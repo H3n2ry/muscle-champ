@@ -39,16 +39,17 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _targWtCtrl  = TextEditingController();
 
   // ── Step 2 ────────────────────────────────────────────────────────────────
-  String _goalType   = 'lose_weight';
+  int _weeklyGoal = 3;
 
-  static const _goals = [
-    (key: 'lose_weight', label: 'PERDER PESO',   icon: Icons.trending_down,
-     desc: 'Queimar gordura e definir'),
-    (key: 'gain_weight', label: 'GANHAR MASSA',  icon: Icons.trending_up,
-     desc: 'Construir músculo e força'),
-    (key: 'maintain',   label: 'MANUTENÇÃO',    icon: Icons.balance,
-     desc: 'Manter a composição atual'),
-  ];
+  // Infere automaticamente o objetivo a partir dos pesos
+  String get _goalType {
+    final curr = double.tryParse(_currWtCtrl.text.replaceAll(',', '.')) ?? 0;
+    final targ = double.tryParse(_targWtCtrl.text.replaceAll(',', '.')) ?? 0;
+    if (curr <= 0 || targ <= 0) return 'maintain';
+    if (targ < curr - 1) return 'lose_weight';
+    if (targ > curr + 1) return 'gain_weight';
+    return 'maintain';
+  }
 
   @override
   void initState() {
@@ -133,13 +134,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     final targWt  = double.tryParse(_targWtCtrl.text.replaceAll(',', '.')) ?? 0;
 
     await ref.read(authControllerProvider.notifier).register(
-      name:          _nameCtrl.text.trim(),
-      email:         _emailCtrl.text.trim(),
-      password:      _passCtrl.text,
-      goalType:      _goalType,
-      heightCm:      height,
-      currentWeight: currWt,
-      targetWeight:  targWt,
+      name:              _nameCtrl.text.trim(),
+      email:             _emailCtrl.text.trim(),
+      password:          _passCtrl.text,
+      goalType:          _goalType,
+      heightCm:          height,
+      currentWeight:     currWt,
+      targetWeight:      targWt,
+      weeklyWorkoutGoal: _weeklyGoal,
     );
 
     if (mounted) {
@@ -236,18 +238,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     bmiColor:   _bmi != null ? _bmiColor(_bmi!) : null,
                     onChanged:  () => setState(() {}),
                   ),
-                  _Step2Goal(
-                    goals:    _goals,
-                    selected: _goalType,
-                    onSelect: (k) => setState(() => _goalType = k),
-                    // Summary data
-                    name:          _nameCtrl.text,
-                    heightCm:      double.tryParse(_heightCtrl.text) ?? 0,
+                  _Step2Frequency(
+                    selected:      _weeklyGoal,
+                    onSelect:      (v) => setState(() => _weeklyGoal = v),
+                    goalType:      _goalType,
                     currentWeight: double.tryParse(_currWtCtrl.text) ?? 0,
                     targetWeight:  double.tryParse(_targWtCtrl.text) ?? 0,
-                    bmi:           _bmi,
-                    bmiLabel:      _bmi != null ? _bmiLabel(_bmi!) : null,
-                    bmiColor:      _bmi != null ? _bmiColor(_bmi!) : null,
                   ),
                 ],
               ),
@@ -764,34 +760,52 @@ class _Step1Body extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// STEP 2 — MISSÃO
+// STEP 2 — FREQUÊNCIA SEMANAL
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _Step2Goal extends StatelessWidget {
-  final List<({String key, String label, IconData icon, String desc})> goals;
-  final String selected;
-  final ValueChanged<String> onSelect;
-  // Summary
-  final String name;
-  final double heightCm;
+class _Step2Frequency extends StatelessWidget {
+  final int selected;
+  final ValueChanged<int> onSelect;
+  final String goalType;
   final double currentWeight;
   final double targetWeight;
-  final double? bmi;
-  final String? bmiLabel;
-  final Color? bmiColor;
 
-  const _Step2Goal({
-    required this.goals,
+  const _Step2Frequency({
     required this.selected,
     required this.onSelect,
-    required this.name,
-    required this.heightCm,
+    required this.goalType,
     required this.currentWeight,
     required this.targetWeight,
-    required this.bmi,
-    required this.bmiLabel,
-    required this.bmiColor,
   });
+
+  static const _options = [2, 3, 4, 5, 6];
+
+  String get _goalLabel {
+    switch (goalType) {
+      case 'lose_weight': return 'Perder Peso';
+      case 'gain_weight': return 'Ganhar Massa';
+      default:            return 'Manutenção';
+    }
+  }
+
+  IconData get _goalIcon {
+    switch (goalType) {
+      case 'lose_weight': return Icons.trending_down;
+      case 'gain_weight': return Icons.trending_up;
+      default:            return Icons.balance;
+    }
+  }
+
+  String _daysLabel(int days) {
+    switch (days) {
+      case 2: return 'Iniciante';
+      case 3: return 'Regular';
+      case 4: return 'Dedicado';
+      case 5: return 'Avançado';
+      case 6: return 'Elite';
+      default: return '';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -800,217 +814,148 @@ class _Step2Goal extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title
-          Text('SUA',
+          Text('SEU',
               style: AppTypography.headlineLg.copyWith(
                 fontSize: 32, fontWeight: FontWeight.w700)),
-          Text('MISSÃO',
+          Text('COMPROMISSO',
               style: AppTypography.headlineLg.copyWith(
                 fontSize: 32,
                 fontWeight: FontWeight.w700,
                 color: AppColors.primary,
               )),
           const SizedBox(height: 6),
-          Text('Escolha seu objetivo principal',
+          Text('Quantos dias por semana você vai treinar?',
               style: AppTypography.bodySm),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
 
-          // Goal cards
-          ...goals.map((g) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: GestureDetector(
-                  onTap: () => onSelect(g.key),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: selected == g.key
-                          ? AppColors.primary.withOpacity(0.09)
-                          : AppColors.surfaceContainerLow,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: selected == g.key
-                            ? AppColors.primary.withOpacity(0.7)
-                            : AppColors.surfaceContainerHigh,
-                        width: selected == g.key ? 1.5 : 1,
+          // Frequência — grid de opções
+          Row(
+            children: _options.map((days) {
+              final isSelected = days == selected;
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                      right: days != _options.last ? 8 : 0),
+                  child: GestureDetector(
+                    onTap: () => onSelect(days),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 160),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppColors.primary.withOpacity(0.12)
+                            : AppColors.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.primary
+                              : AppColors.surfaceContainerHigh,
+                          width: isSelected ? 1.5 : 1,
+                        ),
                       ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: selected == g.key
-                                ? AppColors.primary.withOpacity(0.15)
-                                : AppColors.surfaceContainerHigh,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(g.icon,
-                              size: 22,
-                              color: selected == g.key
+                      child: Column(
+                        children: [
+                          Text(
+                            '$days',
+                            style: AppTypography.headlineMd.copyWith(
+                              color: isSelected
                                   ? AppColors.primary
-                                  : AppColors.onSurfaceVariant),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(g.label,
-                                  style: AppTypography.labelMd.copyWith(
-                                    color: selected == g.key
-                                        ? AppColors.primary
-                                        : AppColors.onSurface,
-                                    letterSpacing: 0.5,
-                                  )),
-                              const SizedBox(height: 2),
-                              Text(g.desc,
-                                  style: AppTypography.bodySm),
-                            ],
+                                  : AppColors.onSurface,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 22,
+                            ),
                           ),
-                        ),
-                        if (selected == g.key)
-                          const Icon(Icons.check_circle,
-                              color: AppColors.primary, size: 22),
-                      ],
+                          Text(
+                            'dias',
+                            style: AppTypography.labelSm.copyWith(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : AppColors.onSurfaceVariant,
+                              fontSize: 9,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              )),
+              );
+            }).toList(),
+          ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
 
-          // Summary card
-          if (name.isNotEmpty || heightCm > 0)
-            _SummaryCard(
-              name:          name,
-              heightCm:      heightCm,
-              currentWeight: currentWeight,
-              targetWeight:  targetWeight,
-              bmi:           bmi,
-              bmiLabel:      bmiLabel,
-              bmiColor:      bmiColor,
-              goalLabel:     goals
-                  .firstWhere((g) => g.key == selected)
-                  .label,
+          // Label do nível selecionado
+          Center(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Text(
+                _daysLabel(selected),
+                key: ValueKey(selected),
+                style: AppTypography.labelMd.copyWith(
+                  color: AppColors.primary,
+                  letterSpacing: 2,
+                ),
+              ),
             ),
+          ),
+
+          const SizedBox(height: 32),
+
+          // Card de objetivo inferido automaticamente
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                  color: AppColors.primary.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(_goalIcon,
+                      color: AppColors.primary, size: 22),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('OBJETIVO DETECTADO',
+                          style: AppTypography.labelSm.copyWith(
+                            color: AppColors.onSurfaceVariant,
+                            fontSize: 9,
+                            letterSpacing: 2,
+                          )),
+                      const SizedBox(height: 2),
+                      Text(_goalLabel,
+                          style: AppTypography.labelMd.copyWith(
+                            color: AppColors.primary,
+                          )),
+                      if (currentWeight > 0 && targetWeight > 0)
+                        Text(
+                          '${currentWeight.toStringAsFixed(1)} kg → ${targetWeight.toStringAsFixed(1)} kg',
+                          style: AppTypography.bodySm.copyWith(
+                              fontSize: 11),
+                        ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.auto_awesome,
+                    color: AppColors.primary, size: 18),
+              ],
+            ),
+          ),
 
           const SizedBox(height: 8),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SUMMARY CARD (step 3)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _SummaryCard extends StatelessWidget {
-  final String name;
-  final double heightCm;
-  final double currentWeight;
-  final double targetWeight;
-  final double? bmi;
-  final String? bmiLabel;
-  final Color? bmiColor;
-  final String goalLabel;
-
-  const _SummaryCard({
-    required this.name,
-    required this.heightCm,
-    required this.currentWeight,
-    required this.targetWeight,
-    required this.bmi,
-    required this.bmiLabel,
-    required this.bmiColor,
-    required this.goalLabel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.surfaceContainerHigh),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.person_outline,
-                  color: AppColors.primary, size: 16),
-              const SizedBox(width: 8),
-              Text('RESUMO DO PERFIL',
-                  style: AppTypography.labelSm.copyWith(
-                    letterSpacing: 2,
-                    color: AppColors.primary,
-                  )),
-            ],
-          ),
-          const SizedBox(height: 14),
-          _SummaryRow(icon: Icons.person, label: 'Nome',
-              value: name.isEmpty ? '—' : name),
-          _SummaryRow(icon: Icons.height, label: 'Altura',
-              value: heightCm > 0 ? '${heightCm.toInt()} cm' : '—'),
-          _SummaryRow(icon: Icons.monitor_weight_outlined,
-              label: 'Peso atual',
-              value: currentWeight > 0
-                  ? '${currentWeight.toStringAsFixed(1)} kg' : '—'),
-          _SummaryRow(icon: Icons.flag_outlined,
-              label: 'Peso alvo',
-              value: targetWeight > 0
-                  ? '${targetWeight.toStringAsFixed(1)} kg' : '—'),
-          if (bmi != null)
-            _SummaryRow(
-              icon: Icons.analytics_outlined,
-              label: 'IMC',
-              value: '${bmi!.toStringAsFixed(1)} — $bmiLabel',
-              valueColor: bmiColor,
-            ),
-          _SummaryRow(icon: Icons.emoji_events_outlined,
-              label: 'Objetivo', value: goalLabel,
-              valueColor: AppColors.primary),
-        ],
-      ),
-    );
-  }
-}
-
-class _SummaryRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color? valueColor;
-  const _SummaryRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.valueColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Icon(icon, size: 15, color: AppColors.onSurfaceVariant),
-          const SizedBox(width: 10),
-          Text(label,
-              style: AppTypography.bodySm.copyWith(fontSize: 12)),
-          const Spacer(),
-          Text(value,
-              style: AppTypography.bodyMd.copyWith(
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-                color: valueColor ?? AppColors.onSurface,
-              )),
         ],
       ),
     );

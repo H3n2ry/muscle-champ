@@ -44,6 +44,7 @@ class AuthController extends AsyncNotifier<UserModel?> {
     required double heightCm,
     required double currentWeight,
     required double targetWeight,
+    required int weeklyWorkoutGoal,
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
@@ -55,6 +56,7 @@ class AuthController extends AsyncNotifier<UserModel?> {
             heightCm: heightCm,
             currentWeight: currentWeight,
             targetWeight: targetWeight,
+            weeklyWorkoutGoal: weeklyWorkoutGoal,
           ),
     );
   }

@@ -32,17 +32,18 @@ class AuthRepository {
     required double heightCm,
     required double currentWeight,
     required double targetWeight,
+    required int weeklyWorkoutGoal,
   }) async {
     final response = await _client.auth.signUp(
       email: email,
       password: password,
-      // Todos os dados são passados no metadata → trigger cria profile+goals
       data: {
-        'name':           name,
-        'goal_type':      goalType,
-        'height_cm':      heightCm,
-        'current_weight': currentWeight,
-        'target_weight':  targetWeight,
+        'name':                 name,
+        'goal_type':            goalType,
+        'height_cm':            heightCm,
+        'current_weight':       currentWeight,
+        'target_weight':        targetWeight,
+        'weekly_workout_goal':  weeklyWorkoutGoal,
       },
     );
 

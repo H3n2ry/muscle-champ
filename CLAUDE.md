@@ -4,7 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build & Run Commands
 
-All commands run from `C:\Users\Jean\Desktop\muscle camp\project\app`.
+> **Importante:** Flutter, Android Studio e Node.js estão instalados na **máquina de desenvolvimento (Jean)**.
+> Esta máquina (User Implacil) não tem essas ferramentas no PATH — use-a apenas para editar código e commitar.
+
+All commands run from `C:\Users\Jean\Desktop\muscle camp\project\app` (máquina Jean).
 
 ### Environment setup (required for Android builds — set in same PowerShell session)
 ```powershell
@@ -33,6 +36,15 @@ flutter analyze                      # Static analysis (pre-existing errors in d
 ```bash
 cd build/web
 vercel --prod --yes --scope "af-dev"  # Links to muscle-champ project automatically → https://muscle-champ.vercel.app
+```
+
+### Build + deploy completo (sequência recomendada)
+```bash
+# Na máquina Jean, dentro de C:\Users\Jean\Desktop\muscle camp\project\app
+flutter pub get
+flutter build web --release
+cd build/web
+vercel --prod --yes --scope "af-dev"
 ```
 
 ### If build fails with path errors

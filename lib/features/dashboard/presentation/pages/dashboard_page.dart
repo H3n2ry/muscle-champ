@@ -227,7 +227,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final user      = ref.watch(authControllerProvider).valueOrNull;
+    final user      = ref.watch(currentUserProvider).valueOrNull
+                   ?? ref.watch(authControllerProvider).valueOrNull;
     final dashboard = ref.watch(dashboardProvider);
 
     final pendingCount =
@@ -532,7 +533,6 @@ class _DashboardContent extends StatelessWidget {
                 child: _ProtocolCard(
                   icon: Icons.fitness_center,
                   title: 'TREINO',
-                  subtitle: '+10 pontos',
                   done: data.workoutDoneToday,
                 ),
               ),
@@ -541,7 +541,6 @@ class _DashboardContent extends StatelessWidget {
                 child: _ProtocolCard(
                   icon: Icons.restaurant,
                   title: 'DIETA',
-                  subtitle: '+10 pontos',
                   done: data.dietGoalMetToday,
                 ),
               ),
@@ -824,12 +823,10 @@ class _MiniDivider extends StatelessWidget {
 class _ProtocolCard extends StatelessWidget {
   final IconData icon;
   final String title;
-  final String subtitle;
   final bool done;
   const _ProtocolCard({
     required this.icon,
     required this.title,
-    required this.subtitle,
     required this.done,
   });
 
@@ -848,52 +845,95 @@ class _ProtocolCard extends StatelessWidget {
               : AppColors.surfaceContainerHigh,
           width: done ? 1.5 : 1,
         ),
+        boxShadow: done
+            ? [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.15),
+                  blurRadius: 14,
+                  spreadRadius: 0,
+                )
+              ]
+            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Stack(
+            clipBehavior: Clip.none,
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
                   color: done
                       ? AppColors.primary.withOpacity(0.2)
                       : AppColors.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon,
-                    size: 18,
-                    color: done
-                        ? AppColors.primary
-                        : AppColors.onSurfaceVariant),
+                child: Icon(
+                  done ? Icons.emoji_events : icon,
+                  size: 22,
+                  color: done
+                      ? AppColors.primary
+                      : AppColors.onSurfaceVariant,
+                ),
               ),
-              Icon(
-                done
-                    ? Icons.check_circle
-                    : Icons.radio_button_unchecked,
-                color: done
-                    ? AppColors.primary
-                    : AppColors.outlineVariant,
-                size: 20,
-              ),
+              if (done)
+                Positioned(
+                  top: -4,
+                  right: -4,
+                  child: Container(
+                    width: 16,
+                    height: 16,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.check,
+                        color: AppColors.onPrimary, size: 10),
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 12),
           Text(title,
-              style: AppTypography.labelMd.copyWith(
-                  letterSpacing: 1)),
-          const SizedBox(height: 2),
-          Text(
-            done ? 'Concluído ✓' : subtitle,
-            style: AppTypography.bodySm.copyWith(
-              color: done
-                  ? AppColors.primary
-                  : AppColors.onSurfaceVariant,
+              style: AppTypography.labelMd.copyWith(letterSpacing: 1)),
+          const SizedBox(height: 6),
+          if (done)
+            Row(
+              children: [
+                const Icon(Icons.star_rounded,
+                    color: AppColors.primary, size: 12),
+                const SizedBox(width: 4),
+                Text(
+                  'CONQUISTADO',
+                  style: AppTypography.labelSm.copyWith(
+                    color: AppColors.primary,
+                    fontSize: 10,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
+            )
+          else
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                    color: AppColors.primary.withOpacity(0.3)),
+              ),
+              child: Text(
+                '+10 PTS',
+                style: AppTypography.labelSm.copyWith(
+                  color: AppColors.primary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
-          ),
         ],
       ),
     );
