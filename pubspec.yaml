@@ -1,0 +1,60 @@
+name: muscle_camp
+description: Muscle Camp - Fitness competition app
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Supabase (auth + banco + storage em um só)
+  supabase_flutter: ^2.5.0
+
+  # State management
+  flutter_riverpod: ^2.5.1
+
+  # Navigation
+  go_router: ^13.2.1
+
+  # UI
+  google_fonts: ^6.2.1
+  fl_chart: ^0.67.0
+  cached_network_image: ^3.3.1
+  image: ^4.8.0
+  shimmer: ^3.0.0
+
+  # Image picker (foto de perfil)
+  image_picker: ^1.1.2
+
+  # Persistência local (controle do popup semanal)
+  shared_preferences: ^2.3.2
+
+  # HTTP (Groq API)
+  http: ^1.2.1
+
+  # Utils
+  intl: ^0.19.0
+  equatable: ^2.0.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/logo.png"
+  min_sdk_android: 21
+  web:
+    generate: false
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/animations/
