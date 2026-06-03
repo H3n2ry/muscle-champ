@@ -17,6 +17,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _emailCtrl    = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _formKey      = GlobalKey<FormState>();
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailCtrl.addListener(_clearError);
+    _passwordCtrl.addListener(_clearError);
+  }
+
+  void _clearError() {
+    if (_errorMessage != null) setState(() => _errorMessage = null);
+  }
 
   @override
   void dispose() {
@@ -25,7 +37,28 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     super.dispose();
   }
 
+  String _friendlyError(Object error) {
+    final msg = error.toString().toLowerCase();
+    if (msg.contains('invalid_credentials') || msg.contains('invalid login credentials')) {
+      return 'Email ou senha incorretos. Verifique e tente novamente.';
+    }
+    if (msg.contains('email_not_confirmed') || msg.contains('not confirmed')) {
+      return 'Confirme seu email antes de entrar. Verifique sua caixa de entrada.';
+    }
+    if (msg.contains('user_not_found') || msg.contains('no user')) {
+      return 'Nenhuma conta encontrada com este email.';
+    }
+    if (msg.contains('too_many_requests') || msg.contains('rate limit')) {
+      return 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
+    }
+    if (msg.contains('network') || msg.contains('socketexception') || msg.contains('connection')) {
+      return 'Sem conexão com a internet. Verifique sua rede.';
+    }
+    return 'Algo deu errado. Tente novamente.';
+  }
+
   Future<void> _submit() async {
+    setState(() => _errorMessage = null);
     if (!_formKey.currentState!.validate()) return;
     await ref.read(authControllerProvider.notifier).login(
           email: _emailCtrl.text.trim(),
@@ -34,12 +67,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     if (mounted) {
       final error = ref.read(authControllerProvider).error;
       if (error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error.toString()),
-            backgroundColor: AppColors.errorContainer,
-          ),
-        );
+        setState(() => _errorMessage = _friendlyError(error));
       } else {
         context.go('/dashboard');
       }
@@ -188,7 +216,55 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               : null,
                     ),
 
-                    const SizedBox(height: 40),
+                    // ── Erro inline ───────────────────────────────
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                      child: _errorMessage != null
+                          ? Padding(
+                              padding: const EdgeInsets.only(top: 20),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 14),
+                                decoration: BoxDecoration(
+                                  color: AppColors.errorContainer
+                                      .withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                      color: AppColors.errorContainer
+                                          .withOpacity(0.5)),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    const Icon(Icons.error_outline,
+                                        color: AppColors.error, size: 20),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        _errorMessage!,
+                                        style:
+                                            AppTypography.bodySm.copyWith(
+                                          color: AppColors.error,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () => setState(
+                                          () => _errorMessage = null),
+                                      child: const Icon(Icons.close,
+                                          color: AppColors.error, size: 16),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+
+                    const SizedBox(height: 20),
 
                     // ── Login button ───────────────────────────────
                     SizedBox(

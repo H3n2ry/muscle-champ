@@ -149,18 +149,41 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       if (state.hasError) {
         final err = state.error;
         if (err is EmailConfirmationPendingException) {
-          // Email de confirmação enviado → vai para tela de confirmação
           context.go('/confirm-email', extra: err.email);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(err.toString()),
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 18),
+                const SizedBox(width: 10),
+                Expanded(child: Text(_friendlyError(err!))),
+              ],
+            ),
             backgroundColor: AppColors.errorContainer,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.all(16),
           ));
         }
       } else {
         context.go('/dashboard');
       }
     }
+  }
+
+  String _friendlyError(Object error) {
+    final msg = error.toString().toLowerCase();
+    if (msg.contains('já está cadastrado') || msg.contains('already registered')) {
+      return 'Este email já está cadastrado. Faça login.';
+    }
+    if (msg.contains('weak_password') || msg.contains('senha')) {
+      return 'Senha fraca. Use letras, números e símbolos.';
+    }
+    if (msg.contains('network') || msg.contains('socketexception')) {
+      return 'Sem conexão com a internet.';
+    }
+    return 'Algo deu errado. Tente novamente.';
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
