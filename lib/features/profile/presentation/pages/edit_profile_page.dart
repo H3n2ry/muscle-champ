@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../shared/widgets/mk_snack.dart';
 import '../../data/models/profile_model.dart';
 import '../../data/repositories/profile_repository.dart';
 import '../providers/profile_provider.dart';
@@ -92,28 +93,13 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
       if (mounted) {
         context.pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(children: [
-              const Icon(Icons.check_circle, color: AppColors.onPrimary, size: 18),
-              const SizedBox(width: 10),
-              Text('Perfil atualizado com sucesso!',
-                  style: AppTypography.bodyMd.copyWith(color: AppColors.onPrimary)),
-            ]),
-            backgroundColor: AppColors.primary,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
+        MkSnack.success(context, 'Perfil atualizado com sucesso!');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao salvar: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        final msg = e.toString().replaceFirst('Exception: ', '');
+        MkSnack.error(context,
+            msg.length > 100 ? 'Erro ao salvar. Tente novamente.' : msg);
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);

@@ -246,7 +246,15 @@ Regras OBRIGATÓRIAS — respeite com precisão:
 
   static void _assertOk(http.Response res) {
     if (res.statusCode != 200) {
-      throw Exception('Groq ${res.statusCode}: ${res.body}');
+      // Extrai a mensagem legível da resposta JSON da Groq, se disponível
+      String? groqMsg;
+      try {
+        final json = jsonDecode(res.body) as Map<String, dynamic>;
+        groqMsg = (json['error'] as Map?)?['message'] as String?;
+      } catch (_) {
+        // Resposta não é JSON válido — usa mensagem genérica
+      }
+      throw Exception(groqMsg ?? 'Groq ${res.statusCode}: ${res.body}');
     }
   }
 

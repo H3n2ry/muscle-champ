@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../shared/widgets/mk_error_banner.dart';
 import '../../../../shared/widgets/mk_text_field.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../providers/auth_provider.dart';
@@ -24,6 +25,7 @@ class RegisterPage extends ConsumerStatefulWidget {
 class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _pageCtrl = PageController();
   int _step = 0;
+  String? _errorMessage;
 
   // ── Step 0 ────────────────────────────────────────────────────────────────
   final _step0Key    = GlobalKey<FormState>();
@@ -151,20 +153,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         if (err is EmailConfirmationPendingException) {
           context.go('/confirm-email', extra: err.email);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white, size: 18),
-                const SizedBox(width: 10),
-                Expanded(child: Text(_friendlyError(err!))),
-              ],
-            ),
-            backgroundColor: AppColors.errorContainer,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
-            margin: const EdgeInsets.all(16),
-          ));
+          setState(() => _errorMessage = _friendlyError(err!));
         }
       } else {
         context.go('/dashboard');
@@ -272,9 +261,19 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               ),
             ),
 
+            // ── Erro global (ex: email já cadastrado) ────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: MkErrorBanner(
+                message: _errorMessage,
+                onDismiss: () => setState(() => _errorMessage = null),
+                padding: EdgeInsets.zero,
+              ),
+            ),
+
             // ── Bottom button ─────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
               child: SizedBox(
                 width: double.infinity,
                 height: 56,

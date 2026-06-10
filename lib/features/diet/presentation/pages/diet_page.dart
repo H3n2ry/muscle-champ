@@ -8,6 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/groq/groq_config.dart';
 import '../../../../core/groq/groq_service.dart';
+import '../../../../shared/widgets/mk_error_banner.dart';
 import '../../data/datasources/food_database.dart';
 import '../../data/models/diet_model.dart';
 import '../providers/diet_provider.dart';
@@ -32,10 +33,10 @@ class DietPage extends ConsumerWidget {
         child: summary.when(
           loading: () => const Center(
               child: CircularProgressIndicator(color: AppColors.primary)),
-          error: (e, _) => Center(
-              child: Text('Erro ao carregar dieta',
-                  style:
-                      AppTypography.bodyMd.copyWith(color: AppColors.error))),
+          error: (e, _) => MkErrorState(
+            subtitle: 'Não foi possível carregar sua dieta.',
+            onRetry: () => ref.invalidate(dietControllerProvider),
+          ),
           data: (data) => _DietContent(
             data: data,
             onAdd: () => _showAddMealSheet(context, ref),
@@ -606,26 +607,9 @@ class _AiDietSection extends ConsumerWidget {
 
           // Erro
           else if (planState.error != null)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.errorContainer.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                    color: AppColors.error.withOpacity(0.4)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.error_outline,
-                      color: AppColors.error, size: 18),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(planState.error!,
-                        style: AppTypography.bodySm
-                            .copyWith(color: AppColors.error)),
-                  ),
-                ],
-              ),
+            MkErrorBanner(
+              message: planState.error,
+              padding: EdgeInsets.zero,
             )
 
           // Sem plano → botão de gerar
@@ -1728,10 +1712,11 @@ class _SmartMealSheetState extends State<_SmartMealSheet> {
     try {
       final result = await GroqService.calculateFoodMacros(desc);
       if (mounted) setState(() => _aiResult = result);
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        setState(
-            () => _aiError = 'Não foi possível calcular. Tente novamente.');
+        final msg = e.toString().replaceFirst('Exception: ', '');
+        setState(() => _aiError =
+            msg.isNotEmpty ? msg : 'Não foi possível calcular. Tente novamente.');
       }
     } finally {
       if (mounted) setState(() => _aiLoading = false);
@@ -1767,10 +1752,12 @@ class _SmartMealSheetState extends State<_SmartMealSheet> {
           setState(() => _photoResult = result);
         }
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        setState(
-            () => _photoError = 'Erro ao analisar foto. Tente novamente.');
+        final msg = e.toString().replaceFirst('Exception: ', '');
+        setState(() => _photoError = msg.length > 120
+            ? '${msg.substring(0, 120)}…'
+            : msg);
       }
     } finally {
       if (mounted) setState(() => _photoLoading = false);
@@ -2259,19 +2246,11 @@ class _SmartMealSheetState extends State<_SmartMealSheet> {
           ),
         ),
 
-        if (_aiError != null) ...[
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.errorContainer.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(_aiError!,
-                style:
-                    AppTypography.bodySm.copyWith(color: AppColors.error)),
-          ),
-        ],
+        MkErrorBanner(
+          message: _aiError,
+          onDismiss: () => setState(() => _aiError = null),
+          padding: const EdgeInsets.only(top: 10),
+        ),
 
         if (_aiResult != null) ...[
           const SizedBox(height: 16),
@@ -2473,19 +2452,11 @@ class _SmartMealSheetState extends State<_SmartMealSheet> {
           ),
         ],
 
-        if (_photoError != null) ...[
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.errorContainer.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(_photoError!,
-                style:
-                    AppTypography.bodySm.copyWith(color: AppColors.error)),
-          ),
-        ],
+        MkErrorBanner(
+          message: _photoError,
+          onDismiss: () => setState(() => _photoError = null),
+          padding: const EdgeInsets.only(top: 10),
+        ),
 
         if (_photoResult != null) ...[
           const SizedBox(height: 14),

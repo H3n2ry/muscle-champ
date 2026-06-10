@@ -5,6 +5,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/groq/groq_config.dart';
 import '../../../../core/groq/groq_service.dart';
+import '../../../../shared/widgets/mk_error_banner.dart';
+import '../../../../shared/widgets/mk_snack.dart';
 import '../../data/models/workout_template_model.dart';
 import '../../data/repositories/workout_template_repository.dart';
 import '../../data/datasources/exercise_library.dart';
@@ -97,23 +99,8 @@ class WorkoutPage extends ConsumerWidget {
                 loading: () => const Center(
                     child: CircularProgressIndicator(
                         color: AppColors.primary)),
-                error: (e, _) => Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.wifi_off,
-                          color: AppColors.onSurfaceVariant, size: 40),
-                      const SizedBox(height: 12),
-                      Text('Erro ao carregar',
-                          style: AppTypography.bodyMd),
-                      const SizedBox(height: 12),
-                      TextButton(
-                        onPressed: () =>
-                            ref.invalidate(workoutTemplatesProvider),
-                        child: const Text('Tentar novamente'),
-                      ),
-                    ],
-                  ),
+                error: (e, _) => MkErrorState(
+                  onRetry: () => ref.invalidate(workoutTemplatesProvider),
                 ),
                 data: (list) {
                   if (list.isEmpty) {
@@ -230,19 +217,12 @@ class WorkoutPage extends ConsumerWidget {
             final alreadyDone = result['already_done'] as bool? ?? false;
             final progression = result['progression'] as int? ?? 0;
             if (alreadyDone) {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                content: Text('Treino já registrado hoje!'),
-                behavior: SnackBarBehavior.floating,
-              ));
+              MkSnack.info(context, 'Treino já registrado hoje!');
             } else {
               final msg = progression > 0
-                  ? '✅ +10 pts  🔥 +${progression * 5} pts progressão!'
-                  : '✅ Treino concluído! +10 pts';
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text(msg),
-                backgroundColor: AppColors.primary,
-                behavior: SnackBarBehavior.floating,
-              ));
+                  ? '+10 pts  +${progression * 5} pts por progressão!'
+                  : 'Treino concluído! +10 pts';
+              MkSnack.success(context, msg);
             }
           }
         },
@@ -302,7 +282,10 @@ class _AiWorkoutSheetState extends State<_AiWorkoutSheet> {
       final result = await GroqService.generateWorkout(group);
       if (mounted) setState(() => _generated = result);
     } catch (e) {
-      if (mounted) setState(() => _error = 'Erro ao gerar treino. Tente novamente.');
+      if (mounted) {
+        final msg = e.toString().replaceFirst('Exception: ', '');
+        setState(() => _error = msg.isNotEmpty ? msg : 'Erro ao gerar treino. Tente novamente.');
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -491,19 +474,11 @@ class _AiWorkoutSheetState extends State<_AiWorkoutSheet> {
                 ),
               ),
 
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.errorContainer.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(_error!,
-                      style: AppTypography.bodySm
-                          .copyWith(color: AppColors.error)),
-                ),
-              ],
+              MkErrorBanner(
+                message: _error,
+                onDismiss: () => setState(() => _error = null),
+                padding: const EdgeInsets.only(top: 12),
+              ),
 
               // Exercícios gerados
               if (_generated.isNotEmpty) ...[

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../shared/widgets/mk_error_banner.dart';
 import '../../../../shared/widgets/mk_text_field.dart';
 import '../providers/auth_provider.dart';
 
@@ -217,51 +218,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ),
 
                     // ── Erro inline ───────────────────────────────
-                    AnimatedSize(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeInOut,
-                      child: _errorMessage != null
-                          ? Padding(
-                              padding: const EdgeInsets.only(top: 20),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 14),
-                                decoration: BoxDecoration(
-                                  color: AppColors.errorContainer
-                                      .withOpacity(0.15),
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                      color: AppColors.errorContainer
-                                          .withOpacity(0.5)),
-                                ),
-                                child: Row(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    const Icon(Icons.error_outline,
-                                        color: AppColors.error, size: 20),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        _errorMessage!,
-                                        style:
-                                            AppTypography.bodySm.copyWith(
-                                          color: AppColors.error,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ),
-                                    GestureDetector(
-                                      onTap: () => setState(
-                                          () => _errorMessage = null),
-                                      child: const Icon(Icons.close,
-                                          color: AppColors.error, size: 16),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            )
-                          : const SizedBox.shrink(),
+                    MkErrorBanner(
+                      message: _errorMessage,
+                      onDismiss: () => setState(() => _errorMessage = null),
                     ),
 
                     const SizedBox(height: 20),
