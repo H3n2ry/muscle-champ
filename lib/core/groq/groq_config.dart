@@ -1,16 +1,17 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:muscle_camp/core/secrets.dart';
 
 class GroqConfig {
   GroqConfig._();
 
-  static const String apiKey = Secrets.groqApiKey;
-
+  // As chamadas de IA passam pela Edge Function groq-proxy (autenticada por JWT).
+  // A chave Groq vive no Supabase Vault — nunca no app.
   static const String baseUrl =
-      'https://api.groq.com/openai/v1/chat/completions';
+      '${Secrets.supabaseUrl}/functions/v1/groq-proxy';
 
   static const String textModel  = 'llama-3.3-70b-versatile';
   static const String visionModel = 'meta-llama/llama-4-scout-17b-16e-instruct';
 
   static bool get isConfigured =>
-      apiKey.isNotEmpty && apiKey.startsWith('gsk_');
+      Supabase.instance.client.auth.currentSession != null;
 }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'groq_config.dart';
 
 class GroqService {
@@ -239,10 +240,18 @@ Regras OBRIGATÓRIAS — respeite com precisão:
 
   // ── helpers ────────────────────────────────────────────────────────────────
 
-  static Map<String, String> _headers() => {
-        'Authorization': 'Bearer ${GroqConfig.apiKey}',
-        'Content-Type': 'application/json',
-      };
+  // Autentica no groq-proxy com o JWT do usuário logado.
+  // A chave Groq nunca chega ao cliente — fica no Supabase Vault.
+  static Map<String, String> _headers() {
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session == null) {
+      throw Exception('Sessão expirada. Faça login novamente.');
+    }
+    return {
+      'Authorization': 'Bearer ${session.accessToken}',
+      'Content-Type': 'application/json',
+    };
+  }
 
   static void _assertOk(http.Response res) {
     if (res.statusCode != 200) {

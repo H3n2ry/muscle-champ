@@ -1701,7 +1701,7 @@ class _SmartMealSheetState extends State<_SmartMealSheet> {
     final desc = _aiCtrl.text.trim();
     if (desc.isEmpty) return;
     if (!GroqConfig.isConfigured) {
-      setState(() => _aiError = 'Configure a chave Groq em groq_config.dart');
+      setState(() => _aiError = 'Sessão expirada. Faça login novamente.');
       return;
     }
     setState(() {
@@ -1731,7 +1731,7 @@ class _SmartMealSheetState extends State<_SmartMealSheet> {
     final bytes = await xfile.readAsBytes();
     if (!GroqConfig.isConfigured) {
       setState(
-          () => _photoError = 'Configure a chave Groq em groq_config.dart');
+          () => _photoError = 'Sessão expirada. Faça login novamente.');
       return;
     }
     setState(() {

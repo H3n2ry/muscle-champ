@@ -268,7 +268,7 @@ class _AiWorkoutSheetState extends State<_AiWorkoutSheet> {
     if (group == null) return;
 
     if (!GroqConfig.isConfigured) {
-      setState(() => _error = 'Configure a chave Groq em groq_config.dart');
+      setState(() => _error = 'Sessão expirada. Faça login novamente.');
       return;
     }
 
