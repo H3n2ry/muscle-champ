@@ -23,9 +23,9 @@ class DietLogModel {
 
   factory DietLogModel.fromJson(Map<String, dynamic> json) => DietLogModel(
         id:       json['id']       as String,
-        userId:   json['user_id']  as String,
+        userId:   (json['userId'] ?? json['user_id']) as String? ?? '',
         date:     DateTime.parse(json['date'] as String),
-        mealName: json['meal_name'] as String,
+        mealName: (json['mealName'] ?? json['meal_name']) as String,
         calories: (json['calories'] as num).toInt(),
         protein:  (json['protein']  as num).toDouble(),
         carbs:    (json['carbs']    as num).toDouble(),

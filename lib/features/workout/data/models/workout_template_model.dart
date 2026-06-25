@@ -57,12 +57,12 @@ class TemplateExerciseModel {
   factory TemplateExerciseModel.fromJson(Map<String, dynamic> j) =>
       TemplateExerciseModel(
         id:          j['id'] as String,
-        templateId:  j['template_id'] as String,
+        templateId:  (j['templateId'] ?? j['template_id']) as String? ?? '',
         name:        j['name'] as String,
         sets:        (j['sets'] as num).toInt(),
         reps:        (j['reps'] as num).toInt(),
-        weightKg:    (j['weight_kg'] as num).toDouble(),
-        orderIndex:  (j['order_index'] as num?)?.toInt() ?? 0,
+        weightKg:    ((j['weightKg'] ?? j['weight_kg']) as num?)?.toDouble() ?? 0,
+        orderIndex:  ((j['orderIndex'] ?? j['order_index']) as num?)?.toInt() ?? 0,
       );
 
   TemplateExerciseModel copyWith({

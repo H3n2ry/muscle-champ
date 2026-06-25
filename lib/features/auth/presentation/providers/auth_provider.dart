@@ -1,18 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../../../core/firebase/firebase_service.dart';
 import '../../data/models/user_model.dart';
 import '../../data/repositories/auth_repository.dart';
 
-// Stream do estado de autenticação do Supabase
-final authSessionProvider = StreamProvider<Session?>((ref) {
-  return Supabase.instance.client.auth.onAuthStateChange
-      .map((event) => event.session);
+// Stream do estado de autenticação do Firebase
+final authSessionProvider = StreamProvider<User?>((ref) {
+  return FB.auth.authStateChanges();
 });
 
 // Usuário atual com dados do perfil
 final currentUserProvider = FutureProvider<UserModel?>((ref) async {
-  final session = ref.watch(authSessionProvider).valueOrNull;
-  if (session == null) return null;
+  final user = ref.watch(authSessionProvider).valueOrNull;
+  if (user == null) return null;
   return ref.watch(authRepositoryProvider).getCurrentUser();
 });
 

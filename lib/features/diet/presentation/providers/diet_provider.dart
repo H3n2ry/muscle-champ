@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/firebase/firebase_service.dart';
 import '../../data/models/diet_model.dart';
 import '../../data/repositories/diet_repository.dart';
 import '../../../../core/groq/groq_service.dart';
@@ -52,7 +52,7 @@ final aiDietPlanProvider =
 class AiDietPlanNotifier extends StateNotifier<AiDietPlanState> {
   // Chave única por usuário — evita que contas diferentes compartilhem o plano
   static String _storageKey() {
-    final uid = Supabase.instance.client.auth.currentUser?.id;
+    final uid = FB.auth.currentUser?.uid;
     return uid != null ? 'ai_diet_plan_v1_$uid' : 'ai_diet_plan_v1';
   }
 

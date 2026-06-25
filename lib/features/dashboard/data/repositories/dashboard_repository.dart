@@ -1,112 +1,91 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/firebase/firebase_service.dart';
 import '../models/dashboard_model.dart';
 
 final dashboardRepositoryProvider =
     Provider<DashboardRepository>((_) => DashboardRepository());
 
 class DashboardRepository {
-  final _client = Supabase.instance.client;
-
   Future<DashboardModel> getDashboard() async {
-    final userId = _client.auth.currentUser!.id;
-    final today  = DateTime.now().toIso8601String().substring(0, 10);
-    final weekStart = _weekStart();
-    final sevenDaysAgo = DateTime.now()
-        .subtract(const Duration(days: 7))
-        .toIso8601String();
+    final uid         = FB.uid;
+    final today       = FB.today;
+    final weekStart   = _weekStart();
+    final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
 
-    // Queries individuais — mais fácil de depurar e resilientes a dados ausentes
-    final pointsData = await _safe(
-      _client.from('points').select('amount').eq('user_id', userId),
-      defaultValue: [],
-    );
+    final results = await Future.wait([
+      FB.db.collection('users').doc(uid).get(),
+      FB.db.collection('workout_completions')
+          .where('userId', isEqualTo: uid)
+          .where('completedDate', isEqualTo: today)
+          .limit(1)
+          .get(),
+      FB.db.collection('points')
+          .where('userId', isEqualTo: uid)
+          .where('reason', isEqualTo: 'diet_goal_met')
+          .where('createdAt',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(DateTime.parse(today)))
+          .limit(1)
+          .get(),
+      FB.db.collection('workout_completions')
+          .where('userId', isEqualTo: uid)
+          .where('completedDate', isGreaterThanOrEqualTo: weekStart)
+          .get(),
+      FB.db.collection('points')
+          .where('userId', isEqualTo: uid)
+          .where('createdAt',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(sevenDaysAgo))
+          .get(),
+      FB.db
+          .collection('users')
+          .orderBy('totalPoints', descending: true)
+          .limit(100)
+          .get(),
+    ]);
 
-    final todayWorkout = await _safe(
-      _client.from('workouts').select('id')
-          .eq('user_id', userId).eq('date', today).eq('completed', true),
-      defaultValue: [],
-    );
+    final userDoc       = results[0] as DocumentSnapshot;
+    final todayWorkouts = (results[1] as QuerySnapshot).docs;
+    final dietPoints    = (results[2] as QuerySnapshot).docs;
+    final weekWorkouts  = (results[3] as QuerySnapshot).docs;
+    final histPoints    = (results[4] as QuerySnapshot).docs;
+    final allUsers      = (results[5] as QuerySnapshot).docs;
 
-    final dietDoneToday = await _safe(
-      _client.from('points').select('id')
-          .eq('user_id', userId).eq('reason', 'diet_goal_met')
-          .gte('created_at', today),
-      defaultValue: [],
-    );
+    final userData = userDoc.data() as Map<String, dynamic>? ?? {};
 
-    final goal = await _safe(
-      _client.from('goals').select().eq('user_id', userId).maybeSingle(),
-      defaultValue: null,
-    );
-
-    final weekWorkouts = await _safe(
-      _client.from('workouts').select('id')
-          .eq('user_id', userId).eq('completed', true)
-          .gte('date', weekStart),
-      defaultValue: [],
-    );
-
-    final history = await _safe(
-      _client.from('points').select('amount, created_at')
-          .eq('user_id', userId).gte('created_at', sevenDaysAgo),
-      defaultValue: [],
-    );
-
-    // Ranking calculado localmente (evita falha de RPC)
+    // Rank global
     int globalRank = 1;
-    int friendsRank = 1;
-    try {
-      final allPoints = await _client
-          .from('points')
-          .select('user_id, amount');
-      final Map<String, int> totals = {};
-      for (final p in allPoints as List) {
-        final uid = p['user_id'] as String;
-        totals[uid] = (totals[uid] ?? 0) + (p['amount'] as int);
+    for (int i = 0; i < allUsers.length; i++) {
+      if (allUsers[i].id == uid) {
+        globalRank = i + 1;
+        break;
       }
-      final sorted = totals.entries.toList()
-        ..sort((a, b) => b.value.compareTo(a.value));
-      final idx = sorted.indexWhere((e) => e.key == userId);
-      globalRank = idx >= 0 ? idx + 1 : sorted.length + 1;
-      friendsRank = globalRank;
-    } catch (_) {}
-
-    final totalPoints = (pointsData as List)
-        .fold<int>(0, (s, p) => s + (p['amount'] as int));
-
-    // Agrupar histórico por dia
-    final Map<String, int> dayMap = {};
-    for (final p in history as List) {
-      final day = (p['created_at'] as String).substring(0, 10);
-      dayMap[day] = (dayMap[day] ?? 0) + (p['amount'] as int);
     }
 
-    final goalMap = goal as Map<String, dynamic>?;
+    // Histórico de pontos agrupado por dia
+    final Map<String, int> dayMap = {};
+    for (final d in histPoints) {
+      final data = d.data() as Map<String, dynamic>;
+      final ts   = (data['createdAt'] as Timestamp?)?.toDate();
+      if (ts == null) continue;
+      final day = ts.toIso8601String().substring(0, 10);
+      dayMap[day] = (dayMap[day] ?? 0) + (data['amount'] as int? ?? 0);
+    }
 
     return DashboardModel(
-      totalPoints:       totalPoints,
+      totalPoints:       userData['totalPoints'] as int? ?? 0,
       globalRank:        globalRank,
-      friendsRank:       friendsRank,
-      workoutDoneToday:  (todayWorkout as List).isNotEmpty,
-      dietGoalMetToday:  (dietDoneToday as List).isNotEmpty,
-      currentWeight:     (goalMap?['current_weight'] as num?)?.toDouble() ?? 0,
-      targetWeight:      (goalMap?['target_weight']  as num?)?.toDouble() ?? 0,
-      weeklyWorkouts:    (weekWorkouts as List).length,
-      weeklyWorkoutGoal: (goalMap?['weekly_workout_goal'] as int?) ?? 5,
+      friendsRank:       globalRank,
+      workoutDoneToday:  todayWorkouts.isNotEmpty,
+      dietGoalMetToday:  dietPoints.isNotEmpty,
+      currentWeight:     (userData['currentWeight'] as num?)?.toDouble() ?? 0,
+      targetWeight:      (userData['targetWeight']  as num?)?.toDouble() ?? 0,
+      weeklyWorkouts:    weekWorkouts.length,
+      weeklyWorkoutGoal: userData['weeklyWorkoutGoal'] as int? ?? 3,
       pointHistory: dayMap.entries
           .map((e) => PointHistoryEntry(date: e.key, points: e.value))
           .toList()
         ..sort((a, b) => a.date.compareTo(b.date)),
     );
-  }
-
-  Future<dynamic> _safe(Future<dynamic> query, {required dynamic defaultValue}) async {
-    try {
-      return await query;
-    } catch (_) {
-      return defaultValue;
-    }
   }
 
   String _weekStart() {

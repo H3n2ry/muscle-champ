@@ -10,8 +10,11 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Supabase (auth + banco + storage em um só)
-  supabase_flutter: ^2.5.0
+  # Firebase (auth + banco + storage)
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  cloud_firestore: ^5.4.4
+  firebase_storage: ^12.3.2
 
   # State management
   flutter_riverpod: ^2.5.1

@@ -1,55 +1,57 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/firebase/firebase_service.dart';
 import '../models/diet_model.dart';
 
 final dietRepositoryProvider =
     Provider<DietRepository>((_) => DietRepository());
 
 class DietRepository {
-  final _client = Supabase.instance.client;
-
   Future<DietSummaryModel> getTodaySummary() async {
-    final userId = _client.auth.currentUser!.id;
-    final today  = DateTime.now().toIso8601String().substring(0, 10);
+    final uid        = FB.uid;
+    final today      = FB.today;
+    final todayStart = Timestamp.fromDate(DateTime.parse(today));
 
     final results = await Future.wait([
-      _client
-          .from('diet_logs')
-          .select()
-          .eq('user_id', userId)
-          .eq('date', today)
-          .order('created_at'),
-      _client
-          .from('goals')
-          .select('daily_calories, goal_type')
-          .eq('user_id', userId)
-          .maybeSingle(),
-      // Check if diet goal already awarded today
-      _client
-          .from('points')
-          .select('id')
-          .eq('user_id', userId)
-          .eq('reason', 'diet_goal_met')
-          .gte('created_at', today),
+      FB.db
+          .collection('diet_logs')
+          .where('userId', isEqualTo: uid)
+          .where('date', isEqualTo: today)
+          .orderBy('createdAt')
+          .get(),
+      FB.db.collection('users').doc(uid).get(),
+      FB.db
+          .collection('points')
+          .where('userId', isEqualTo: uid)
+          .where('reason', isEqualTo: 'diet_goal_met')
+          .where('createdAt', isGreaterThanOrEqualTo: todayStart)
+          .limit(1)
+          .get(),
     ]);
 
-    final meals        = results[0] as List;
-    final goal         = results[1] as Map<String, dynamic>?;
-    final goalCalories = (goal?['daily_calories'] as int?) ?? 2000;
-    final goalType     = goal?['goal_type'] as String?;
+    final mealsSnap    = results[0] as QuerySnapshot;
+    final userDoc      = results[1] as DocumentSnapshot;
+    final userData     = userDoc.data() as Map<String, dynamic>? ?? {};
+    final goalCalories = userData['dailyCalories'] as int? ?? 2000;
+    final goalType     = userData['goalType'] as String?;
+
+    final meals = mealsSnap.docs.map((d) {
+      final data = d.data() as Map<String, dynamic>;
+      return DietLogModel.fromJson({...data, 'id': d.id});
+    }).toList();
 
     final totals = meals.fold(
       (calories: 0, protein: 0.0, carbs: 0.0, fat: 0.0),
       (acc, m) => (
-        calories: acc.calories + (m['calories'] as int),
-        protein:  acc.protein  + (m['protein']  as num).toDouble(),
-        carbs:    acc.carbs    + (m['carbs']    as num).toDouble(),
-        fat:      acc.fat      + (m['fat']      as num).toDouble(),
+        calories: acc.calories + m.calories,
+        protein:  acc.protein  + m.protein,
+        carbs:    acc.carbs    + m.carbs,
+        fat:      acc.fat      + m.fat,
       ),
     );
 
     final goalMet = totals.calories >= goalCalories * 0.9 &&
-                    totals.calories <= goalCalories * 1.1;
+        totals.calories <= goalCalories * 1.1;
 
     return DietSummaryModel(
       totalCalories: totals.calories,
@@ -59,26 +61,81 @@ class DietRepository {
       totalCarbs:    totals.carbs,
       totalFat:      totals.fat,
       goalMet:       goalMet,
-      meals: meals
-          .map((e) => DietLogModel.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      meals:         meals,
     );
   }
 
   Future<DietLogModel> addMeal(Map<String, dynamic> data) async {
-    final userId = _client.auth.currentUser!.id;
-    final today  = DateTime.now().toIso8601String().substring(0, 10);
+    final uid   = FB.uid;
+    final today = FB.today;
 
-    final inserted = await _client
-        .from('diet_logs')
-        .insert({...data, 'user_id': userId, 'date': today})
-        .select()
-        .single();
+    // Normalizar chave meal_name → mealName
+    final normalized = {
+      'mealName': data['meal_name'] ?? data['mealName'],
+      'calories': data['calories'],
+      'protein':  data['protein'],
+      'carbs':    data['carbs'],
+      'fat':      data['fat'],
+    };
 
-    return DietLogModel.fromJson(inserted);
+    final ref = await FB.db.collection('diet_logs').add({
+      ...normalized,
+      'userId':    uid,
+      'date':      today,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    final todayStart = Timestamp.fromDate(DateTime.parse(today));
+
+    // Verificar se meta já foi premiada hoje
+    final [mealsSnap, alreadyWon, userDoc] = await Future.wait([
+      FB.db
+          .collection('diet_logs')
+          .where('userId', isEqualTo: uid)
+          .where('date', isEqualTo: today)
+          .get(),
+      FB.db
+          .collection('points')
+          .where('userId', isEqualTo: uid)
+          .where('reason', isEqualTo: 'diet_goal_met')
+          .where('createdAt', isGreaterThanOrEqualTo: todayStart)
+          .limit(1)
+          .get(),
+      FB.db.collection('users').doc(uid).get(),
+    ]);
+
+    final allMeals = (mealsSnap as QuerySnapshot).docs;
+    final userData = ((userDoc as DocumentSnapshot).data() as Map<String, dynamic>? ?? {});
+    final goalCal  = userData['dailyCalories'] as int? ?? 2000;
+    final totalCal = allMeals.fold<int>(
+      0,
+      (s, d) => s + ((d.data() as Map<String, dynamic>)['calories'] as int? ?? 0),
+    );
+
+    if ((alreadyWon as QuerySnapshot).docs.isEmpty &&
+        totalCal >= goalCal * 0.9 &&
+        totalCal <= goalCal * 1.1) {
+      await FB.db.collection('points').add({
+        'userId':    uid,
+        'amount':    10,
+        'reason':    'diet_goal_met',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      await FB.db.runTransaction((tx) async {
+        final userRef = FB.db.collection('users').doc(uid);
+        final ud      = await tx.get(userRef);
+        final cur     = ud.data()?['totalPoints'] as int? ?? 0;
+        tx.update(userRef, {'totalPoints': cur + 10});
+      });
+    }
+
+    // Retornar o documento recém criado
+    final doc = await ref.get();
+    final docData = doc.data()!;
+    return DietLogModel.fromJson({...docData, 'id': ref.id});
   }
 
   Future<void> deleteMeal(String mealId) async {
-    await _client.from('diet_logs').delete().eq('id', mealId);
+    await FB.db.collection('diet_logs').doc(mealId).delete();
   }
 }
