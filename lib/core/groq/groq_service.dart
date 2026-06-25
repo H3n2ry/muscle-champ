@@ -1,15 +1,41 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:image/image.dart' as img;
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'groq_config.dart';
 
+/// Todas as chamadas de IA passam pela Cloud Function `groqProxy` (Callable).
+/// A chave Groq vive no Secret Manager do Firebase — nunca chega ao cliente.
+/// O proxy valida o usuário logado (Firebase Auth) automaticamente.
 class GroqService {
   GroqService._();
 
+  static final _functions =
+      FirebaseFunctions.instanceFor(region: GroqConfig.region);
+
+  // ── Transporte ──────────────────────────────────────────────────────────────
+
+  /// Envia o payload (formato OpenAI/Groq) ao proxy e devolve o JSON da resposta.
+  static Future<Map<String, dynamic>> _callGroq(
+      Map<String, dynamic> payload) async {
+    try {
+      final callable = _functions.httpsCallable('groqProxy');
+      final result = await callable.call<Map<String, dynamic>>(payload);
+      return Map<String, dynamic>.from(result.data);
+    } on FirebaseFunctionsException catch (e) {
+      // A function lança HttpsError com mensagem legível
+      throw Exception(e.message ?? 'Erro ao chamar a IA. Tente novamente.');
+    }
+  }
+
+  static String _extractContent(Map<String, dynamic> data) {
+    return (data['choices'] as List).first['message']['content'] as String;
+  }
+
+  // ── Treino ──────────────────────────────────────────────────────────────────
+
   static Future<List<Map<String, dynamic>>> generateWorkout(
       String muscleGroup) async {
-    final body = jsonEncode({
+    final data = await _callGroq({
       'model': GroqConfig.textModel,
       'temperature': 0.7,
       'response_format': {'type': 'json_object'},
@@ -27,30 +53,18 @@ Regras:
 - "sets" entre 3 e 4
 - "tip" máximo 60 caracteres''',
         },
-        {
-          'role': 'user',
-          'content': 'Gere um treino para: $muscleGroup',
-        },
+        {'role': 'user', 'content': 'Gere um treino para: $muscleGroup'},
       ],
     });
-
-    final res = await http
-        .post(
-          Uri.parse(GroqConfig.baseUrl),
-          headers: _headers(),
-          body: body,
-        )
-        .timeout(const Duration(seconds: 30));
-
-    _assertOk(res);
-    final content = _extractContent(res);
-    final parsed = jsonDecode(content) as Map<String, dynamic>;
+    final parsed = jsonDecode(_extractContent(data)) as Map<String, dynamic>;
     return List<Map<String, dynamic>>.from(parsed['exercises'] as List);
   }
 
+  // ── Macros por texto ──────────────────────────────────────────────────────────
+
   static Future<Map<String, dynamic>> calculateFoodMacros(
       String description) async {
-    final body = jsonEncode({
+    final data = await _callGroq({
       'model': GroqConfig.textModel,
       'temperature': 0.2,
       'response_format': {'type': 'json_object'},
@@ -67,28 +81,15 @@ Regras:
 - Valores de protein/carbs/fat em gramas com 1 casa decimal
 - "name" em português, descritivo''',
         },
-        {
-          'role': 'user',
-          'content': description,
-        },
+        {'role': 'user', 'content': description},
       ],
     });
-
-    final res = await http
-        .post(
-          Uri.parse(GroqConfig.baseUrl),
-          headers: _headers(),
-          body: body,
-        )
-        .timeout(const Duration(seconds: 20));
-
-    _assertOk(res);
-    final content = _extractContent(res);
-    return Map<String, dynamic>.from(jsonDecode(content) as Map);
+    return Map<String, dynamic>.from(jsonDecode(_extractContent(data)) as Map);
   }
 
+  // ── Plano alimentar ───────────────────────────────────────────────────────────
+
   /// Gera um plano alimentar diário completo baseado nas calorias alvo e objetivo.
-  /// Retorna Map com goal_protein_g, goal_carbs_g, goal_fat_g e lista de meals.
   static Future<Map<String, dynamic>> generateDietPlan(
       int calories, String goalType, {
       double? goalProtein,
@@ -101,12 +102,11 @@ Regras:
       'maintain':    'manutenção',
     }[goalType] ?? 'saúde geral';
 
-    // Metas exatas fornecidas pelo app (calculadas com base nas kcal do usuário)
-    final protMeta  = goalProtein?.round() ?? (calories * 0.30 ~/ 4);
-    final carbMeta  = goalCarbs?.round()   ?? (calories * 0.40 ~/ 4);
-    final fatMeta   = goalFat?.round()     ?? (calories * 0.30 ~/ 9);
+    final protMeta = goalProtein?.round() ?? (calories * 0.30 ~/ 4);
+    final carbMeta = goalCarbs?.round()   ?? (calories * 0.40 ~/ 4);
+    final fatMeta  = goalFat?.round()     ?? (calories * 0.30 ~/ 9);
 
-    final body = jsonEncode({
+    final data = await _callGroq({
       'model': GroqConfig.textModel,
       'temperature': 0.3,
       'response_format': {'type': 'json_object'},
@@ -148,19 +148,13 @@ Regras OBRIGATÓRIAS — respeite com precisão:
         },
       ],
     });
-
-    final res = await http
-        .post(Uri.parse(GroqConfig.baseUrl), headers: _headers(), body: body)
-        .timeout(const Duration(seconds: 45));
-
-    _assertOk(res);
-    final content = _extractContent(res);
-    return Map<String, dynamic>.from(jsonDecode(content) as Map);
+    return Map<String, dynamic>.from(jsonDecode(_extractContent(data)) as Map);
   }
 
-  // Redimensiona para máx 512px e recomprime em JPEG 75% — reduz ~73% dos tokens.
-  // Funciona com qualquer formato (JPG, PNG, WEBP) vindo de câmera ou galeria.
-  // 768px: bom equilíbrio entre qualidade (pratos complexos) e tokens
+  // ── Análise de foto ───────────────────────────────────────────────────────────
+
+  // Redimensiona para máx 768px e recomprime em JPEG 80% — reduz tokens.
+  // 768px: bom equilíbrio entre qualidade (pratos complexos) e custo.
   static const int _maxImagePx = 768;
 
   static (String b64, String mime) _optimizeImage(String base64Input) {
@@ -176,8 +170,8 @@ Regras OBRIGATÓRIAS — respeite com precisão:
           : 'image/jpeg';
       return (base64Input, mime);
     }
-    // Só redimensiona se a imagem for maior que o limite
-    final needsResize = original.width > _maxImagePx || original.height > _maxImagePx;
+    final needsResize =
+        original.width > _maxImagePx || original.height > _maxImagePx;
     final resized = needsResize
         ? img.copyResize(
             original,
@@ -194,7 +188,7 @@ Regras OBRIGATÓRIAS — respeite com precisão:
     final portionCtx = portionHint != null
         ? '\nO usuário indica que é uma porção $portionHint — use isso para calibrar o peso.'
         : '';
-    final body = jsonEncode({
+    final data = await _callGroq({
       'model': GroqConfig.visionModel,
       'temperature': 0.2,
       'max_tokens': 300,
@@ -204,9 +198,7 @@ Regras OBRIGATÓRIAS — respeite com precisão:
           'content': [
             {
               'type': 'image_url',
-              'image_url': {
-                'url': 'data:$mime;base64,$optimized',
-              },
+              'image_url': {'url': 'data:$mime;base64,$optimized'},
             },
             {
               'type': 'text',
@@ -221,54 +213,9 @@ Regras OBRIGATÓRIAS — respeite com precisão:
         },
       ],
     });
-
-    final res = await http
-        .post(
-          Uri.parse(GroqConfig.baseUrl),
-          headers: _headers(),
-          body: body,
-        )
-        .timeout(const Duration(seconds: 30));
-
-    _assertOk(res);
-    final raw = _extractContent(res);
-    // extrai o bloco JSON mesmo que o modelo inclua texto extra
+    final raw = _extractContent(data);
     final jsonMatch = RegExp(r'\{[\s\S]*\}').firstMatch(raw);
     final jsonStr = jsonMatch?.group(0) ?? raw;
     return Map<String, dynamic>.from(jsonDecode(jsonStr) as Map);
-  }
-
-  // ── helpers ────────────────────────────────────────────────────────────────
-
-  // Autentica no groq-proxy com o JWT do usuário logado.
-  // A chave Groq nunca chega ao cliente — fica no Supabase Vault.
-  static Map<String, String> _headers() {
-    final session = Supabase.instance.client.auth.currentSession;
-    if (session == null) {
-      throw Exception('Sessão expirada. Faça login novamente.');
-    }
-    return {
-      'Authorization': 'Bearer ${session.accessToken}',
-      'Content-Type': 'application/json',
-    };
-  }
-
-  static void _assertOk(http.Response res) {
-    if (res.statusCode != 200) {
-      // Extrai a mensagem legível da resposta JSON da Groq, se disponível
-      String? groqMsg;
-      try {
-        final json = jsonDecode(res.body) as Map<String, dynamic>;
-        groqMsg = (json['error'] as Map?)?['message'] as String?;
-      } catch (_) {
-        // Resposta não é JSON válido — usa mensagem genérica
-      }
-      throw Exception(groqMsg ?? 'Groq ${res.statusCode}: ${res.body}');
-    }
-  }
-
-  static String _extractContent(http.Response res) {
-    final data = jsonDecode(res.body) as Map<String, dynamic>;
-    return (data['choices'] as List).first['message']['content'] as String;
   }
 }
