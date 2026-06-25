@@ -174,7 +174,11 @@ Dashboard data comes from Supabase RPC `get_dashboard_data`.
 
 ## Groq API (`groq_service.dart`)
 
-Four static methods, all calling `https://api.groq.com/openai/v1/chat/completions`:
+**The Groq key is NEVER in the client.** All calls go through the Supabase Edge Function `groq-proxy` (`${supabaseUrl}/functions/v1/groq-proxy`), which is JWT-authenticated. The key lives in the Supabase **Vault** (`groq_api_key`) and is read only server-side by the Edge Function. `GroqService._headers()` sends the logged-in user's session `accessToken`; `GroqConfig.isConfigured` checks for an active Supabase session.
+
+To rotate the key: `SELECT vault.update_secret((SELECT id FROM vault.secrets WHERE name='groq_api_key'), 'gsk_...')` then redeploy the `groq-proxy` function (it caches the key per instance).
+
+Four static methods, all POSTing to the proxy (which forwards to `https://api.groq.com/openai/v1/chat/completions`):
 
 | Method | Model | Temp | Returns |
 |--------|-------|------|---------|
@@ -224,9 +228,22 @@ UI mockups: `../dashboard_de_progresso_v3/` and `../perfil_e_evolu_o_v3/` (HTML 
 
 | Service | Purpose | Config |
 |---------|---------|--------|
-| Supabase | Auth + PostgreSQL + Storage | `supabase_config.dart` |
-| Groq | LLM inference | `groq_config.dart` (key starts `gsk_`) |
+| Supabase | Auth + PostgreSQL + Storage + Edge Functions + Vault | `supabase_config.dart` / `secrets.dart` (project `jryetjysjiyuuoznaejc`) |
+| Groq | LLM inference (via `groq-proxy` Edge Function) | key in Supabase Vault, never in client |
 | Vercel | Web hosting | Project: `muscle-champ`, scope: `af-dev` |
+| GitHub Actions | Keepalive (anti free-tier pause) | `.github/workflows/supabase-keepalive.yml` |
+
+## Security (hardened 2026-06)
+
+**Never put secrets in the client.** The Groq key is in the Vault (see Groq API section). `lib/core/secrets.dart` is gitignored and holds only `supabaseUrl` + `supabaseAnonKey` (the anon key is public by design).
+
+**RLS**: every table is owner-scoped via `auth.uid() = user_id` (or an `EXISTS` join to a parent row the user owns). `profiles` SELECT for the ranking is `TO authenticated USING (true)` — login required, and only `id`/`name`/`avatar_url`/`created_at` are exposed (no sensitive data). The `avatars` storage bucket lists only the owner's folder; public display uses public URLs.
+
+**RPCs**: all the `SECURITY DEFINER` functions enforce `auth.uid()` internally — they do **not** trust the `p_user_id` argument (kept only for signature compatibility). `EXECUTE` is revoked from `PUBLIC`/`anon` on every user-data RPC; only `check_email_exists` stays anon-callable (used pre-login during signup). All functions have a locked `search_path`.
+
+**Keepalive**: the Supabase free tier pauses after ~7 idle days. `.github/workflows/supabase-keepalive.yml` pings a light RPC daily (runs on GitHub's infra) to keep the project active. It only runs once pushed to GitHub.
+
+**Known/accepted advisor warnings** (not real issues): the 8 `authenticated_security_definer` warnings (ranking/workout RPCs must be `SECURITY DEFINER` and are guarded internally), `check_email_exists` being anon-callable (intentional), and leaked-password protection being off (Pro-only; compensated with Auth → Email password requirements: min length 8 + lowercase/uppercase/digits/symbols).
 
 ## Supabase Tables
 
