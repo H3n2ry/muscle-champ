@@ -1,33 +1,65 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/firebase/firebase_service.dart';
 import '../models/workout_template_model.dart';
 
 final workoutTemplateRepositoryProvider =
     Provider<WorkoutTemplateRepository>((_) => WorkoutTemplateRepository());
 
 class WorkoutTemplateRepository {
-  final _client = Supabase.instance.client;
-
   // ── Listar templates com status de hoje ────────────────────────────
   Future<List<WorkoutTemplateModel>> getTemplates() async {
-    final userId = _client.auth.currentUser!.id;
-    final data = await _client.rpc('get_workout_templates',
-        params: {'p_user_id': userId});
-    return (data as List)
-        .map((e) => WorkoutTemplateModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+    final uid   = FB.uid;
+    final today = FB.today;
+
+    final results = await Future.wait([
+      FB.db
+          .collection('workout_templates')
+          .where('userId', isEqualTo: uid)
+          .orderBy('createdAt')
+          .get(),
+      FB.db
+          .collection('workout_completions')
+          .where('userId', isEqualTo: uid)
+          .where('completedDate', isEqualTo: today)
+          .get(),
+    ]);
+
+    final templatesSnap  = results[0] as QuerySnapshot;
+    final completionsSnap = results[1] as QuerySnapshot;
+
+    final doneTodayIds = completionsSnap.docs
+        .map((d) => (d.data() as Map<String, dynamic>)['templateId'] as String)
+        .toSet();
+
+    return templatesSnap.docs.map((doc) {
+      final data      = doc.data() as Map<String, dynamic>;
+      final exercises = data['exercises'] as List? ?? [];
+      return WorkoutTemplateModel(
+        id:            doc.id,
+        name:          data['name'] as String,
+        doneToday:     doneTodayIds.contains(doc.id),
+        exerciseCount: exercises.length,
+      );
+    }).toList();
   }
 
   // ── Exercícios de um template ──────────────────────────────────────
   Future<List<TemplateExerciseModel>> getExercises(String templateId) async {
-    final data = await _client
-        .from('template_exercises')
-        .select()
-        .eq('template_id', templateId)
-        .order('order_index');
-    return (data as List)
-        .map((e) => TemplateExerciseModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+    final doc       = await FB.db.collection('workout_templates').doc(templateId).get();
+    final exercises = (doc.data()?['exercises'] as List? ?? []);
+    return exercises.asMap().entries.map((e) {
+      final ex = e.value as Map<String, dynamic>;
+      return TemplateExerciseModel(
+        id:          ex['id'] as String? ?? e.key.toString(),
+        templateId:  templateId,
+        name:        ex['name'] as String,
+        sets:        (ex['sets'] as num).toInt(),
+        reps:        (ex['reps'] as num).toInt(),
+        weightKg:    (ex['weightKg'] as num?)?.toDouble() ?? 0,
+        orderIndex:  (ex['orderIndex'] as num?)?.toInt() ?? e.key,
+      );
+    }).toList();
   }
 
   // ── Criar template ─────────────────────────────────────────────────
@@ -35,31 +67,25 @@ class WorkoutTemplateRepository {
     required String name,
     required List<Map<String, dynamic>> exercises,
   }) async {
-    final userId = _client.auth.currentUser!.id;
+    final uid = FB.uid;
+    final exercisesWithId = exercises.asMap().entries.map((e) => {
+          'id':         FB.db.collection('_').doc().id,
+          'name':       e.value['name'] as String,
+          'sets':       e.value['sets'] as int,
+          'reps':       e.value['reps'] as int,
+          'weightKg':   (e.value['weight_kg'] as num?)?.toDouble() ?? 0.0,
+          'orderIndex': e.key,
+        }).toList();
 
-    final template = await _client
-        .from('workout_templates')
-        .insert({'user_id': userId, 'name': name})
-        .select()
-        .single();
-
-    final templateId = template['id'] as String;
-
-    if (exercises.isNotEmpty) {
-      await _client.from('template_exercises').insert(
-        exercises.asMap().entries.map((entry) => {
-          'template_id': templateId,
-          'name':        entry.value['name'] as String,
-          'sets':        entry.value['sets'] as int,
-          'reps':        entry.value['reps'] as int,
-          'weight_kg':   entry.value['weight_kg'] as double,
-          'order_index': entry.key,
-        }).toList(),
-      );
-    }
+    final ref = await FB.db.collection('workout_templates').add({
+      'userId':    uid,
+      'name':      name,
+      'exercises': exercisesWithId,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
 
     return WorkoutTemplateModel(
-      id:            templateId,
+      id:            ref.id,
       name:          name,
       doneToday:     false,
       exerciseCount: exercises.length,
@@ -68,10 +94,10 @@ class WorkoutTemplateRepository {
 
   // ── Editar nome do template ────────────────────────────────────────
   Future<void> updateTemplateName(String templateId, String name) async {
-    await _client
-        .from('workout_templates')
-        .update({'name': name})
-        .eq('id', templateId);
+    await FB.db
+        .collection('workout_templates')
+        .doc(templateId)
+        .update({'name': name});
   }
 
   // ── Atualizar exercícios do template (substitui todos) ─────────────
@@ -79,31 +105,23 @@ class WorkoutTemplateRepository {
     String templateId,
     List<Map<String, dynamic>> exercises,
   ) async {
-    await _client
-        .from('template_exercises')
-        .delete()
-        .eq('template_id', templateId);
-
-    if (exercises.isNotEmpty) {
-      await _client.from('template_exercises').insert(
-        exercises.asMap().entries.map((entry) => {
-          'template_id': templateId,
-          'name':        entry.value['name'] as String,
-          'sets':        entry.value['sets'] as int,
-          'reps':        entry.value['reps'] as int,
-          'weight_kg':   entry.value['weight_kg'] as double,
-          'order_index': entry.key,
-        }).toList(),
-      );
-    }
+    final exercisesWithId = exercises.asMap().entries.map((e) => {
+          'id':         e.value['id'] as String? ?? FB.db.collection('_').doc().id,
+          'name':       e.value['name'] as String,
+          'sets':       e.value['sets'] as int,
+          'reps':       e.value['reps'] as int,
+          'weightKg':   (e.value['weight_kg'] as num?)?.toDouble() ?? 0.0,
+          'orderIndex': e.key,
+        }).toList();
+    await FB.db
+        .collection('workout_templates')
+        .doc(templateId)
+        .update({'exercises': exercisesWithId});
   }
 
   // ── Deletar template ───────────────────────────────────────────────
   Future<void> deleteTemplate(String templateId) async {
-    await _client
-        .from('workout_templates')
-        .delete()
-        .eq('id', templateId);
+    await FB.db.collection('workout_templates').doc(templateId).delete();
   }
 
   // ── Concluir treino do dia ─────────────────────────────────────────
@@ -111,20 +129,89 @@ class WorkoutTemplateRepository {
     required String templateId,
     required List<TemplateExerciseModel> exercises,
   }) async {
-    final userId = _client.auth.currentUser!.id;
-    final exercisesJson = exercises.map((e) => {
-      'id':        e.id,
-      'weight_kg': e.weightKg,
-      'sets':      e.sets,
-      'reps':      e.reps,
+    final uid          = FB.uid;
+    final today        = FB.today;
+    final completionId = '${templateId}_${uid}_$today';
+
+    // Verificar se já feito hoje
+    final existing = await FB.db
+        .collection('workout_completions')
+        .doc(completionId)
+        .get();
+    if (existing.exists) {
+      return {'already_done': true, 'progression': 0};
+    }
+
+    // Buscar pesos anteriores do template
+    final templateDoc   = await FB.db.collection('workout_templates').doc(templateId).get();
+    final prevExercises = (templateDoc.data()?['exercises'] as List? ?? []);
+    final Map<String, double> prevWeights = {};
+    for (final ex in prevExercises) {
+      final exMap = ex as Map<String, dynamic>;
+      prevWeights[exMap['id'] as String] =
+          (exMap['weightKg'] as num?)?.toDouble() ?? 0;
+    }
+
+    // Detectar progressão e preparar exercícios atualizados
+    int progression = 0;
+    final updatedExercises = exercises.map((ex) {
+      final prev = prevWeights[ex.id] ?? 0;
+      if (ex.weightKg > prev) progression++;
+      return {
+        'id':         ex.id,
+        'name':       ex.name,
+        'sets':       ex.sets,
+        'reps':       ex.reps,
+        'weightKg':   ex.weightKg,
+        'orderIndex': ex.orderIndex,
+      };
     }).toList();
 
-    final result = await _client.rpc('complete_workout_template', params: {
-      'p_user_id':     userId,
-      'p_template_id': templateId,
-      'p_exercises':   exercisesJson,
+    // Salvar completion
+    await FB.db.collection('workout_completions').doc(completionId).set({
+      'userId':        uid,
+      'templateId':    templateId,
+      'completedDate': today,
+      'progression':   progression,
+      'createdAt':     FieldValue.serverTimestamp(),
     });
 
-    return result as Map<String, dynamic>;
+    // Atualizar pesos no template
+    await FB.db
+        .collection('workout_templates')
+        .doc(templateId)
+        .update({'exercises': updatedExercises});
+
+    // Pontos: +10 por treino
+    int totalPoints = 10;
+    await FB.db.collection('points').add({
+      'userId':      uid,
+      'amount':      10,
+      'reason':      'workout_completed',
+      'referenceId': templateId,
+      'createdAt':   FieldValue.serverTimestamp(),
+    });
+
+    // Pontos: +5 por exercício com progressão
+    if (progression > 0) {
+      final progressionPts = progression * 5;
+      totalPoints += progressionPts;
+      await FB.db.collection('points').add({
+        'userId':    uid,
+        'amount':    progressionPts,
+        'reason':    'load_progression',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+
+    // Atualizar totalPoints no usuário com transaction
+    await FB.db.runTransaction((tx) async {
+      final userRef = FB.db.collection('users').doc(uid);
+      final userDoc = await tx.get(userRef);
+      final current = userDoc.data()?['totalPoints'] as int? ?? 0;
+      tx.update(userRef, {'totalPoints': current + totalPoints});
+    });
+
+    return {'already_done': false, 'progression': progression};
   }
 }

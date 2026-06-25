@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/firebase/firebase_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 
@@ -40,7 +40,7 @@ class TutorialNotifier extends StateNotifier<TutorialState> {
   static const int totalSteps = 12;
 
   Future<void> _init() async {
-    final uid = Supabase.instance.client.auth.currentUser?.id;
+    final uid = FB.auth.currentUser?.uid;
     if (uid == null) {
       state = state.copyWith(loading: false, show: false);
       return;
@@ -61,7 +61,7 @@ class TutorialNotifier extends StateNotifier<TutorialState> {
   Future<void> skip() => _complete();
 
   Future<void> _complete() async {
-    final uid = Supabase.instance.client.auth.currentUser?.id;
+    final uid = FB.auth.currentUser?.uid;
     if (uid != null) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('tutorial_seen_$uid', true);

@@ -1,6 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_model.dart';
+import '../../../../core/firebase/firebase_service.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((_) => AuthRepository());
 
@@ -11,17 +13,15 @@ class EmailConfirmationPendingException implements Exception {
 }
 
 class AuthRepository {
-  final _client = Supabase.instance.client;
-
   Future<UserModel> login({
     required String email,
     required String password,
   }) async {
-    final response = await _client.auth.signInWithPassword(
+    final cred = await FB.auth.signInWithEmailAndPassword(
       email: email,
       password: password,
     );
-    return _fetchProfile(response.user!.id);
+    return _fetchProfile(cred.user!.uid);
   }
 
   Future<UserModel> register({
@@ -34,90 +34,84 @@ class AuthRepository {
     required double targetWeight,
     required int weeklyWorkoutGoal,
   }) async {
-    final response = await _client.auth.signUp(
+    final cred = await FB.auth.createUserWithEmailAndPassword(
       email: email,
       password: password,
-      data: {
-        'name':                 name,
-        'goal_type':            goalType,
-        'height_cm':            heightCm,
-        'current_weight':       currentWeight,
-        'target_weight':        targetWeight,
-        'weekly_workout_goal':  weeklyWorkoutGoal,
-      },
     );
+    final uid = cred.user!.uid;
 
-    // Se não há sessão, confirmação de email está habilitada
-    if (response.session == null) {
-      // Quando o email já está cadastrado, o Supabase retorna identities vazio
-      // em vez de retornar um erro (comportamento anti-enumeração)
-      if (response.user?.identities?.isEmpty ?? false) {
-        throw Exception('Este e-mail já está cadastrado. Faça login na tela anterior.');
-      }
-      throw EmailConfirmationPendingException(email);
+    // Calcular meta calórica (Mifflin-St Jeor simplificado)
+    final bmr  = 10 * currentWeight + 6.25 * heightCm - 500;
+    final tdee = bmr * 1.55;
+    int calories;
+    if (goalType == 'lose_weight') {
+      calories = (tdee - 500).clamp(1200, 9999).toInt();
+    } else if (goalType == 'gain_weight') {
+      calories = (tdee + 300).clamp(1200, 9999).toInt();
+    } else {
+      calories = tdee.clamp(1200, 9999).toInt();
     }
 
-    return _fetchProfile(response.user!.id);
+    await FB.db.collection('users').doc(uid).set({
+      'name':              name,
+      'nameLower':         name.toLowerCase(),
+      'email':             email,
+      'avatarUrl':         null,
+      'createdAt':         FieldValue.serverTimestamp(),
+      'goalType':          goalType,
+      'heightCm':          heightCm,
+      'currentWeight':     currentWeight,
+      'targetWeight':      targetWeight,
+      'dailyCalories':     calories,
+      'weeklyWorkoutGoal': weeklyWorkoutGoal,
+      'totalPoints':       0,
+    });
+
+    return _fetchProfile(uid);
   }
 
-  /// Verifica se o e-mail já existe em auth.users via RPC com SECURITY DEFINER.
+  /// Verifica se o e-mail já está cadastrado no Firebase Auth.
   Future<bool> checkEmailExists(String email) async {
-    final result = await _client.rpc(
-      'check_email_exists',
-      params: {'p_email': email},
-    );
-    return result as bool;
+    // ignore: deprecated_member_use
+    final methods = await FB.auth.fetchSignInMethodsForEmail(email);
+    return methods.isNotEmpty;
   }
 
   Future<UserModel?> getCurrentUser() async {
-    final user = _client.auth.currentUser;
+    final user = FB.auth.currentUser;
     if (user == null) return null;
-    return _fetchProfile(user.id);
+    return _fetchProfile(user.uid);
   }
 
-  Future<void> logout() => _client.auth.signOut();
+  Future<void> logout() => FB.auth.signOut();
 
-  /// Confirma o e-mail usando o código OTP de 6 dígitos enviado pelo Supabase.
+  /// Firebase não usa OTP de 6 dígitos por padrão — método mantido por
+  /// compatibilidade com a tela confirm_email_page.
   Future<void> verifyOtp({
     required String email,
     required String token,
   }) async {
-    await _client.auth.verifyOTP(
-      email: email,
-      token: token,
-      type: OtpType.signup,
-    );
+    // No-op: Firebase não requer confirmação de email por padrão.
   }
 
-  /// Reenvia o código OTP de confirmação para o e-mail informado.
+  /// Reenvia o email de verificação para o usuário atual.
   Future<void> resendConfirmation(String email) async {
-    await _client.auth.resend(
-      type: OtpType.signup,
-      email: email,
-    );
+    await FB.auth.currentUser?.sendEmailVerification();
   }
 
-  Future<UserModel> _fetchProfile(String userId) async {
-    final results = await Future.wait<dynamic>([
-      _client.from('profiles').select().eq('id', userId).single(),
-      _client.from('goals').select('goal_type').eq('user_id', userId).maybeSingle(),
-      _client.from('points').select('amount').eq('user_id', userId),
-    ]);
-
-    final profile     = results[0] as Map<String, dynamic>;
-    final goal        = results[1] as Map<String, dynamic>?;
-    final points      = results[2] as List;
-    final totalPoints = points.fold<int>(0, (sum, p) => sum + (p['amount'] as int));
+  Future<UserModel> _fetchProfile(String uid) async {
+    final doc = await FB.db.collection('users').doc(uid).get();
+    if (!doc.exists) throw Exception('Perfil não encontrado');
+    final data = doc.data()!;
 
     return UserModel(
-      id:          profile['id'] as String,
-      name:        profile['name'] as String,
-      email:       _client.auth.currentUser?.email ?? '',
-      avatarUrl:   profile['avatar_url'] as String?,
-      totalPoints: totalPoints,
-      goalType:    goal?['goal_type'] as String?,
-      createdAt:   DateTime.parse(profile['created_at'] as String),
+      id:          uid,
+      name:        data['name'] as String? ?? '',
+      email:       FB.auth.currentUser?.email ?? '',
+      avatarUrl:   data['avatarUrl'] as String?,
+      totalPoints: data['totalPoints'] as int? ?? 0,
+      goalType:    data['goalType'] as String?,
+      createdAt:   (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
-
 }

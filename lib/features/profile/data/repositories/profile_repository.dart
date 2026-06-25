@@ -1,116 +1,128 @@
 import 'dart:typed_data';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/firebase/firebase_service.dart';
 import '../models/profile_model.dart';
 
 final profileRepositoryProvider =
     Provider<ProfileRepository>((_) => ProfileRepository());
 
 class ProfileRepository {
-  final _client = Supabase.instance.client;
-
   // ── Leitura ─────────────────────────────────────────────────────
 
   Future<ProfileModel> getProfile() async {
-    final userId = _client.auth.currentUser!.id;
+    final uid = FB.uid;
 
-    final results = await Future.wait<dynamic>([
-      _client.from('profiles').select().eq('id', userId).single(),
-      _client.from('goals').select().eq('user_id', userId).maybeSingle(),
-      _client.from('points').select('amount').eq('user_id', userId),
-      _client.from('workouts').select('id').eq('user_id', userId).eq('completed', true),
-      _client.rpc('get_streak', params: {'p_user_id': userId}),
-      // Última leitura de bioimpedância (opcional)
-      _client
-          .from('bioimpedance_logs')
-          .select()
-          .eq('user_id', userId)
-          .order('measured_at', ascending: false)
+    final results = await Future.wait([
+      FB.db.collection('users').doc(uid).get(),
+      FB.db.collection('workout_completions').where('userId', isEqualTo: uid).get(),
+      FB.db
+          .collection('bioimpedance_logs')
+          .where('userId', isEqualTo: uid)
+          .orderBy('measuredAt', descending: true)
           .limit(1)
-          .maybeSingle(),
+          .get(),
     ]);
 
-    final profile     = results[0] as Map<String, dynamic>;
-    final goal        = results[1] as Map<String, dynamic>?;
-    final points      = results[2] as List;
-    final workouts    = results[3] as List;
-    final streak      = results[4] as int? ?? 0;
-    final bio         = results[5] as Map<String, dynamic>?;
-    final totalPoints = points.fold<int>(0, (s, p) => s + (p['amount'] as int));
+    final userDoc  = results[0] as DocumentSnapshot;
+    final workouts = (results[1] as QuerySnapshot).docs;
+    final bioSnap  = (results[2] as QuerySnapshot).docs;
+
+    final data        = userDoc.data() as Map<String, dynamic>? ?? {};
+    final streak      = _calcStreak(workouts);
+    final bio         = bioSnap.isNotEmpty
+        ? bioSnap.first.data() as Map<String, dynamic>
+        : null;
 
     return ProfileModel(
-      id:            profile['id'] as String,
-      name:          profile['name'] as String,
-      email:         _client.auth.currentUser!.email ?? '',
-      avatarUrl:     profile['avatar_url'] as String?,
-      goalType:      goal?['goal_type'] as String? ?? 'maintain',
-      currentWeight: (goal?['current_weight'] as num?)?.toDouble() ?? 0,
-      targetWeight:  (goal?['target_weight']  as num?)?.toDouble() ?? 0,
-      heightCm:      (goal?['height_cm']       as num?)?.toDouble() ?? 0,
-      totalPoints:   totalPoints,
+      id:            uid,
+      name:          data['name'] as String? ?? '',
+      email:         FB.auth.currentUser?.email ?? '',
+      avatarUrl:     data['avatarUrl'] as String?,
+      goalType:      data['goalType'] as String? ?? 'maintain',
+      currentWeight: (data['currentWeight'] as num?)?.toDouble() ?? 0,
+      targetWeight:  (data['targetWeight']  as num?)?.toDouble() ?? 0,
+      heightCm:      (data['heightCm']      as num?)?.toDouble() ?? 0,
+      totalPoints:   data['totalPoints'] as int? ?? 0,
       totalWorkouts: workouts.length,
       streak:        streak,
-      memberSince:   DateTime.parse(profile['created_at'] as String),
-      // Bioimpedância
-      bodyFatPct:   (bio?['body_fat_pct']   as num?)?.toDouble(),
-      muscleMassKg: (bio?['muscle_mass_kg'] as num?)?.toDouble(),
-      visceralFat:  (bio?['visceral_fat']   as num?)?.toInt(),
-      hydrationPct: (bio?['hydration_pct']  as num?)?.toDouble(),
-      boneMassKg:   (bio?['bone_mass_kg']   as num?)?.toDouble(),
-      bmrKcal:      (bio?['bmr_kcal']       as num?)?.toInt(),
-      bioUpdatedAt: bio?['measured_at'] != null
-          ? DateTime.parse(bio!['measured_at'] as String)
+      memberSince:   (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      bodyFatPct:    (bio?['bodyFatPct']   as num?)?.toDouble(),
+      muscleMassKg:  (bio?['muscleMassKg'] as num?)?.toDouble(),
+      visceralFat:   (bio?['visceralFat']  as num?)?.toInt(),
+      hydrationPct:  (bio?['hydrationPct'] as num?)?.toDouble(),
+      boneMassKg:    (bio?['boneMassKg']   as num?)?.toDouble(),
+      bmrKcal:       (bio?['bmrKcal']      as num?)?.toInt(),
+      bioUpdatedAt:  bio?['measuredAt'] != null
+          ? DateTime.tryParse(bio!['measuredAt'] as String)
           : null,
     );
+  }
+
+  int _calcStreak(List<QueryDocumentSnapshot> completions) {
+    final dates = completions
+        .map((d) => (d.data() as Map<String, dynamic>)['completedDate'] as String?)
+        .whereType<String>()
+        .toSet()
+        .toList()
+      ..sort((a, b) => b.compareTo(a));
+
+    if (dates.isEmpty) return 0;
+    int streak = 0;
+    DateTime check = DateTime.now();
+    for (final d in dates) {
+      final date = DateTime.parse(d);
+      if (date.year == check.year &&
+          date.month == check.month &&
+          date.day == check.day) {
+        streak++;
+        check = check.subtract(const Duration(days: 1));
+      } else {
+        break;
+      }
+    }
+    return streak;
   }
 
   // ── Edição de perfil ─────────────────────────────────────────────
 
   Future<void> updateName(String name) async {
-    await _client
-        .from('profiles')
-        .update({'name': name})
-        .eq('id', _client.auth.currentUser!.id);
+    await FB.db.collection('users').doc(FB.uid).update({
+      'name':      name,
+      'nameLower': name.toLowerCase(),
+    });
   }
 
   Future<void> updateWeight(double weight) async {
-    final userId = _client.auth.currentUser!.id;
-    final today  = DateTime.now().toIso8601String().substring(0, 10);
+    final uid   = FB.uid;
+    final today = FB.today;
     await Future.wait([
-      _client
-          .from('goals')
-          .update({
-            'current_weight': weight,
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('user_id', userId),
-      _client.from('weight_logs').upsert({
-        'user_id': userId,
-        'weight':  weight,
-        'date':    today,
+      FB.db
+          .collection('users')
+          .doc(uid)
+          .update({'currentWeight': weight}),
+      FB.db.collection('weight_logs').add({
+        'userId':    uid,
+        'weight':    weight,
+        'date':      today,
+        'createdAt': FieldValue.serverTimestamp(),
       }),
     ]);
   }
 
   Future<void> updateHeight(double heightCm) async {
-    await _client
-        .from('goals')
-        .update({
-          'height_cm':  heightCm,
-          'updated_at': DateTime.now().toIso8601String(),
-        })
-        .eq('user_id', _client.auth.currentUser!.id);
+    await FB.db
+        .collection('users')
+        .doc(FB.uid)
+        .update({'heightCm': heightCm});
   }
 
   Future<void> updateGoal(String goalType, double targetWeight) async {
-    await _client
-        .from('goals')
-        .update({
-          'goal_type':     goalType,
-          'target_weight': targetWeight,
-          'updated_at':    DateTime.now().toIso8601String(),
-        })
-        .eq('user_id', _client.auth.currentUser!.id);
+    await FB.db.collection('users').doc(FB.uid).update({
+      'goalType':     goalType,
+      'targetWeight': targetWeight,
+    });
   }
 
   // ── Bioimpedância ─────────────────────────────────────────────────
@@ -123,29 +135,38 @@ class ProfileRepository {
     double? boneMassKg,
     int? bmrKcal,
   }) async {
-    final userId = _client.auth.currentUser!.id;
-    final today  = DateTime.now().toIso8601String().substring(0, 10);
+    final uid   = FB.uid;
+    final today = FB.today;
 
-    await _client.from('bioimpedance_logs').upsert(
-      {
-        'user_id':        userId,
-        'body_fat_pct':   bodyFatPct,
-        'muscle_mass_kg': muscleMassKg,
-        'visceral_fat':   visceralFat,
-        'hydration_pct':  hydrationPct,
-        'bone_mass_kg':   boneMassKg,
-        'bmr_kcal':       bmrKcal,
-        'measured_at':    today,
-      },
-      onConflict: 'user_id, measured_at',
-    );
+    final existing = await FB.db
+        .collection('bioimpedance_logs')
+        .where('userId', isEqualTo: uid)
+        .where('measuredAt', isEqualTo: today)
+        .limit(1)
+        .get();
+
+    final data = {
+      'userId':     uid,
+      'measuredAt': today,
+      if (bodyFatPct   != null) 'bodyFatPct':   bodyFatPct,
+      if (muscleMassKg != null) 'muscleMassKg': muscleMassKg,
+      if (visceralFat  != null) 'visceralFat':  visceralFat,
+      if (hydrationPct != null) 'hydrationPct': hydrationPct,
+      if (boneMassKg   != null) 'boneMassKg':   boneMassKg,
+      if (bmrKcal      != null) 'bmrKcal':      bmrKcal,
+    };
+
+    if (existing.docs.isNotEmpty) {
+      await existing.docs.first.reference.update(data);
+    } else {
+      await FB.db.collection('bioimpedance_logs').add(data);
+    }
   }
 
   // ── Upload de avatar ─────────────────────────────────────────────
 
   Future<String> uploadAvatar(Uint8List bytes, String ext) async {
-    final userId      = _client.auth.currentUser!.id;
-    final storagePath = '$userId/avatar.$ext';
+    final uid  = FB.uid;
     final mimeMap = {
       'jpg':  'image/jpeg',
       'jpeg': 'image/jpeg',
@@ -154,21 +175,11 @@ class ProfileRepository {
       'heic': 'image/heic',
     };
     final mime = mimeMap[ext.toLowerCase()] ?? 'image/jpeg';
-
-    await _client.storage.from('avatars').uploadBinary(
-      storagePath,
-      bytes,
-      fileOptions: FileOptions(contentType: mime, upsert: true),
-    );
-
-    final baseUrl = _client.storage.from('avatars').getPublicUrl(storagePath);
-    final url     = '$baseUrl?t=${DateTime.now().millisecondsSinceEpoch}';
-
-    await _client
-        .from('profiles')
-        .update({'avatar_url': url})
-        .eq('id', userId);
-
+    final ref  = FB.storage.ref('avatars/$uid/avatar.$ext');
+    final meta = SettableMetadata(contentType: mime);
+    await ref.putData(bytes, meta);
+    final url = await ref.getDownloadURL();
+    await FB.db.collection('users').doc(uid).update({'avatarUrl': url});
     return url;
   }
 }

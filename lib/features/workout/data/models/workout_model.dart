@@ -16,11 +16,11 @@ class WorkoutModel {
   });
 
   factory WorkoutModel.fromJson(Map<String, dynamic> json) => WorkoutModel(
-        id: json['id'] as String,
-        userId: json['user_id'] as String,
-        date: DateTime.parse(json['date'] as String),
+        id:        json['id'] as String,
+        userId:    (json['userId'] ?? json['user_id']) as String? ?? '',
+        date:      DateTime.parse(json['date'] as String),
         completed: json['completed'] as bool,
-        notes: json['notes'] as String?,
+        notes:     json['notes'] as String?,
         exercises: (json['exercises'] as List? ?? [])
             .map((e) => ExerciseModel.fromJson(e as Map<String, dynamic>))
             .toList(),
