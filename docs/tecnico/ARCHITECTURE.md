@@ -218,7 +218,7 @@ Todos os widgets do projeto usam `AppColors.*` — sem dependência de `Theme.of
 ### ⚠️ Acoplamentos a monitorar
 - `Supabase.instance.client` direto nos repositórios dificulta mocking
 - `diet_page.dart` concentra muita lógica (poderia extrair controllers de UI)
-- `GroqConfig` expõe chaves hardcoded — se vazar o código, vaza a chave
+- ~~`GroqConfig` expõe chaves hardcoded~~ — resolvido: a chave Groq vive no Supabase Vault e é usada só pela Edge Function `groq-proxy`; `GroqConfig`/`GroqService` apontam para o proxy, não para a Groq direta
 
 ---
 

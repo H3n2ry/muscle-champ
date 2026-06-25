@@ -101,8 +101,8 @@ main.dart
 
 | Serviço | Protocolo | Autenticação | Disponibilidade |
 |---------|-----------|-------------|-----------------|
-| Supabase | HTTPS/WSS | JWT (anonKey + Bearer) | SLA não garantido (free tier) |
-| Groq API | HTTPS | Bearer API Key (`gsk_...`) | SLA não garantido (free tier) |
+| Supabase | HTTPS/WSS | JWT (anonKey + Bearer) | SLA não garantido (free tier; keepalive evita pausa) |
+| Groq API | HTTPS (via Edge Function `groq-proxy`) | Chave no Vault, server-side | SLA não garantido (free tier) |
 | Vercel | HTTPS | N/A (hosting estático) | Edge Network global |
 
 ### 3.2 Grafo de dependências internas
@@ -184,8 +184,9 @@ Ver `docs/tecnico/DEPENDENCIES.md` para análise completa.
 | Config | Arquivo | Valor atual |
 |--------|---------|------------|
 | Supabase URL | `core/supabase/supabase_config.dart` | `https://jryetjysjiyuuoznaejc.supabase.co` |
-| Supabase anonKey | `core/supabase/supabase_config.dart` | JWT longo (hardcoded) |
-| Groq apiKey | `core/groq/groq_config.dart` | `gsk_...` (hardcoded) |
+| Supabase anonKey | `core/secrets.dart` (gitignored) | JWT longo (público por design) |
+| Groq apiKey | Supabase Vault (`groq_api_key`) | server-side; NUNCA no cliente |
+| Groq proxy | `core/groq/groq_config.dart` | `${supabaseUrl}/functions/v1/groq-proxy` |
 | Groq textModel | `core/groq/groq_config.dart` | `llama-3.3-70b-versatile` |
 | Groq visionModel | `core/groq/groq_config.dart` | `meta-llama/llama-4-scout-17b-16e-instruct` |
 

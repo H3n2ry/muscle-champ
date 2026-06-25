@@ -305,13 +305,17 @@ Todas as operações são feitas via `supabase_flutter` SDK com Row Level Securi
 
 ## 4. Groq API
 
-**Base URL:** `https://api.groq.com/openai/v1/chat/completions`
+⚠️ O app **não** chama a Groq diretamente. Todas as chamadas passam pela Edge Function `groq-proxy` do Supabase, que injeta a chave (guardada no Vault) server-side. O cliente nunca tem a chave `gsk_`.
 
-**Headers obrigatórios:**
+**Base URL (proxy):** `${supabaseUrl}/functions/v1/groq-proxy`
+**Upstream (dentro do proxy):** `https://api.groq.com/openai/v1/chat/completions`
+
+**Headers obrigatórios (cliente → proxy):**
 ```
-Authorization: Bearer gsk_...
+Authorization: Bearer <JWT da sessão Supabase do usuário>
 Content-Type: application/json
 ```
+O corpo (modelos, mensagens) segue o formato OpenAI/Groq abaixo; o proxy repassa e devolve a resposta da Groq.
 
 ---
 

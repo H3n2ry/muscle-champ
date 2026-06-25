@@ -49,25 +49,25 @@
 
 | Ameaça | Vetor | Probabilidade | Impacto | Status |
 |--------|-------|--------------|---------|--------|
-| Vazamento da chave Groq via engenharia reversa do APK | `strings` no APK / decompilação | **Alta** | **Crítico** | 🔴 Chave hardcoded no código |
-| Vazamento da anonKey Supabase | Idem | **Alta** | Alto | 🔴 Chave hardcoded (anonKey é pública por design, mas confirmar RLS) |
-| Dados de saúde visíveis para outros usuários | Bug em RPC de ranking | Baixa | Alto | ⚠️ RPCs devem ser auditadas |
-| Fotos de avatar de outros usuários | URLs públicas previsíveis | Baixa | Médio | ⚠️ `{userId}/avatar.ext` é previsível se UUID for descoberto |
+| Vazamento da chave Groq via engenharia reversa do APK | `strings` no APK / decompilação | **Alta** | **Crítico** | ✅ Resolvido (2026-06) — chave no Supabase Vault, usada só pela Edge Function `groq-proxy`; nunca no cliente |
+| Vazamento da anonKey Supabase | Idem | **Alta** | Alto | ✅ anonKey é pública por design; RLS auditado e owner-scoped em todas as tabelas |
+| Dados de saúde visíveis para outros usuários | Bug em RPC de ranking | Baixa | Alto | ✅ RPCs auditadas — validam `auth.uid()` internamente |
+| Fotos de avatar de outros usuários | URLs públicas previsíveis | Baixa | Médio | ✅ Bucket `avatars` lista só a pasta do dono; exibição via URL pública (nome + avatar não são sensíveis) |
 
 ### D — Denial of Service (Negação de Serviço)
 
 | Ameaça | Vetor | Probabilidade | Impacto | Status |
 |--------|-------|--------------|---------|--------|
-| Esgotar cota Groq free tier | Enviar muitas fotos rapidamente | Média | Alto | 🔴 Sem rate limiting no app |
-| Esgotar cota Supabase free tier | Spam de cadastros / requests | Baixa | Alto | ⚠️ Sem proteção adicional |
+| Esgotar cota Groq free tier | Enviar muitas fotos rapidamente | Média | Alto | 🟡 Parcial — proxy `groq-proxy` exige login, faz allowlist de modelo e cap de `max_tokens`; rate-limit por usuário ainda pendente |
+| Esgotar cota Supabase free tier | Spam de cadastros / requests | Baixa | Alto | ⚠️ Sem proteção adicional (free pausa por inatividade é evitado pelo keepalive) |
 | Timeout em cascata | Groq lento → app trava | Baixa | Médio | ✅ `.timeout(Duration(seconds: 30))` |
 
 ### E — Elevation of Privilege (Elevação de Privilégio)
 
 | Ameaça | Vetor | Probabilidade | Impacto | Status |
 |--------|-------|--------------|---------|--------|
-| Acessar dados de outro usuário via RPC | Bug na lógica SQL da RPC | Baixa | Alto | ⚠️ RPCs precisam ser auditadas |
-| Manipular ranking global | Criar muitos pontos artificialmente | Baixa | Médio | ⚠️ Pontos inseridos pelo cliente (sem validação server-side?) |
+| Acessar dados de outro usuário via RPC | Bug na lógica SQL da RPC | Baixa | Alto | ✅ RPCs validam `auth.uid()` (ignoram `p_user_id`); EXECUTE revogado de anon/PUBLIC |
+| Manipular ranking global | Criar muitos pontos artificialmente | Baixa | Médio | ✅ Política INSERT de `points` = `WITH CHECK (auth.uid() = user_id)` |
 
 ---
 
@@ -75,12 +75,12 @@
 
 | # | Risco | Severidade | Facilidade | Prioridade |
 |---|-------|-----------|-----------|-----------|
-| 1 | Chave Groq hardcoded → exfiltração via APK | Crítico | Fácil | 🔴 Imediato |
-| 2 | Sem rate limiting → abuso da cota Groq | Alto | Média | 🔴 Antes do lançamento |
-| 3 | Pontos criados pelo cliente sem validação | Médio | Difícil | 🟡 Sprint seguinte |
-| 4 | RPCs não auditadas → possível data leak | Alto | Média | 🟡 Auditar antes do lançamento |
+| 1 | Chave Groq hardcoded → exfiltração via APK | Crítico | Fácil | ✅ Resolvido (Vault + proxy) |
+| 2 | Sem rate limiting → abuso da cota Groq | Alto | Média | 🟡 Proxy mitiga (login + caps); rate-limit por usuário pendente |
+| 3 | Pontos criados pelo cliente sem validação | Médio | Difícil | ✅ Resolvido (RLS `auth.uid() = user_id`) |
+| 4 | RPCs não auditadas → possível data leak | Alto | Média | ✅ Resolvido (auditadas, validam `auth.uid()`) |
 | 5 | Sem audit log de operações sensíveis | Baixo | Fácil | 🟢 Backlog |
-| 6 | URLs de avatar previsíveis | Baixo | Fácil | 🟢 Backlog |
+| 6 | URLs de avatar previsíveis | Baixo | Fácil | ✅ Bucket restrito ao dono |
 
 ---
 
@@ -88,15 +88,14 @@
 
 ### 🔴 Antes do lançamento
 
-**1. Externalizar chaves de API**
-```dart
-// Em vez de hardcoded:
-static const String apiKey = 'gsk_...';
+**1. Externalizar chaves de API** ✅ FEITO (2026-06)
 
-// Usar dart-define no build:
-static const String apiKey = String.fromEnvironment('GROQ_API_KEY');
-// Build: flutter build apk --dart-define=GROQ_API_KEY=gsk_...
-```
+A chave Groq foi totalmente removida do cliente. `dart-define` foi descartado porque a chave ainda ficaria embutida no binário (extraível por `strings`). Solução adotada:
+
+- Chave no **Supabase Vault** (`groq_api_key`), criptografada em repouso.
+- Edge Function **`groq-proxy`** (`verify_jwt`) lê a chave server-side e encaminha à Groq.
+- O app chama o proxy com o JWT da sessão (`GroqService`), nunca vê a chave.
+- Rotação: `vault.update_secret(...)` + redeploy da função.
 
 **2. Rate limiting na DietPage**
 ```dart

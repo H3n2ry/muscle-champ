@@ -7,9 +7,9 @@
 
 ## 🔴 Crítico — Bloqueia o Deploy
 
-- [ ] **Chaves de API fora do código-fonte** — `groq_config.dart` e `supabase_config.dart` não devem ter chaves hardcoded em produção
-- [ ] **`.env` ou arquivos de secrets não commitados** — verificar `git status` e `.gitignore`
-- [ ] **RLS ativa em todas as tabelas** — verificar no Supabase Dashboard → Table Editor → cada tabela tem RLS ativado
+- [x] **Chaves de API fora do código-fonte** — ✅ chave Groq no Supabase Vault (via Edge Function `groq-proxy`); `secrets.dart` só tem URL + anonKey (pública por design)
+- [x] **`.env` ou arquivos de secrets não commitados** — ✅ `lib/core/secrets.dart` no `.gitignore`, confirmado
+- [x] **RLS ativa em todas as tabelas** — ✅ auditado 2026-06; todas as tabelas com políticas owner-scoped (`auth.uid()`)
 - [ ] **Confirmação de e-mail habilitada** — Supabase Auth Settings → Email Confirmations = ON
 
 ---
@@ -30,9 +30,9 @@
 - [ ] **`flutter build apk --obfuscate --split-debug-info=./debug-info`** — dificulta engenharia reversa
 - [ ] **Verificar dependências desatualizadas** — `flutter pub outdated`
 - [ ] **Logs sem stack traces expostos ao usuário** — mensagens de erro amigáveis nas páginas
-- [ ] **Supabase: revisar políticas RLS** das tabelas `workouts`, `diet_logs`, `points`, `friendships`
+- [x] **Supabase: revisar políticas RLS** das tabelas `workouts`, `diet_logs`, `points`, `friendships` — ✅ auditadas; `points` INSERT travado em `auth.uid() = user_id`
 - [ ] **Groq: verificar se há CVEs no modelo em uso** — acompanhar https://groq.com/security
-- [ ] **Bucket `avatars`: confirmar que não é listável** — Storage → Policies → listar desabilitado
+- [x] **Bucket `avatars`: confirmar que não é listável** — ✅ listagem restrita à pasta do dono; exibição via URL pública
 - [ ] **Rate limiting na chamada de foto** — cooldown entre chamadas ao `analyzeFoodPhoto`
 - [ ] **Web: verificar Content-Security-Policy** no Vercel (`vercel.json` headers)
 
