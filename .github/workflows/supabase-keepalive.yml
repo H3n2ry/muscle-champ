@@ -1,0 +1,36 @@
+name: Supabase Keepalive
+
+# Mantém o projeto Supabase do plano free SEMPRE ativo.
+# O free pausa após ~7 dias de inatividade; este ping diário evita isso.
+# Roda na infra do GitHub (grátis) — não depende de nenhuma máquina ligada.
+
+on:
+  schedule:
+    # Todo dia às 09:17 UTC (~06:17 BRT). Horário "quebrado" de propósito:
+    # crons redondos no GitHub costumam atrasar por congestionamento.
+    - cron: "17 9 * * *"
+  workflow_dispatch: {} # permite rodar manualmente pelo botão "Run workflow"
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pingar o banco (RPC leve que executa SQL)
+        run: |
+          # A anon key é pública por design (vai embutida no app), então
+          # pode ficar aqui sem risco. A RPC check_email_exists toca o
+          # Postgres, garantindo que conte como atividade do banco.
+          ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpyeWV0anlzaml5dXVvem5hZWpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzMDE5OTIsImV4cCI6MjA5NDg3Nzk5Mn0.XMl5qb30XRhBB4mhPU42l5mtUXKj15s5lr_dJggrzOA"
+          URL="https://jryetjysjiyuuoznaejc.supabase.co/rest/v1/rpc/check_email_exists"
+          code=$(curl -sS -o /tmp/out.txt -w "%{http_code}" -X POST "$URL" \
+            -H "apikey: $ANON" \
+            -H "Authorization: Bearer $ANON" \
+            -H "Content-Type: application/json" \
+            -d '{"p_email":"keepalive@noop.local"}')
+          echo "HTTP $code"
+          cat /tmp/out.txt
+          # Qualquer 2xx significa que o banco respondeu (projeto ativo).
+          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then
+            echo "::error::Ping falhou (HTTP $code) — o projeto pode estar pausado."
+            exit 1
+          fi
