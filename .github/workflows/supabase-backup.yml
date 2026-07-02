@@ -1,0 +1,59 @@
+name: Supabase Backup
+
+# Backup automático do banco (pg_dump) — proteção contra perda de dados.
+# O dump é criptografado (GPG/AES256) antes de virar artifact, então mesmo
+# que o arquivo vaze, os dados de saúde ficam ilegíveis sem a passphrase.
+#
+# Secrets necessários (Settings → Secrets and variables → Actions):
+#   SUPABASE_DB_URL    → connection string do "Session Pooler" (porta 5432)
+#   BACKUP_PASSPHRASE  → senha para descriptografar o backup (guarde bem!)
+#
+# Para RESTAURAR um backup:
+#   gh run download <run-id>            # baixa o .dump.gpg
+#   gpg --batch --passphrase 'SUA_SENHA' -d -o backup.dump arquivo.dump.gpg
+#   pg_restore --clean --no-owner --no-privileges -d "$SUPABASE_DB_URL" backup.dump
+
+on:
+  schedule:
+    - cron: "30 6 * * 0"   # todo domingo às 06:30 UTC (~03:30 BRT)
+  workflow_dispatch: {}      # permite rodar manualmente
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Instalar pg_dump 17 (mesma versão do Supabase)
+        run: |
+          sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+
+      - name: Dump + criptografia
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$DB_URL" ] || [ -z "$PASSPHRASE" ]; then
+            echo "::error::Faltam os secrets SUPABASE_DB_URL e/ou BACKUP_PASSPHRASE."
+            exit 1
+          fi
+          ts=$(date +%Y%m%d_%H%M%S)
+          echo "Fazendo dump do banco..."
+          /usr/lib/postgresql/17/bin/pg_dump "$DB_URL" \
+            --no-owner --no-privileges --format=custom --file=backup.dump
+          echo "Dump: $(du -h backup.dump | cut -f1)"
+          gpg --batch --yes --passphrase "$PASSPHRASE" \
+            --symmetric --cipher-algo AES256 \
+            -o "muscle-champ_${ts}.dump.gpg" backup.dump
+          rm -f backup.dump
+          echo "name=muscle-champ_${ts}" >> "$GITHUB_OUTPUT"
+        id: dump
+
+      - name: Guardar backup criptografado (retido 90 dias)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.dump.outputs.name }}
+          path: "*.dump.gpg"
+          retention-days: 90
+          if-no-files-found: error
