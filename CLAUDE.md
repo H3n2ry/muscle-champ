@@ -133,7 +133,9 @@ The meal entry sheet (`_SmartMealSheet`) has 3 modes selectable via tab:
 
 **Food database** (`FoodDatabase`): local static food database in `food_database.dart`. `FoodDatabase.search(query)` returns `List<FoodItem>`. Each `FoodItem` has `kcalPer100g`, `proteinPer100g`, `carbsPer100g`, `fatPer100g` and `calculate(weightG)` → `NutritionResult`.
 
-**FOTO mode**: image picked → bytes encoded as base64 → `GroqService.analyzeFoodPhoto(b64, portionHint: hint)` → result shown with slider (20–600g range) to adjust weight; macros scale proportionally.
+**FOTO mode**: image picked → bytes encoded as base64 → `GroqService.analyzeFoodPhoto(b64, portionHint: hint, handLengthCm:, handWidthCm:)` → result shown with slider (20–600g range) to adjust weight; macros scale proportionally.
+
+**Hand calibration** (`calibration_page.dart` + `calibration_repository.dart`): optional one-time step to improve photo accuracy. User photographs a coin (R$1=27mm / R$0,50=23mm / R$0,25=25mm) on their open palm; `GroqService.calibrateHand(b64, coinMm)` measures the hand using the coin as scale reference. Saved to `goals` (`hand_length_cm`, `hand_width_cm`, `hand_calibrated_at`). The FOTO mode reads `handCalibrationProvider` and passes the measurements to `analyzeFoodPhoto` — if the hand appears next to the food it's a precise ruler, otherwise it gives the model a sense of the user's body scale. Route: `/calibrate`. A badge/invite shows in FOTO mode based on calibration state.
 
 **Macro rings**: Diet page shows animated circular progress rings per macro (Proteína/Carboidrato/Gordura) using `TweenAnimationBuilder` + `CustomPainter`.
 
@@ -185,7 +187,8 @@ Four static methods, all POSTing to the proxy (which forwards to `https://api.gr
 | `generateWorkout(muscleGroup)` | text | 0.7 | `List<Map>` — each map has `name`, `sets`, `reps`, `tip` |
 | `calculateFoodMacros(description)` | text | 0.2 | map: `name`, `weight_g`, `calories`, `protein`, `carbs`, `fat` |
 | `generateDietPlan(calories, goalType, {goalProtein?, goalCarbs?, goalFat?})` | text | 0.3 | full `DietPlan` JSON |
-| `analyzeFoodPhoto(base64Input, {portionHint?})` | vision | 0.2 | map: `name`, `weight_g`, `calories`, `protein`, `carbs`, `fat` |
+| `analyzeFoodPhoto(base64Input, {portionHint?, handLengthCm?, handWidthCm?})` | vision | 0.2 | map: `name`, `weight_g`, `calories`, `protein`, `carbs`, `fat` |
+| `calibrateHand(base64Input, coinDiameterMm)` | vision | 0.1 | map: `hand_length_cm`, `hand_width_cm` (or `error`) |
 
 **`generateDietPlan`**: strict "não ultrapassar" macro rules. Falls back to 30/40/30 split if targets omitted. Temperature 0.3 is intentional to enforce caloric accuracy.
 
