@@ -88,7 +88,7 @@ class ProfileRepository {
         'user_id': userId,
         'weight':  weight,
         'date':    today,
-      }),
+      }, onConflict: 'user_id,date'),
     ]);
   }
 
