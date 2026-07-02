@@ -5,13 +5,15 @@ name: Supabase Backup
 # que o arquivo vaze, os dados de saúde ficam ilegíveis sem a passphrase.
 #
 # Secrets necessários (Settings → Secrets and variables → Actions):
-#   SUPABASE_DB_URL    → connection string do "Session Pooler" (porta 5432)
-#   BACKUP_PASSPHRASE  → senha para descriptografar o backup (guarde bem!)
+#   SUPABASE_DB_URL      → connection string do "Session Pooler" SEM a senha
+#                          (ex: postgresql://postgres.REF@...pooler.supabase.com:5432/postgres)
+#   SUPABASE_DB_PASSWORD → a senha do banco (literal — aceita qualquer caractere)
+#   BACKUP_PASSPHRASE    → senha para descriptografar o backup (guarde bem!)
 #
 # Para RESTAURAR um backup:
 #   gh run download <run-id>            # baixa o .dump.gpg
 #   gpg --batch --passphrase 'SUA_SENHA' -d -o backup.dump arquivo.dump.gpg
-#   pg_restore --clean --no-owner --no-privileges -d "$SUPABASE_DB_URL" backup.dump
+#   PGPASSWORD='senha' pg_restore --clean --no-owner --no-privileges -d "$SUPABASE_DB_URL" backup.dump
 
 on:
   schedule:
@@ -32,14 +34,17 @@ jobs:
       - name: Dump + criptografia
         env:
           DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
         run: |
-          if [ -z "$DB_URL" ] || [ -z "$PASSPHRASE" ]; then
-            echo "::error::Faltam os secrets SUPABASE_DB_URL e/ou BACKUP_PASSPHRASE."
+          if [ -z "$DB_URL" ] || [ -z "$PGPASSWORD" ] || [ -z "$PASSPHRASE" ]; then
+            echo "::error::Faltam os secrets SUPABASE_DB_URL, SUPABASE_DB_PASSWORD e/ou BACKUP_PASSPHRASE."
             exit 1
           fi
           ts=$(date +%Y%m%d_%H%M%S)
           echo "Fazendo dump do banco..."
+          # A senha vem por PGPASSWORD (env), não na URI — evita problemas com
+          # caracteres especiais (@, #, etc.) na connection string.
           /usr/lib/postgresql/17/bin/pg_dump "$DB_URL" \
             --no-owner --no-privileges --format=custom --file=backup.dump
           echo "Dump: $(du -h backup.dump | cut -f1)"
