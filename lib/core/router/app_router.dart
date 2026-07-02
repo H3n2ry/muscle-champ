@@ -8,6 +8,7 @@ import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/workout/presentation/pages/workout_page.dart';
 import '../../features/diet/presentation/pages/diet_page.dart';
+import '../../features/diet/presentation/pages/calibration_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/edit_profile_page.dart';
 import '../../features/profile/data/models/profile_model.dart';
@@ -48,6 +49,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/notifications',
         builder: (_, __) => const NotificationsPage(),
+      ),
+      GoRoute(
+        path: '/calibrate',
+        builder: (_, __) => const CalibrationPage(),
       ),
       ShellRoute(
         builder: (context, state, child) => MainScaffold(child: child),

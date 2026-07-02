@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -11,6 +12,7 @@ import '../../../../core/groq/groq_service.dart';
 import '../../../../shared/widgets/mk_error_banner.dart';
 import '../../data/datasources/food_database.dart';
 import '../../data/models/diet_model.dart';
+import '../../data/repositories/calibration_repository.dart';
 import '../providers/diet_provider.dart';
 
 // ── Modo de entrada de refeição ───────────────────────────────────────────────
@@ -1614,15 +1616,15 @@ class _EmptyDiet extends StatelessWidget {
 // SMART MEAL SHEET — 3 modos: BANCO · IA · FOTO
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _SmartMealSheet extends StatefulWidget {
+class _SmartMealSheet extends ConsumerStatefulWidget {
   final Future<void> Function(Map<String, dynamic>) onSave;
   const _SmartMealSheet({required this.onSave});
 
   @override
-  State<_SmartMealSheet> createState() => _SmartMealSheetState();
+  ConsumerState<_SmartMealSheet> createState() => _SmartMealSheetState();
 }
 
-class _SmartMealSheetState extends State<_SmartMealSheet> {
+class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
   _MealInputMode _mode = _MealInputMode.banco;
 
   // ── BANCO ──────────────────────────────────────────────────────────────────
@@ -1743,8 +1745,14 @@ class _SmartMealSheetState extends State<_SmartMealSheet> {
     });
     try {
       final b64 = base64Encode(bytes);
-      final result =
-          await GroqService.analyzeFoodPhoto(b64, portionHint: _portionHint);
+      // Usa a calibração da mão (se houver) como régua de escala
+      final cal = ref.read(handCalibrationProvider).valueOrNull;
+      final result = await GroqService.analyzeFoodPhoto(
+        b64,
+        portionHint: _portionHint,
+        handLengthCm: cal?.lengthCm,
+        handWidthCm: cal?.widthCm,
+      );
       if (mounted) {
         if (result.containsKey('error')) {
           setState(() => _photoError = result['error'] as String);
@@ -1762,6 +1770,69 @@ class _SmartMealSheetState extends State<_SmartMealSheet> {
     } finally {
       if (mounted) setState(() => _photoLoading = false);
     }
+  }
+
+  // Selo "IA calibrada" ou convite pra calibrar (usando a mão como régua).
+  Widget _buildCalibrationBadge() {
+    const accent = Color(0xFF0EA5E9);
+    final cal = ref.watch(handCalibrationProvider);
+    final calibrated = cal.valueOrNull?.isCalibrated ?? false;
+
+    if (calibrated) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.check_circle, color: AppColors.primary, size: 15),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text('IA calibrada pela sua mão',
+                  style: AppTypography.bodySm.copyWith(
+                      color: AppColors.primary, fontSize: 12)),
+            ),
+            GestureDetector(
+              onTap: () => context.push('/calibrate'),
+              child: Text('recalibrar',
+                  style: AppTypography.labelSm.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                      fontSize: 10,
+                      decoration: TextDecoration.underline)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return GestureDetector(
+      onTap: () => context.push('/calibrate'),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: accent.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: accent.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.straighten, color: accent, size: 16),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Calibrar a IA com uma moeda deixa a análise mais precisa',
+                style: AppTypography.bodySm
+                    .copyWith(color: accent, fontSize: 12),
+              ),
+            ),
+            const Icon(Icons.arrow_forward, color: accent, size: 15),
+          ],
+        ),
+      ),
+    );
   }
 
   Map<String, dynamic>? get _activeMeal {
@@ -2294,6 +2365,10 @@ class _SmartMealSheetState extends State<_SmartMealSheet> {
                     AppTypography.labelSm.copyWith(letterSpacing: 2)),
           ],
         ),
+        const SizedBox(height: 12),
+
+        // ── Selo / convite de calibração da IA ──────────────────────
+        _buildCalibrationBadge(),
         const SizedBox(height: 12),
 
         if (_photoBytes == null) ...[

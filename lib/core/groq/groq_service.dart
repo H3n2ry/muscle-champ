@@ -189,10 +189,22 @@ Regras OBRIGATÓRIAS — respeite com precisão:
   }
 
   static Future<Map<String, dynamic>> analyzeFoodPhoto(
-      String base64Input, {String? portionHint}) async {
+      String base64Input, {
+      String? portionHint,
+      double? handLengthCm,
+      double? handWidthCm,
+  }) async {
     final (optimized, mime) = _optimizeImage(base64Input);
     final portionCtx = portionHint != null
         ? '\nO usuário indica que é uma porção $portionHint — use isso para calibrar o peso.'
+        : '';
+    // Calibração da mão: régua pessoal para escala. Se a mão aparecer na foto
+    // ao lado da comida, é referência precisa; senão, dá noção do tamanho corporal.
+    final handCtx = (handLengthCm != null && handWidthCm != null)
+        ? '\nCALIBRAÇÃO DO USUÁRIO: a mão dele mede ${handLengthCm.toStringAsFixed(1)}cm de comprimento '
+            '(punho à ponta do dedo médio) e ${handWidthCm.toStringAsFixed(1)}cm de largura de palma. '
+            'Se a mão aparecer na foto ao lado da comida, use-a como régua PRECISA para medir a porção. '
+            'Se não aparecer, use essas medidas como noção do porte físico do usuário para calibrar melhor a estimativa.'
         : '';
     final body = jsonEncode({
       'model': GroqConfig.visionModel,
@@ -212,7 +224,7 @@ Regras OBRIGATÓRIAS — respeite com precisão:
               'type': 'text',
               'text': 'Você é nutricionista. Analise a foto e identifique o(s) alimento(s).\n'
                   'Se houver um prato com vários itens, some tudo e retorne como refeição única.\n'
-                  'Use objetos de referência visíveis (garfo~20cm, faca~22cm, prato~26cm) para estimar o peso total.$portionCtx\n'
+                  'Use objetos de referência visíveis (garfo~20cm, faca~22cm, prato~26cm) para estimar o peso total.$portionCtx$handCtx\n'
                   'Responda SOMENTE com JSON válido, sem nenhum texto antes ou depois:\n'
                   '{"name":"descrição do prato em português","weight_g":PESO_TOTAL_EM_GRAMAS,"calories":KCAL_TOTAIS,"protein":PROTEINA_G,"carbs":CARBO_G,"fat":GORDURA_G}\n'
                   'Se não conseguir identificar nenhum alimento: {"error":"não identificado"}',
@@ -233,6 +245,52 @@ Regras OBRIGATÓRIAS — respeite com precisão:
     _assertOk(res);
     final raw = _extractContent(res);
     // extrai o bloco JSON mesmo que o modelo inclua texto extra
+    final jsonMatch = RegExp(r'\{[\s\S]*\}').firstMatch(raw);
+    final jsonStr = jsonMatch?.group(0) ?? raw;
+    return Map<String, dynamic>.from(jsonDecode(jsonStr) as Map);
+  }
+
+  /// Calibração (uma vez): mede a mão do usuário usando uma moeda de diâmetro
+  /// conhecido como referência de escala. Retorna `hand_length_cm`,
+  /// `hand_width_cm` e `error` (se a moeda ou a mão não forem identificadas).
+  static Future<Map<String, dynamic>> calibrateHand(
+      String base64Input, double coinDiameterMm) async {
+    final (optimized, mime) = _optimizeImage(base64Input);
+    final body = jsonEncode({
+      'model': GroqConfig.visionModel,
+      'temperature': 0.1,
+      'max_tokens': 200,
+      'messages': [
+        {
+          'role': 'user',
+          'content': [
+            {
+              'type': 'image_url',
+              'image_url': {'url': 'data:$mime;base64,$optimized'},
+            },
+            {
+              'type': 'text',
+              'text': 'Nesta foto há uma MOEDA circular apoiada sobre a palma de uma MÃO aberta.\n'
+                  'A moeda tem exatamente ${coinDiameterMm.toStringAsFixed(0)} mm de diâmetro — use-a como referência de escala.\n'
+                  'Meça a mão comparando com a moeda:\n'
+                  '- comprimento: do punho à ponta do dedo médio, em cm\n'
+                  '- largura: da palma na altura dos nós dos dedos, em cm\n'
+                  'Valores plausíveis: comprimento 15–22cm, largura 7–11cm.\n'
+                  'Responda SOMENTE com JSON válido, sem texto antes ou depois:\n'
+                  '{"hand_length_cm":COMPRIMENTO,"hand_width_cm":LARGURA}\n'
+                  'Se não houver moeda E mão claramente visíveis: {"error":"não identificado"}',
+            },
+          ],
+        },
+      ],
+    });
+
+    final res = await http
+        .post(Uri.parse(GroqConfig.baseUrl), headers: _headers(), body: body)
+        .timeout(const Duration(seconds: 30));
+
+    _assertOk(res);
+    final raw = _extractContent(res);
     final jsonMatch = RegExp(r'\{[\s\S]*\}').firstMatch(raw);
     final jsonStr = jsonMatch?.group(0) ?? raw;
     return Map<String, dynamic>.from(jsonDecode(jsonStr) as Map);
