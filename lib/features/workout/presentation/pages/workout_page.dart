@@ -127,10 +127,17 @@ class WorkoutPage extends ConsumerWidget {
                         onEdit: () => _showEditSheet(
                             context, ref, list[i]),
                         onDelete: () async {
-                          await ref
-                              .read(workoutTemplateRepositoryProvider)
-                              .deleteTemplate(list[i].id);
-                          ref.invalidate(workoutTemplatesProvider);
+                          try {
+                            await ref
+                                .read(workoutTemplateRepositoryProvider)
+                                .deleteTemplate(list[i].id);
+                            ref.invalidate(workoutTemplatesProvider);
+                          } catch (e) {
+                            if (context.mounted) {
+                              MkSnack.error(context,
+                                  'Não foi possível excluir o treino. Tente novamente.');
+                            }
+                          }
                         },
                       ),
                     ),
@@ -690,7 +697,9 @@ class _TemplateCard extends ConsumerWidget {
                   onTap: () async {
                     final confirm = await showDialog<bool>(
                       context: context,
-                      builder: (_) => AlertDialog(
+                      // usa o context do PRÓPRIO diálogo no pop — com o context
+                      // externo o pop removia a página de Treino (tela preta)
+                      builder: (dialogCtx) => AlertDialog(
                         backgroundColor: AppColors.surfaceContainerLow,
                         title: const Text('Excluir treino?'),
                         content: Text(
@@ -698,11 +707,11 @@ class _TemplateCard extends ConsumerWidget {
                         actions: [
                           TextButton(
                               onPressed: () =>
-                                  Navigator.pop(context, false),
+                                  Navigator.pop(dialogCtx, false),
                               child: const Text('CANCELAR')),
                           TextButton(
                               onPressed: () =>
-                                  Navigator.pop(context, true),
+                                  Navigator.pop(dialogCtx, true),
                               child: Text('EXCLUIR',
                                   style: TextStyle(
                                       color: AppColors.error))),
@@ -927,21 +936,32 @@ class _TemplateSheetState extends ConsumerState<_TemplateSheet> {
   }
 
   Future<void> _loadExercises() async {
-    final list = await ref
-        .read(workoutTemplateRepositoryProvider)
-        .getExercises(widget.templateId!);
-    if (mounted) {
-      setState(() {
-        _exercises = list
-            .map((e) => {
-                  'name': e.name,
-                  'sets': e.sets,
-                  'reps': e.reps,
-                  'weight_kg': e.weightKg,
-                })
-            .toList();
-        _loaded = true;
-      });
+    try {
+      final list = await ref
+          .read(workoutTemplateRepositoryProvider)
+          .getExercises(widget.templateId!);
+      if (mounted) {
+        setState(() {
+          // <String, dynamic> explícito: sem isso o Dart infere Map<String, Object>
+          // e o .add() de novos exercícios lança TypeError no modo edição
+          _exercises = list
+              .map((e) => <String, dynamic>{
+                    'name': e.name,
+                    'sets': e.sets,
+                    'reps': e.reps,
+                    'weight_kg': e.weightKg,
+                  })
+              .toList();
+          _loaded = true;
+        });
+      }
+    } catch (e) {
+      // Libera a UI mesmo se falhar — evita o painel preso/vazio bloqueando a tela
+      if (mounted) {
+        setState(() => _loaded = true);
+        MkSnack.error(
+            context, 'Não foi possível carregar os exercícios do treino.');
+      }
     }
   }
 
@@ -952,8 +972,8 @@ class _TemplateSheetState extends ConsumerState<_TemplateSheet> {
   }
 
   void _addExercise() {
-    setState(() =>
-        _exercises.add({'name': '', 'sets': 3, 'reps': 10, 'weight_kg': 0.0}));
+    setState(() => _exercises.add(
+        <String, dynamic>{'name': '', 'sets': 3, 'reps': 10, 'weight_kg': 0.0}));
   }
 
   void _openLibrary() {
@@ -963,8 +983,12 @@ class _TemplateSheetState extends ConsumerState<_TemplateSheet> {
       backgroundColor: Colors.transparent,
       builder: (_) => _ExerciseLibrarySheet(
         onSelect: (name) {
-          setState(() => _exercises
-              .add({'name': name, 'sets': 3, 'reps': 10, 'weight_kg': 0.0}));
+          setState(() => _exercises.add(<String, dynamic>{
+                'name': name,
+                'sets': 3,
+                'reps': 10,
+                'weight_kg': 0.0,
+              }));
         },
       ),
     );
@@ -1302,18 +1326,27 @@ class _ExerciseLibrarySheetState extends State<_ExerciseLibrarySheet> {
                       height: 1,
                       color: AppColors.surfaceContainerHigh,
                     ),
-                    itemBuilder: (_, i) => ListTile(
-                      contentPadding:
-                          const EdgeInsets.symmetric(vertical: 4),
-                      title: Text(exercises[i],
-                          style: AppTypography.bodyMd
-                              .copyWith(fontWeight: FontWeight.w500)),
-                      trailing: const Icon(Icons.add_circle_outline,
-                          color: AppColors.primary, size: 20),
+                    itemBuilder: (_, i) => GestureDetector(
+                      behavior: HitTestBehavior.opaque,
                       onTap: () {
+                        // Adiciona primeiro; o fechamento nunca pode impedir a ação
                         widget.onSelect(exercises[i]);
-                        Navigator.pop(context);
+                        Navigator.of(context).maybePop();
                       },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(exercises[i],
+                                  style: AppTypography.bodyMd
+                                      .copyWith(fontWeight: FontWeight.w500)),
+                            ),
+                            const Icon(Icons.add_circle_outline,
+                                color: AppColors.primary, size: 20),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
           ),
@@ -1371,7 +1404,7 @@ class _ExerciseInputRowState extends State<_ExerciseInputRow> {
   }
 
   void _emit() {
-    widget.onChange({
+    widget.onChange(<String, dynamic>{
       'name': _name.text,
       'sets': int.tryParse(_sets.text) ?? 3,
       'reps': int.tryParse(_reps.text) ?? 10,
@@ -1693,13 +1726,16 @@ class _WorkoutTimerState extends State<_WorkoutTimer> {
               const Icon(Icons.timer_outlined,
                   color: AppColors.onSurfaceVariant, size: 16),
               const SizedBox(width: 6),
-              Text('CRONÔMETRO DE DESCANSO',
-                  style: AppTypography.labelSm.copyWith(
-                    letterSpacing: 1.5,
-                    color: AppColors.onSurfaceVariant,
-                    fontSize: 10,
-                  )),
-              const Spacer(),
+              Expanded(
+                child: Text('DESCANSO',
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.labelSm.copyWith(
+                      letterSpacing: 1.5,
+                      color: AppColors.onSurfaceVariant,
+                      fontSize: 10,
+                    )),
+              ),
+              const SizedBox(width: 6),
               // Presets
               ...(_presets.map((s) => GestureDetector(
                     onTap: () => _setPreset(s),

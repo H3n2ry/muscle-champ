@@ -100,6 +100,17 @@ class WorkoutTemplateRepository {
 
   // ── Deletar template ───────────────────────────────────────────────
   Future<void> deleteTemplate(String templateId) async {
+    // Remove os registros dependentes antes do template. Isso evita erro de
+    // foreign key caso as constraints no banco não tenham ON DELETE CASCADE —
+    // que fazia a exclusão lançar exceção e quebrar a tela.
+    await _client
+        .from('template_exercises')
+        .delete()
+        .eq('template_id', templateId);
+    await _client
+        .from('workout_completions')
+        .delete()
+        .eq('template_id', templateId);
     await _client
         .from('workout_templates')
         .delete()

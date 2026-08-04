@@ -793,11 +793,17 @@ class _PodiumColumn extends StatelessWidget {
               topLeft: Radius.circular(8),
               topRight: Radius.circular(8),
             ),
-            border: Border(
-              top:   BorderSide(color: _placeColor, width: 2),
-              left:  BorderSide(color: _placeColor.withOpacity(0.4)),
-              right: BorderSide(color: _placeColor.withOpacity(0.4)),
-            ),
+            // Borda uniforme: o Flutter não permite borderRadius com bordas de
+            // cores diferentes por lado. O topo destacado vira um boxShadow.
+            border: Border.all(color: _placeColor.withOpacity(0.4)),
+            boxShadow: [
+              BoxShadow(
+                color: _placeColor.withOpacity(0.5),
+                blurRadius: 0,
+                spreadRadius: 0,
+                offset: const Offset(0, -2),
+              ),
+            ],
           ),
           child: Center(
             child: Text('#$place',
@@ -919,18 +925,20 @@ class _AthleteRow extends StatelessWidget {
                 onTap: () async {
                   final confirm = await showDialog<bool>(
                     context: context,
-                    builder: (_) => AlertDialog(
+                    // context do próprio diálogo no pop — evita remover a
+                    // página da navegação (tela preta) em vez do diálogo
+                    builder: (dialogCtx) => AlertDialog(
                       backgroundColor: AppColors.surfaceContainerLow,
                       title: const Text('Remover amigo?'),
                       content: Text(
                           '${entry.userName} será removido do seu ranking de amigos.'),
                       actions: [
                         TextButton(
-                          onPressed: () => Navigator.pop(context, false),
+                          onPressed: () => Navigator.pop(dialogCtx, false),
                           child: const Text('CANCELAR'),
                         ),
                         TextButton(
-                          onPressed: () => Navigator.pop(context, true),
+                          onPressed: () => Navigator.pop(dialogCtx, true),
                           child: Text('REMOVER',
                               style: TextStyle(color: AppColors.error)),
                         ),
