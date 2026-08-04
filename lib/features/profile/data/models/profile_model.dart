@@ -7,6 +7,7 @@ class ProfileModel {
   final double currentWeight;
   final double targetWeight;
   final double heightCm;
+  final DateTime? birthDate;
   final int totalPoints;
   final int totalWorkouts;
   final int streak;
@@ -30,6 +31,7 @@ class ProfileModel {
     required this.currentWeight,
     required this.targetWeight,
     required this.heightCm,
+    this.birthDate,
     required this.totalPoints,
     required this.totalWorkouts,
     required this.streak,
@@ -54,5 +56,17 @@ class ProfileModel {
     if (heightCm <= 0 || currentWeight <= 0) return null;
     final hm = heightCm / 100.0;
     return currentWeight / (hm * hm);
+  }
+
+  /// Idade em anos completos (retorna null se não houver data de nascimento)
+  int? get age {
+    if (birthDate == null) return null;
+    final now = DateTime.now();
+    var a = now.year - birthDate!.year;
+    if (now.month < birthDate!.month ||
+        (now.month == birthDate!.month && now.day < birthDate!.day)) {
+      a--;
+    }
+    return a;
   }
 }

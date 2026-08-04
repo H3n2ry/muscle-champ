@@ -130,3 +130,100 @@ class AiDietPlanNotifier extends StateNotifier<AiDietPlanState> {
     _clearStorage();
   }
 }
+
+// ── Provider da Dieta Manual (montada pelo usuário) ───────────────────────────
+
+final customDietPlanProvider =
+    StateNotifierProvider.autoDispose<CustomDietPlanNotifier, DietPlan?>(
+        (_) => CustomDietPlanNotifier());
+
+class CustomDietPlanNotifier extends StateNotifier<DietPlan?> {
+  static String _storageKey() {
+    final uid = Supabase.instance.client.auth.currentUser?.id;
+    return uid != null ? 'custom_diet_plan_v1_$uid' : 'custom_diet_plan_v1';
+  }
+
+  CustomDietPlanNotifier() : super(null) {
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_storageKey());
+      if (raw == null) return;
+      final data = jsonDecode(raw) as Map<String, dynamic>;
+      if (mounted) {
+        state = DietPlan.fromJson(
+            data, (data['target_calories'] as num?)?.toInt() ?? 0);
+      }
+    } catch (_) {
+      // JSON inválido/desatualizado — ignora
+    }
+  }
+
+  Future<void> _persist(DietPlan? plan) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (plan == null) {
+        await prefs.remove(_storageKey());
+      } else {
+        await prefs.setString(_storageKey(), jsonEncode(plan.toJson()));
+      }
+    } catch (_) {}
+  }
+
+  void _set(DietPlan? plan) {
+    state = plan;
+    _persist(plan);
+  }
+
+  DietPlan _rebuild(DietPlan base, List<DietPlanMeal> meals) => DietPlan(
+        targetCalories: base.targetCalories,
+        goalProtein: base.goalProtein,
+        goalCarbs: base.goalCarbs,
+        goalFat: base.goalFat,
+        meals: meals,
+      );
+
+  static const _emptyPlan = DietPlan(
+    targetCalories: 0,
+    goalProtein: 0,
+    goalCarbs: 0,
+    goalFat: 0,
+    meals: [],
+  );
+
+  void addMeal(String type) {
+    final plan = state ?? _emptyPlan;
+    final meals = List<DietPlanMeal>.from(plan.meals)
+      ..add(DietPlanMeal(type: type, foods: const []));
+    _set(_rebuild(plan, meals));
+  }
+
+  void removeMeal(int mealIdx) {
+    final plan = state;
+    if (plan == null || mealIdx >= plan.meals.length) return;
+    final meals = List<DietPlanMeal>.from(plan.meals)..removeAt(mealIdx);
+    _set(meals.isEmpty ? null : _rebuild(plan, meals));
+  }
+
+  void addFood(int mealIdx, DietPlanFood food) {
+    final plan = state;
+    if (plan == null || mealIdx >= plan.meals.length) return;
+    final meal = plan.meals[mealIdx];
+    final foods = List<DietPlanFood>.from(meal.foods)..add(food);
+    _set(plan.copyWithMeal(mealIdx, DietPlanMeal(type: meal.type, foods: foods)));
+  }
+
+  void removeFood(int mealIdx, int foodIdx) {
+    final plan = state;
+    if (plan == null || mealIdx >= plan.meals.length) return;
+    final meal = plan.meals[mealIdx];
+    if (foodIdx >= meal.foods.length) return;
+    final foods = List<DietPlanFood>.from(meal.foods)..removeAt(foodIdx);
+    _set(plan.copyWithMeal(mealIdx, DietPlanMeal(type: meal.type, foods: foods)));
+  }
+
+  void clear() => _set(null);
+}

@@ -14,6 +14,7 @@ import '../../data/datasources/food_database.dart';
 import '../../data/models/diet_model.dart';
 import '../../data/repositories/calibration_repository.dart';
 import '../providers/diet_provider.dart';
+import '../providers/water_provider.dart';
 
 // ── Modo de entrada de refeição ───────────────────────────────────────────────
 
@@ -309,10 +310,15 @@ class _DietContent extends StatelessWidget {
             ),
           ),
 
+          const SizedBox(height: 20),
+
+          // ── Hidratação ────────────────────────────────────────────────
+          const _WaterCard(),
+
           const SizedBox(height: 24),
 
-          // ── Plano do Dia IA ───────────────────────────────────────────
-          _AiDietSection(
+          // ── Plano do Dia (IA / Manual) ────────────────────────────────
+          _DietPlanSection(
             goalCalories: data!.goalCalories,
             goalType:     data!.goalType ?? 'maintain',
             goalProtein:  data!.goalProtein,
@@ -358,6 +364,173 @@ class _DietContent extends StatelessWidget {
 
           SizedBox(height: 80 + MediaQuery.of(context).padding.bottom),
         ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WATER CARD — contador de hidratação
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _WaterCard extends ConsumerWidget {
+  const _WaterCard();
+
+  static const _accent = Color(0xFF0EA5E9);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(waterControllerProvider);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.surfaceContainerHigh),
+        ),
+        child: async.when(
+          loading: () => const SizedBox(
+            height: 80,
+            child: Center(
+                child: CircularProgressIndicator(color: _accent)),
+          ),
+          error: (_, __) => Row(
+            children: [
+              const Icon(Icons.water_drop_outlined,
+                  color: _accent, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text('Não foi possível carregar a hidratação.',
+                    style: AppTypography.bodySm
+                        .copyWith(color: AppColors.onSurfaceVariant)),
+              ),
+              TextButton(
+                onPressed: () => ref.invalidate(waterControllerProvider),
+                child: const Text('Tentar'),
+              ),
+            ],
+          ),
+          data: (w) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.water_drop, color: _accent, size: 18),
+                  const SizedBox(width: 8),
+                  Text('HIDRATAÇÃO',
+                      style: AppTypography.labelSm
+                          .copyWith(letterSpacing: 2)),
+                  const Spacer(),
+                  if (w.goalMet)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _accent,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text('META ✓',
+                          style: AppTypography.labelSm.copyWith(
+                              color: Colors.white, fontSize: 10)),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('${w.totalMl}',
+                      style: AppTypography.headlineLg.copyWith(
+                        color: _accent,
+                        fontSize: 40,
+                        fontWeight: FontWeight.w700,
+                      )),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(w.goalMl > 0 ? ' / ${w.goalMl} ml' : ' ml',
+                        style: AppTypography.bodyMd.copyWith(
+                            color: AppColors.onSurfaceVariant)),
+                  ),
+                  const Spacer(),
+                  if (w.totalMl > 0)
+                    GestureDetector(
+                      onTap: () =>
+                          ref.read(waterControllerProvider.notifier).undo(),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.undo,
+                            size: 16, color: AppColors.onSurfaceVariant),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: w.progress,
+                  backgroundColor: AppColors.surfaceContainerHigh,
+                  valueColor: const AlwaysStoppedAnimation(_accent),
+                  minHeight: 10,
+                ),
+              ),
+              if (w.goalMl > 0 && !w.goalMet) ...[
+                const SizedBox(height: 8),
+                Text('Faltam ${w.remainingMl} ml para a meta de hoje',
+                    style: AppTypography.bodySm.copyWith(
+                        color: AppColors.onSurfaceVariant, fontSize: 12)),
+              ] else if (w.goalMl == 0) ...[
+                const SizedBox(height: 8),
+                Text('Defina seu peso no perfil para calcular a meta',
+                    style: AppTypography.bodySm.copyWith(
+                        color: AppColors.onSurfaceVariant, fontSize: 12)),
+              ],
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  _addBtn(ref, 200, 'Copo'),
+                  const SizedBox(width: 8),
+                  _addBtn(ref, 350, 'Caneca'),
+                  const SizedBox(width: 8),
+                  _addBtn(ref, 500, 'Garrafa'),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _addBtn(WidgetRef ref, int ml, String label) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => ref.read(waterControllerProvider.notifier).add(ml),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: _accent.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _accent.withOpacity(0.35)),
+          ),
+          child: Column(
+            children: [
+              Text('+$ml',
+                  style: AppTypography.labelMd.copyWith(
+                      color: _accent, fontWeight: FontWeight.w700)),
+              Text(label,
+                  style: AppTypography.labelSm.copyWith(
+                      color: AppColors.onSurfaceVariant, fontSize: 9)),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -516,14 +689,807 @@ class _RingPainter extends CustomPainter {
 // SEÇÃO PLANO IA
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _AiDietSection extends ConsumerWidget {
+// ─────────────────────────────────────────────────────────────────────────────
+// SEÇÃO DO PLANO — toggle IA / Manual
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _DietPlanSection extends ConsumerStatefulWidget {
   final int    goalCalories;
   final String goalType;
   final double goalProtein;
   final double goalCarbs;
   final double goalFat;
 
-  const _AiDietSection({
+  const _DietPlanSection({
+    required this.goalCalories,
+    required this.goalType,
+    required this.goalProtein,
+    required this.goalCarbs,
+    required this.goalFat,
+  });
+
+  @override
+  ConsumerState<_DietPlanSection> createState() => _DietPlanSectionState();
+}
+
+class _DietPlanSectionState extends ConsumerState<_DietPlanSection> {
+  bool _manual = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text('PLANO DO DIA',
+                  style: AppTypography.labelSm.copyWith(
+                      letterSpacing: 2, color: AppColors.onSurfaceVariant)),
+              const Spacer(),
+              _PlanToggle(
+                manual: _manual,
+                onChanged: (m) => setState(() => _manual = m),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (_manual)
+            const _CustomDietBody()
+          else
+            _AiDietBody(
+              goalCalories: widget.goalCalories,
+              goalType:     widget.goalType,
+              goalProtein:  widget.goalProtein,
+              goalCarbs:    widget.goalCarbs,
+              goalFat:      widget.goalFat,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlanToggle extends StatelessWidget {
+  final bool manual;
+  final ValueChanged<bool> onChanged;
+  const _PlanToggle({required this.manual, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.surfaceContainerHigh),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _seg('IA', !manual, const Color(0xFF7C3AED), () => onChanged(false)),
+          _seg('MANUAL', manual, AppColors.primary, () => onChanged(true)),
+        ],
+      ),
+    );
+  }
+
+  Widget _seg(String label, bool active, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: active ? color.withOpacity(0.18) : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(label,
+            style: AppTypography.labelSm.copyWith(
+              fontSize: 10,
+              letterSpacing: 1,
+              color: active ? color : AppColors.onSurfaceVariant,
+              fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+            )),
+      ),
+    );
+  }
+}
+
+// ── Corpo da dieta manual ─────────────────────────────────────────────────────
+
+class _CustomDietBody extends ConsumerWidget {
+  const _CustomDietBody();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final plan  = ref.watch(customDietPlanProvider);
+    final meals = plan?.meals ?? const <DietPlanMeal>[];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (meals.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.surfaceContainerHigh),
+            ),
+            child: Column(
+              children: [
+                const Icon(Icons.edit_note,
+                    color: AppColors.primary, size: 28),
+                const SizedBox(height: 8),
+                Text('Monte sua própria dieta',
+                    style: AppTypography.labelMd
+                        .copyWith(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 4),
+                Text('Adicione refeições e escolha os alimentos do banco',
+                    textAlign: TextAlign.center,
+                    style: AppTypography.bodySm.copyWith(
+                        color: AppColors.onSurfaceVariant, fontSize: 12)),
+              ],
+            ),
+          )
+        else ...[
+          _CustomMacroSummary(meals: meals),
+          const SizedBox(height: 12),
+          ...meals.asMap().entries.map((e) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _CustomMealCard(meal: e.value, mealIdx: e.key),
+              )),
+        ],
+        const SizedBox(height: 4),
+        GestureDetector(
+          onTap: () => _addMeal(context, ref),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.primary.withOpacity(0.35)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.add, color: AppColors.primary, size: 18),
+                const SizedBox(width: 8),
+                Text('ADICIONAR REFEIÇÃO',
+                    style: AppTypography.labelSm.copyWith(
+                        color: AppColors.primary,
+                        letterSpacing: 1.5,
+                        fontWeight: FontWeight.w700)),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _addMeal(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surfaceContainerLow,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => _AddMealSheet(
+        onConfirm: (type) {
+          ref.read(customDietPlanProvider.notifier).addMeal(type);
+          Navigator.pop(context);
+        },
+      ),
+    );
+  }
+}
+
+class _CustomMacroSummary extends StatelessWidget {
+  final List<DietPlanMeal> meals;
+  const _CustomMacroSummary({required this.meals});
+
+  @override
+  Widget build(BuildContext context) {
+    final kcal = meals.fold(0,   (s, m) => s + m.totalCalories);
+    final p    = meals.fold(0.0, (s, m) => s + m.totalProtein);
+    final c    = meals.fold(0.0, (s, m) => s + m.totalCarbs);
+    final f    = meals.fold(0.0, (s, m) => s + m.totalFat);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.primary.withOpacity(0.25)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.edit_note, color: AppColors.primary, size: 16),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              '$kcal kcal  •  P ${p.toStringAsFixed(0)}g  '
+              'C ${c.toStringAsFixed(0)}g  G ${f.toStringAsFixed(0)}g',
+              style: AppTypography.bodySm.copyWith(
+                  color: AppColors.onSurface, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CustomMealCard extends ConsumerStatefulWidget {
+  final DietPlanMeal meal;
+  final int mealIdx;
+  const _CustomMealCard({required this.meal, required this.mealIdx});
+
+  @override
+  ConsumerState<_CustomMealCard> createState() => _CustomMealCardState();
+}
+
+class _CustomMealCardState extends ConsumerState<_CustomMealCard> {
+  final Set<int> _logged = {};
+
+  Future<void> _log(int i, DietPlanFood food) async {
+    await ref.read(dietControllerProvider.notifier).addMeal(food.toLogMap());
+    if (mounted) setState(() => _logged.add(i));
+  }
+
+  void _addFood() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surfaceContainerLow,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => _AddFoodSheet(
+        onConfirm: (food) {
+          ref
+              .read(customDietPlanProvider.notifier)
+              .addFood(widget.mealIdx, food);
+          Navigator.pop(context);
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final meal = widget.meal;
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.surfaceContainerHigh),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 6, 10),
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.restaurant_menu,
+                      color: AppColors.primary, size: 16),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(meal.type,
+                      style: AppTypography.labelMd
+                          .copyWith(color: AppColors.onSurface)),
+                ),
+                Text('${meal.totalCalories} kcal',
+                    style: AppTypography.labelSm.copyWith(
+                        color: AppColors.onSurfaceVariant, fontSize: 11)),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.delete_outline,
+                      size: 18, color: AppColors.onSurfaceVariant),
+                  onPressed: () => ref
+                      .read(customDietPlanProvider.notifier)
+                      .removeMeal(widget.mealIdx),
+                ),
+              ],
+            ),
+          ),
+          const Divider(
+              height: 1,
+              color: AppColors.surfaceContainerHigh,
+              indent: 14,
+              endIndent: 14),
+          if (meal.foods.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Nenhum alimento ainda',
+                    style: AppTypography.bodySm.copyWith(
+                        color: AppColors.onSurfaceVariant, fontSize: 12)),
+              ),
+            )
+          else
+            ...meal.foods.asMap().entries.map((e) {
+              final i    = e.key;
+              final food = e.value;
+              final done = _logged.contains(i);
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(14, 8, 6, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(food.name,
+                              style: AppTypography.bodySm
+                                  .copyWith(fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 2),
+                          Text(
+                              '${food.weightG.toStringAsFixed(0)}g · ${food.calories} kcal',
+                              style: AppTypography.labelSm.copyWith(
+                                  color: AppColors.onSurfaceVariant,
+                                  fontSize: 10)),
+                        ],
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: done ? null : () => _log(i, food),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: done
+                              ? AppColors.primary.withOpacity(0.15)
+                              : AppColors.primary,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(done ? 'OK' : '+LOG',
+                            style: AppTypography.labelSm.copyWith(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: done
+                                  ? AppColors.primary
+                                  : AppColors.onPrimary,
+                            )),
+                      ),
+                    ),
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(Icons.close,
+                          size: 16, color: AppColors.onSurfaceVariant),
+                      onPressed: () => ref
+                          .read(customDietPlanProvider.notifier)
+                          .removeFood(widget.mealIdx, i),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 2, 14, 12),
+            child: GestureDetector(
+              onTap: _addFood,
+              child: Row(
+                children: [
+                  const Icon(Icons.add_circle_outline,
+                      color: AppColors.primary, size: 16),
+                  const SizedBox(width: 6),
+                  Text('ADICIONAR ALIMENTO',
+                      style: AppTypography.labelSm.copyWith(
+                          color: AppColors.primary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Sheet: nova refeição ──────────────────────────────────────────────────────
+
+class _AddMealSheet extends StatefulWidget {
+  final void Function(String type) onConfirm;
+  const _AddMealSheet({required this.onConfirm});
+
+  @override
+  State<_AddMealSheet> createState() => _AddMealSheetState();
+}
+
+class _AddMealSheetState extends State<_AddMealSheet> {
+  final _ctrl = TextEditingController();
+
+  static const _presets = [
+    'Café da Manhã', 'Lanche da Manhã', 'Almoço', 'Lanche da Tarde',
+    'Jantar', 'Ceia', 'Pré-treino', 'Pós-treino',
+  ];
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.outlineVariant,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Text('NOVA REFEIÇÃO',
+                style: AppTypography.headlineSm
+                    .copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _presets
+                  .map((p) => GestureDetector(
+                        onTap: () => widget.onConfirm(p),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceContainerHigh,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(p,
+                              style: AppTypography.labelSm
+                                  .copyWith(color: AppColors.onSurface)),
+                        ),
+                      ))
+                  .toList(),
+            ),
+            const SizedBox(height: 18),
+            Text('OU PERSONALIZE',
+                style: AppTypography.labelSm.copyWith(
+                    letterSpacing: 1.5,
+                    fontSize: 9,
+                    color: AppColors.onSurfaceVariant)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _ctrl,
+                    style: AppTypography.bodyMd,
+                    textCapitalization: TextCapitalization.words,
+                    onSubmitted: (t) {
+                      if (t.trim().isNotEmpty) widget.onConfirm(t.trim());
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Nome da refeição',
+                      hintStyle: AppTypography.bodyMd
+                          .copyWith(color: AppColors.onSurfaceVariant),
+                      filled: true,
+                      fillColor: AppColors.surfaceContainerHigh,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 52, height: 48,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      final t = _ctrl.text.trim();
+                      if (t.isNotEmpty) widget.onConfirm(t);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.onPrimary,
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Icon(Icons.check, size: 20),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Sheet: adicionar alimento do banco ────────────────────────────────────────
+
+class _AddFoodSheet extends StatefulWidget {
+  final void Function(DietPlanFood food) onConfirm;
+  const _AddFoodSheet({required this.onConfirm});
+
+  @override
+  State<_AddFoodSheet> createState() => _AddFoodSheetState();
+}
+
+class _AddFoodSheetState extends State<_AddFoodSheet> {
+  final _searchCtrl = TextEditingController();
+  final _weightCtrl = TextEditingController(text: '100');
+  List<FoodItem> _results = [];
+  FoodItem? _selected;
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    _weightCtrl.dispose();
+    super.dispose();
+  }
+
+  double get _weight =>
+      double.tryParse(_weightCtrl.text.replaceAll(',', '.')) ?? 0;
+
+  DietPlanFood? get _preview {
+    final sel = _selected;
+    if (sel == null || _weight <= 0) return null;
+    final n = sel.calculate(_weight);
+    return DietPlanFood(
+      name:     sel.name,
+      weightG:  _weight,
+      calories: n.calories,
+      protein:  n.protein,
+      carbs:    n.carbs,
+      fat:      n.fat,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final preview = _preview;
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.outlineVariant,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Text('ADICIONAR ALIMENTO',
+                style: AppTypography.headlineSm
+                    .copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _searchCtrl,
+              style: AppTypography.bodyMd,
+              onChanged: (q) => setState(() {
+                _results = FoodDatabase.search(q);
+                _selected = null;
+              }),
+              decoration: InputDecoration(
+                hintText: 'Buscar no banco de alimentos',
+                hintStyle: AppTypography.bodyMd
+                    .copyWith(color: AppColors.onSurfaceVariant),
+                prefixIcon: const Icon(Icons.search,
+                    color: AppColors.onSurfaceVariant, size: 20),
+                filled: true,
+                fillColor: AppColors.surfaceContainerHigh,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (_selected == null && _results.isNotEmpty)
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 280),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: _results.length > 40 ? 40 : _results.length,
+                  separatorBuilder: (_, __) => const Divider(
+                      height: 1, color: AppColors.surfaceContainerHigh),
+                  itemBuilder: (_, i) {
+                    final f = _results[i];
+                    return GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => setState(() => _selected = f),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(f.name,
+                                      style: AppTypography.bodyMd.copyWith(
+                                          fontWeight: FontWeight.w500)),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                      '${f.kcalPer100g.toStringAsFixed(0)} kcal/100g · ${f.category}',
+                                      style: AppTypography.labelSm.copyWith(
+                                          color: AppColors.onSurfaceVariant,
+                                          fontSize: 10)),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.add_circle_outline,
+                                color: AppColors.primary, size: 20),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            if (_selected != null) ...[
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(_selected!.name,
+                              style: AppTypography.bodyMd
+                                  .copyWith(fontWeight: FontWeight.w700)),
+                        ),
+                        GestureDetector(
+                          onTap: () => setState(() => _selected = null),
+                          child: const Icon(Icons.close,
+                              size: 18, color: AppColors.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: 110,
+                          child: TextField(
+                            controller: _weightCtrl,
+                            style: AppTypography.bodyMd,
+                            keyboardType:
+                                const TextInputType.numberWithOptions(
+                                    decimal: true),
+                            onChanged: (_) => setState(() {}),
+                            decoration: InputDecoration(
+                              labelText: 'Peso',
+                              suffixText: 'g',
+                              isDense: true,
+                              filled: true,
+                              fillColor: AppColors.surfaceContainerLow,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide.none,
+                              ),
+                              labelStyle: AppTypography.bodySm.copyWith(
+                                  color: AppColors.onSurfaceVariant),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        if (preview != null)
+                          Expanded(
+                            child: Text('${preview.calories} kcal',
+                                style: AppTypography.headlineSm.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 20)),
+                          ),
+                      ],
+                    ),
+                    if (preview != null) ...[
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          _MacroPill(
+                              label: 'P',
+                              value: '${preview.protein.toStringAsFixed(0)}g',
+                              color: const Color(0xFF5B8DF6)),
+                          const SizedBox(width: 6),
+                          _MacroPill(
+                              label: 'C',
+                              value: '${preview.carbs.toStringAsFixed(0)}g',
+                              color: AppColors.warning),
+                          const SizedBox(width: 6),
+                          _MacroPill(
+                              label: 'G',
+                              value: '${preview.fat.toStringAsFixed(0)}g',
+                              color: const Color(0xFFFF6B6B)),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: preview == null
+                      ? null
+                      : () => widget.onConfirm(preview),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.onPrimary,
+                    disabledBackgroundColor: AppColors.surfaceContainerHigh,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: Text('ADICIONAR À REFEIÇÃO',
+                      style: AppTypography.labelMd.copyWith(
+                          color: AppColors.onPrimary,
+                          fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PLANO DO DIA IA — corpo (usado dentro de _DietPlanSection)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _AiDietBody extends ConsumerWidget {
+  final int    goalCalories;
+  final String goalType;
+  final double goalProtein;
+  final double goalCarbs;
+  final double goalFat;
+
+  const _AiDietBody({
     required this.goalCalories,
     required this.goalType,
     required this.goalProtein,
@@ -535,54 +1501,48 @@ class _AiDietSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final planState = ref.watch(aiDietPlanProvider);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Header da seção ──────────────────────────────────────────
-          Row(
-            children: [
-              Text('PLANO DO DIA',
-                  style: AppTypography.labelSm.copyWith(
-                      letterSpacing: 2, color: AppColors.onSurfaceVariant)),
-              const Spacer(),
-              if (planState.plan != null)
-                GestureDetector(
-                  onTap: () => ref
-                      .read(aiDietPlanProvider.notifier)
-                      .generate(goalCalories, goalType,
-                          goalProtein: goalProtein,
-                          goalCarbs: goalCarbs,
-                          goalFat: goalFat),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF7C3AED).withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                          color: const Color(0xFF7C3AED).withOpacity(0.4)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.refresh,
-                            color: Color(0xFF7C3AED), size: 12),
-                        const SizedBox(width: 4),
-                        Text('REGENERAR',
-                            style: AppTypography.labelSm.copyWith(
-                              color: Color(0xFF7C3AED),
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                            )),
-                      ],
-                    ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+          // ── Botão regenerar (quando há plano) ────────────────────────
+          if (planState.plan != null) ...[
+            Align(
+              alignment: Alignment.centerRight,
+              child: GestureDetector(
+                onTap: () => ref
+                    .read(aiDietPlanProvider.notifier)
+                    .generate(goalCalories, goalType,
+                        goalProtein: goalProtein,
+                        goalCarbs: goalCarbs,
+                        goalFat: goalFat),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF7C3AED).withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                        color: const Color(0xFF7C3AED).withOpacity(0.4)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.refresh,
+                          color: Color(0xFF7C3AED), size: 12),
+                      const SizedBox(width: 4),
+                      Text('REGENERAR',
+                          style: AppTypography.labelSm.copyWith(
+                            color: Color(0xFF7C3AED),
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                          )),
+                    ],
                   ),
                 ),
-            ],
-          ),
-          const SizedBox(height: 12),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
 
           // ── Estados ──────────────────────────────────────────────────
 
@@ -689,8 +1649,7 @@ class _AiDietSection extends ConsumerWidget {
             }),
           ],
         ],
-      ),
-    );
+      );
   }
 }
 

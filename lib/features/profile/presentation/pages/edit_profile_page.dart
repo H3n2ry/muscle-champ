@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../shared/widgets/mk_date_field.dart';
 import '../../../../shared/widgets/mk_snack.dart';
 import '../../data/models/profile_model.dart';
 import '../../data/repositories/profile_repository.dart';
@@ -22,6 +23,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   late final TextEditingController _currentWeightCtrl;
   late final TextEditingController _targetWeightCtrl;
   late String _goalType;
+  DateTime? _birthDate;
 
   bool _isSaving = false;
   final _formKey = GlobalKey<FormState>();
@@ -38,6 +40,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     _targetWeightCtrl = TextEditingController(
         text: p.targetWeight > 0 ? p.targetWeight.toStringAsFixed(1) : '');
     _goalType = p.goalType;
+    _birthDate = p.birthDate;
   }
 
   @override
@@ -84,6 +87,10 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       final newTarget = double.tryParse(_targetWeightCtrl.text) ?? 0;
       if (_goalType != p.goalType || newTarget != p.targetWeight) {
         futures.add(repo.updateGoal(_goalType, newTarget));
+      }
+
+      if (_birthDate != p.birthDate) {
+        futures.add(repo.updateBirthDate(_birthDate));
       }
 
       await Future.wait(futures);
@@ -189,6 +196,20 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                                 v == null || v.trim().isEmpty
                                     ? 'Obrigatório'
                                     : null,
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          Text('DATA DE NASCIMENTO',
+                              style: AppTypography.labelSm.copyWith(
+                                  letterSpacing: 1.5,
+                                  color: AppColors.onSurfaceVariant,
+                                  fontSize: 10)),
+                          const SizedBox(height: 8),
+                          MkDateField(
+                            value: _birthDate,
+                            onChanged: (d) =>
+                                setState(() => _birthDate = d),
                           ),
 
                           const SizedBox(height: 28),

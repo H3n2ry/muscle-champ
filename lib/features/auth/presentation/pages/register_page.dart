@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../shared/widgets/mk_date_field.dart';
 import '../../../../shared/widgets/mk_error_banner.dart';
 import '../../../../shared/widgets/mk_text_field.dart';
 import '../../data/repositories/auth_repository.dart';
@@ -39,6 +40,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _heightCtrl  = TextEditingController();
   final _currWtCtrl  = TextEditingController();
   final _targWtCtrl  = TextEditingController();
+  DateTime? _birthDate;
+  bool _birthDateError = false;
 
   // ── Step 2 ────────────────────────────────────────────────────────────────
   int _weeklyGoal = 3;
@@ -106,7 +109,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   // ── Navigation ────────────────────────────────────────────────────────────
   void _goNext() {
     if (_step == 0 && !_step0Key.currentState!.validate()) return;
-    if (_step == 1 && !_step1Key.currentState!.validate()) return;
+    if (_step == 1) {
+      final formOk = _step1Key.currentState!.validate();
+      if (_birthDate == null) setState(() => _birthDateError = true);
+      if (!formOk || _birthDate == null) return;
+    }
     if (_step < 2) {
       setState(() => _step++);
       _pageCtrl.nextPage(
@@ -144,6 +151,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       currentWeight:     currWt,
       targetWeight:      targWt,
       weeklyWorkoutGoal: _weeklyGoal,
+      birthDate:         _birthDate,
     );
 
     if (mounted) {
@@ -244,6 +252,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     heightCtrl: _heightCtrl,
                     currWtCtrl: _currWtCtrl,
                     targWtCtrl: _targWtCtrl,
+                    birthDate:  _birthDate,
+                    birthDateError: _birthDateError
+                        ? 'Informe sua data de nascimento'
+                        : null,
+                    onBirthDate: (d) => setState(() {
+                      _birthDate = d;
+                      _birthDateError = false;
+                    }),
                     bmi:        _bmi,
                     targetBmi:  _targetBmi,
                     bmiLabel:   _bmi != null ? _bmiLabel(_bmi!) : null,
@@ -634,6 +650,9 @@ class _Step1Body extends StatelessWidget {
   final TextEditingController heightCtrl;
   final TextEditingController currWtCtrl;
   final TextEditingController targWtCtrl;
+  final DateTime? birthDate;
+  final String? birthDateError;
+  final ValueChanged<DateTime> onBirthDate;
   final double? bmi;
   final double? targetBmi;
   final String? bmiLabel;
@@ -645,6 +664,9 @@ class _Step1Body extends StatelessWidget {
     required this.heightCtrl,
     required this.currWtCtrl,
     required this.targWtCtrl,
+    required this.birthDate,
+    required this.birthDateError,
+    required this.onBirthDate,
     required this.bmi,
     required this.targetBmi,
     required this.bmiLabel,
@@ -672,7 +694,7 @@ class _Step1Body extends StatelessWidget {
                   color: AppColors.primary,
                 )),
             const SizedBox(height: 6),
-            Text('Usadas para calcular IMC e meta calórica',
+            Text('Usadas para IMC, meta calórica e hidratação',
                 style: AppTypography.bodySm),
 
             const SizedBox(height: 32),
@@ -747,6 +769,16 @@ class _Step1Body extends StatelessWidget {
                 }
                 return null;
               },
+            ),
+
+            const SizedBox(height: 20),
+
+            _FieldLabel('DATA DE NASCIMENTO'),
+            const SizedBox(height: 8),
+            MkDateField(
+              value: birthDate,
+              onChanged: onBirthDate,
+              errorText: birthDateError,
             ),
 
             const SizedBox(height: 24),

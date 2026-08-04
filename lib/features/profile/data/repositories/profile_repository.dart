@@ -47,6 +47,9 @@ class ProfileRepository {
       currentWeight: (goal?['current_weight'] as num?)?.toDouble() ?? 0,
       targetWeight:  (goal?['target_weight']  as num?)?.toDouble() ?? 0,
       heightCm:      (goal?['height_cm']       as num?)?.toDouble() ?? 0,
+      birthDate:     goal?['birth_date'] != null
+          ? DateTime.parse(goal!['birth_date'] as String)
+          : null,
       totalPoints:   totalPoints,
       totalWorkouts: workouts.length,
       streak:        streak,
@@ -97,6 +100,16 @@ class ProfileRepository {
         .from('goals')
         .update({
           'height_cm':  heightCm,
+          'updated_at': DateTime.now().toIso8601String(),
+        })
+        .eq('user_id', _client.auth.currentUser!.id);
+  }
+
+  Future<void> updateBirthDate(DateTime? birthDate) async {
+    await _client
+        .from('goals')
+        .update({
+          'birth_date': birthDate?.toIso8601String().substring(0, 10),
           'updated_at': DateTime.now().toIso8601String(),
         })
         .eq('user_id', _client.auth.currentUser!.id);

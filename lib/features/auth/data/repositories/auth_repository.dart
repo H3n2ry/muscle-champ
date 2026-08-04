@@ -33,6 +33,7 @@ class AuthRepository {
     required double currentWeight,
     required double targetWeight,
     required int weeklyWorkoutGoal,
+    DateTime? birthDate,
   }) async {
     final response = await _client.auth.signUp(
       email: email,
@@ -44,6 +45,8 @@ class AuthRepository {
         'current_weight':       currentWeight,
         'target_weight':        targetWeight,
         'weekly_workout_goal':  weeklyWorkoutGoal,
+        if (birthDate != null)
+          'birth_date': birthDate.toIso8601String().substring(0, 10),
       },
     );
 
