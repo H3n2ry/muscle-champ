@@ -46,6 +46,27 @@ Pão de queijo: 300kcal P6 C36 G14 | Esfiha de carne: 250kcal P10 C30 G10
 Strogonoff de carne: 190kcal P13 C6 G13 | Escondidinho: 150kcal P8 C15 G6
 Salgadinho de pacote: 520kcal P6 C60 G28 | Chocolate ao leite: 535kcal P7.6 C59 G30
 
+DOCES E SOBREMESAS (por 100g — você costuma SUPERESTIMAR estes, use os valores):
+Doce de leite: 306kcal P5.5 C58.5 G6 | Leite condensado: 321kcal P7.9 C55 G8.7
+Brigadeiro: 400kcal P5 C55 G18 | Beijinho: 380kcal P4 C56 G16
+Pudim de leite: 150kcal P5 C24 G4 | Mousse de chocolate: 200kcal P4 C25 G10
+Bolo simples: 300kcal P5 C50 G9 | Bolo de chocolate: 370kcal P5 C52 G16
+Brownie: 400kcal P5 C50 G20 | Paçoca: 480kcal P14 C50 G25
+Goiabada: 270kcal P0.4 C68 G0.1 | Geleia de frutas: 250kcal P0.4 C62 G0.1
+Mel: 309kcal P0.3 C84 G0 | Açaí puro (polpa): 58kcal P0.8 C6.2 G3.9
+Sorvete de creme: 207kcal P3.5 C24 G11 | Chantilly: 260kcal P2 C12 G23
+
+OUTROS COMUNS (por 100g):
+Linguiça: 300kcal P16 C1 G26 | Bacon: 540kcal P37 C1.4 G42
+Presunto: 145kcal P18 C1.5 G7.5 | Peito de peru: 100kcal P18 C2 G2
+Carne moída refogada: 220kcal P24 C0 G14 | Picanha grelhada: 290kcal P26 C0 G20
+Sardinha em lata: 200kcal P24 C0 G11 | Atum em lata (água): 116kcal P26 C0 G1
+Cuscuz de milho: 113kcal P2.5 C25 G0.5 | Polenta: 85kcal P2 C18 G0.5
+Farofa pronta: 400kcal P4 C60 G16 | Molho de tomate: 35kcal P1.5 C7 G0.3
+Maionese: 680kcal P1 C2 G75 | Ketchup: 100kcal P1.2 C24 G0.2
+Suco natural de laranja: 45kcal P0.7 C10.4 G0.2 | Cerveja: 43kcal P0.5 C3.6 G0
+Café sem açúcar: 2kcal P0.1 C0.3 G0 | Leite achocolatado: 80kcal P3 C13 G2
+
 MEDIDAS CASEIRAS → GRAMAS:
 1 ovo = 50g | 1 colher de sopa de arroz = 25g | 1 colher de sopa de feijão = 20g
 1 concha de feijão = 80g | 1 filé de frango = 120g | 1 bife médio = 100g
@@ -67,12 +88,18 @@ DE ONDE TIRAR OS VALORES POR 100g:
 2. Se NÃO está, use seu próprio conhecimento nutricional — a tabela é só uma
    referência de alimentos comuns, não uma lista fechada. Nunca recuse nem
    force o alimento a virar outro só porque não está listada.
-3. Ao usar conhecimento próprio, confira se a densidade é plausível:
+3. ATENÇÃO — você tende a SUPERESTIMAR a densidade calórica. Sempre que usar
+   conhecimento próprio, escolha o valor mais BAIXO da faixa plausível:
    Verduras/legumes: 15-80 kcal/100g | Frutas: 30-100 (abacate/coco: 150-350)
    Carnes/peixes magros: 100-180 | Carnes gordas/embutidos: 250-400
    Grãos e massas cozidos: 100-160 | Pães e biscoitos: 250-450
    Laticínios: 40-120 (queijos duros: 250-400) | Castanhas/sementes: 500-650
-   Óleos e gorduras puras: 850-900 | Doces e frituras: 300-550
+   Óleos e gorduras puras: 850-900 | Frituras: 280-400
+   Doces cremosos (doce de leite, pudim, mousse, sorvete): 150-320
+   Doces concentrados (brigadeiro, paçoca, chocolate): 380-540
+   Alimentos com água (sopas, caldos, iogurtes, bebidas): 20-120
+   Referência mental: quase nenhum alimento comum passa de 400 kcal/100g.
+   Acima disso só óleo, manteiga, castanha, bacon, chocolate e frito seco.
    Regra física: proteína + carboidrato + gordura nunca somam mais que 100g
    em 100g de alimento (o resto é água e fibra).
 4. VÁRIOS ALIMENTOS: NUNCA some nem calcule média. Liste cada alimento
