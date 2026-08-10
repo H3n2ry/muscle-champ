@@ -173,6 +173,17 @@ Não invente acompanhamentos que não foram citados/vistos.''';
     'abacate': (96, 1.2, 6.0, 8.4),       'coco': (354, 3.3, 15.0, 33.0),
     'uva passa': (299, 3.1, 79.0, 0.5),   'damasco seco': (241, 3.4, 63.0, 0.5),
     'tamara': (282, 2.5, 75.0, 0.4),
+    // Chaves genéricas: a IA às vezes devolve o nome curto ("arroz", "leite").
+    // O matcher prefere a chave mais longa, então "arroz integral" continua
+    // ganhando de "arroz" quando o nome é específico.
+    'arroz': (128, 2.5, 28.0, 0.2),        'leite': (61, 3.2, 4.8, 3.3),
+    'queijo': (264, 17.0, 3.0, 20.0),      'pao': (300, 8.0, 58.0, 3.0),
+    'carne': (219, 32.0, 0.0, 9.0),        'peixe': (128, 26.0, 0.0, 2.7),
+    'suco': (45, 0.6, 10.5, 0.2),          'iogurte': (60, 4.0, 4.7, 3.0),
+    'vinho': (83, 0.1, 2.6, 0.0),          'refresco': (30, 0.0, 7.5, 0.0),
+    'biscoito': (450, 7.0, 70.0, 15.0),    'bolacha': (450, 7.0, 70.0, 15.0),
+    'torta': (250, 6.0, 25.0, 14.0),       'sopa': (50, 3.0, 6.0, 1.5),
+    'salgado': (280, 8.0, 30.0, 14.0),     'doce': (350, 3.0, 60.0, 11.0),
     // Base da dieta
     'arroz branco': (128, 2.5, 28.0, 0.2), 'arroz integral': (124, 2.6, 26.0, 1.0),
     'feijao': (76, 4.8, 13.6, 0.5),        'lentilha': (116, 9.0, 20.0, 0.4),
@@ -222,10 +233,109 @@ Não invente acompanhamentos que não foram citados/vistos.''';
     'brocolis': (35, 2.8, 7.0, 0.4),       'tomate': (18, 0.9, 3.9, 0.2),
     'cenoura': (41, 0.9, 10.0, 0.2),       'legumes': (35, 2.0, 7.0, 0.3),
     'molho de tomate': (35, 1.5, 7.0, 0.3), 'ketchup': (100, 1.2, 24.0, 0.2),
-    'suco de laranja': (45, 0.7, 10.4, 0.2), 'refrigerante': (42, 0.0, 10.6, 0.0),
-    'cerveja': (43, 0.5, 3.6, 0.0),        'cafe': (2, 0.1, 0.3, 0.0),
+    // Bebidas (por 100ml — densidade ~1g/ml, tratadas como gramas)
+    'agua': (0, 0.0, 0.0, 0.0),            'agua de coco': (22, 0.7, 5.3, 0.2),
+    'cafe': (2, 0.1, 0.3, 0.0),            'cafe com acucar': (20, 0.1, 5.0, 0.0),
+    'cafe com leite': (40, 2.0, 3.5, 1.8), 'cappuccino': (65, 2.5, 9.0, 2.2),
+    'cha': (1, 0.0, 0.2, 0.0),             'cha gelado': (30, 0.0, 7.5, 0.0),
+    'refrigerante': (42, 0.0, 10.6, 0.0),  'refrigerante zero': (0, 0.0, 0.1, 0.0),
+    'suco de laranja': (45, 0.7, 10.4, 0.2), 'suco de uva': (60, 0.4, 15.0, 0.1),
+    'suco de caixa': (50, 0.3, 12.0, 0.1), 'suco em po': (30, 0.0, 7.5, 0.0),
+    'suco natural': (45, 0.6, 10.5, 0.2),  'limonada': (35, 0.1, 9.0, 0.0),
+    'leite desnatado': (35, 3.4, 5.0, 0.2), 'iogurte liquido': (70, 2.5, 12.0, 1.2),
+    'vitamina de banana': (90, 3.0, 15.0, 2.0), 'smoothie': (70, 1.5, 15.0, 0.5),
+    'cerveja': (43, 0.5, 3.6, 0.0),        'cerveja sem alcool': (25, 0.4, 5.5, 0.0),
+    'vinho tinto': (83, 0.1, 2.6, 0.0),    'vinho branco': (82, 0.1, 2.6, 0.0),
+    'destilado': (231, 0.0, 0.0, 0.0),     'vodka': (231, 0.0, 0.0, 0.0),
+    'cachaca': (231, 0.0, 0.0, 0.0),       'whisky': (250, 0.0, 0.0, 0.0),
+    'caipirinha': (150, 0.0, 15.0, 0.0),   'energetico': (45, 0.0, 11.0, 0.0),
+    'energetico zero': (3, 0.0, 0.5, 0.0), 'isotonico': (25, 0.0, 6.0, 0.0),
     'achocolatado': (80, 3.0, 13.0, 2.0),
   };
+
+  /// Peso de uma unidade de medida caseira, em gramas.
+  ///
+  /// A IA informa a medida como o usuário falou ("2 ovos", "1 concha de
+  /// feijão") e a conversão para gramas acontece aqui — estimar peso é
+  /// medição, e o modelo é ruim nisso. Chave: 'unidade|alimento' quando o
+  /// peso depende do alimento, ou só 'unidade' para o padrão.
+  static const Map<String, double> _kMedidas = {
+    // unidade (peça inteira)
+    'unidade|ovo': 50,          'unidade|pao frances': 50,
+    'unidade|banana': 100,      'unidade|maca': 130,
+    'unidade|laranja': 180,     'unidade|pera': 160,
+    'unidade|tangerina': 120,   'unidade|mexerica': 120,
+    'unidade|kiwi': 75,         'unidade|pessego': 130,
+    'unidade|ameixa': 60,       'unidade|goiaba': 150,
+    'unidade|coxinha': 80,      'unidade|pastel': 100,
+    'unidade|esfiha': 80,       'unidade|pao de queijo': 30,
+    'unidade|hamburguer': 200,  'unidade|sushi': 25,
+    'unidade|brigadeiro': 20,   'unidade|pacoca': 25,
+    'unidade': 100,             // padrão quando o alimento não está listado
+    // fatia
+    'fatia|pizza': 110,         'fatia|pao de forma': 25,
+    'fatia|queijo': 20,         'fatia|presunto': 15,
+    'fatia|bolo': 80,           'fatia|mamao': 150,
+    'fatia|melancia': 200,      'fatia|abacaxi': 80,
+    'fatia': 40,
+    // colheres
+    'colher de sopa|arroz': 25, 'colher de sopa|feijao': 20,
+    'colher de sopa|azeite': 10, 'colher de sopa|oleo': 10,
+    'colher de sopa|acucar': 12, 'colher de sopa|manteiga': 12,
+    'colher de sopa|requeijao': 15, 'colher de sopa|maionese': 15,
+    'colher de sopa|aveia': 15, 'colher de sopa|farofa': 20,
+    'colher de sopa': 15,
+    'colher de cha|acucar': 4,  'colher de cha': 5,
+    'colher de servir|arroz': 100, 'colher de servir': 80,
+    // porções servidas
+    'concha|feijao': 80,        'concha': 100,
+    'file|frango': 120,         'file|carne': 100,   'file': 120,
+    'bife|carne': 100,          'bife': 100,
+    'prato|arroz': 150,         'prato|massa': 300,
+    'prato|feijoada': 400,      'prato': 400,
+    'marmita': 450,             'porcao': 100,
+    'cumbuca|acai': 300,        'cumbuca': 300,
+    // líquidos (ml ≈ g)
+    'copo|leite': 200,          'copo|suco': 250,
+    'copo|refrigerante': 250,   'copo|cerveja': 300,
+    'copo': 250,
+    'xicara|arroz': 160,        'xicara|cafe': 150,  'xicara': 240,
+    'lata': 350,                'garrafa': 500,
+    'taca|vinho': 150,          'taca': 150,
+    'dose|destilado': 50,       'dose': 50,
+  };
+
+  /// Converte (quantidade, unidade, alimento) em gramas.
+  /// Retorna null quando a unidade não é reconhecida.
+  static double? _resolverPeso(double qtd, String? unidade, String? alimento) {
+    if (unidade == null || qtd <= 0) return null;
+    final u = _slug(unidade);
+    // gramas e ml vêm prontos
+    if (u == 'g' || u == 'grama' || u == 'gramas' ||
+        u == 'ml' || u == 'mililitro' || u == 'mililitros') {
+      return qtd;
+    }
+    if (u == 'kg' || u == 'quilo' || u == 'quilos') return qtd * 1000;
+    if (u == 'l' || u == 'litro' || u == 'litros') return qtd * 1000;
+
+    final a = alimento == null ? '' : _slug(alimento);
+    // procura 'unidade|alimento' mais específico, depois só 'unidade'
+    String? melhor;
+    for (final chave in _kMedidas.keys) {
+      final partes = chave.split('|');
+      if (partes[0] != u) continue;
+      if (partes.length == 1) {
+        melhor ??= chave;
+      } else if (a.contains(partes[1]) &&
+          (melhor == null ||
+              !melhor.contains('|') ||
+              partes[1].length > melhor.split('|')[1].length)) {
+        melhor = chave;
+      }
+    }
+    final peso = melhor == null ? null : _kMedidas[melhor];
+    return peso == null ? null : qtd * peso;
+  }
 
   static String _slug(String s) {
     const de = 'àáâãäåçèéêëìíîïñòóôõöùúûüý';
@@ -283,10 +393,15 @@ Não invente acompanhamentos que não foram citados/vistos.''';
       for (final it in items) {
         if (it is! Map) continue;
         final m = Map<String, dynamic>.from(it);
-        final w = num0(m['weight_g']).clamp(0.0, 3000.0);
+        // Preferido: a IA manda a medida como o usuário falou (qty + unit) e
+        // o app converte. weight_g fica como retrocompatibilidade.
+        final nome = m['name'] as String?;
+        final w = (_resolverPeso(num0(m['qty']), m['unit'] as String?, nome) ??
+                num0(m['weight_g']))
+            .clamp(0.0, 3000.0);
         if (w <= 0) continue;
         // Alimento conhecido → usa os valores oficiais, ignora os da IA
-        final oficial = _lookupDensity(m['name'] as String?);
+        final oficial = _lookupDensity(nome);
         var p = (oficial?.$2 ?? num0(m['protein_per_100g'])) * w / 100;
         var c = (oficial?.$3 ?? num0(m['carbs_per_100g'])) * w / 100;
         var f = (oficial?.$4 ?? num0(m['fat_per_100g'])) * w / 100;
@@ -321,7 +436,12 @@ Não invente acompanhamentos que não foram citados/vistos.''';
       }
     }
 
-    final weight = num0(raw['weight_g']).clamp(1.0, 3000.0);
+    // Item único: a IA devolve o objeto direto, sem o array "items".
+    // Aceita qty/unit (preferido) e weight_g (retrocompatibilidade).
+    final weight = (_resolverPeso(
+                num0(raw['qty']), raw['unit'] as String?, raw['name'] as String?) ??
+            num0(raw['weight_g']))
+        .clamp(1.0, 3000.0);
 
     // Caminho preferido: a IA informou os valores por 100g → app faz a conta.
     // Se o alimento for conhecido, a densidade oficial tem prioridade.
@@ -436,22 +556,28 @@ $_kNutritionReference
 
 $_kAtwaterRule
 
-QUANTIDADE:
-- Se o usuário informar gramas/ml, use exatamente esse valor.
-- Se informar medida caseira (ovo, colher, fatia, concha, filé), converta pela tabela.
-- Se não informar quantidade nenhuma, use a porção caseira típica do alimento
-  (ex: "arroz" = 1 colher de servir = 100g; "frango" = 1 filé = 120g).
-- "weight_g" é o peso TOTAL somando todos os itens citados.
+QUANTIDADE — NÃO converta para gramas. O aplicativo converte.
+Informe a medida do jeito que o usuário falou, em "qty" (número) e "unit":
+- unidades aceitas: g, ml, kg, l, unidade, fatia, colher de sopa, colher de chá,
+  colher de servir, concha, file, bife, prato, marmita, porcao, cumbuca,
+  copo, xicara, lata, garrafa, taca, dose
+- "2 ovos"            -> qty 2, unit "unidade"
+- "1 concha de feijão"-> qty 1, unit "concha"
+- "200g de frango"    -> qty 200, unit "g"
+- "1 copo de suco"    -> qty 1, unit "copo"
+- "meia banana"       -> qty 0.5, unit "unidade"
+- Sem quantidade dita: use a porção típica (1 unidade / 1 porção / 1 copo)
 
 Retorne SOMENTE JSON válido, sem texto antes ou depois, com UM item por
 alimento citado (mesmo que seja só um):
 {"name":"Resumo curto da refeição","items":[
-  {"name":"2 ovos cozidos","weight_g":100,"protein_per_100g":13.0,"carbs_per_100g":1.1,"fat_per_100g":9.5},
-  {"name":"1 fatia de pizza","weight_g":110,"protein_per_100g":12.0,"carbs_per_100g":30.0,"fat_per_100g":11.0}
+  {"name":"ovo cozido","qty":2,"unit":"unidade","protein_per_100g":13.0,"carbs_per_100g":1.1,"fat_per_100g":9.5},
+  {"name":"pizza de calabresa","qty":1,"unit":"fatia","protein_per_100g":12.0,"carbs_per_100g":30.0,"fat_per_100g":11.0}
 ]}
 - "name" do topo: resumo curto em português da refeição inteira
-- cada item: nome, peso em gramas e os valores POR 100g daquele alimento
-- NÃO envie "calories", nem totais, nem médias — o app soma e calcula tudo''',
+- "name" do item: o alimento SEM a quantidade (use "ovo cozido", não "2 ovos")
+- os *_per_100g: densidade daquele alimento, nunca multiplicada pela quantidade
+- NÃO envie "calories", "weight_g", totais nem médias — o app calcula tudo''',
         },
         {
           'role': 'user',
