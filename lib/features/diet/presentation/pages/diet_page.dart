@@ -2597,6 +2597,9 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
   // ── IA ─────────────────────────────────────────────────────────────────────
   final _aiCtrl = TextEditingController();
   Map<String, dynamic>? _aiResult;
+  /// Peso ajustado pelo usuário no modo texto. Medidas como "1 prato de arroz"
+  /// variam muito de pessoa pra pessoa — nenhuma tabela resolve, só quem comeu.
+  double? _aiAdjustedWeight;
   bool _aiLoading = false;
   String? _aiError;
 
@@ -2669,6 +2672,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
       _aiLoading = true;
       _aiError = null;
       _aiResult = null;
+      _aiAdjustedWeight = null;
     });
     try {
       final result = await GroqService.calculateFoodMacros(desc);
@@ -2805,12 +2809,15 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
       };
     }
     if (_mode == _MealInputMode.ia && _aiResult != null) {
+      final base = (_aiResult!['weight_g'] as num?)?.toDouble() ?? 100;
+      final ratio = base > 0 ? (_aiAdjustedWeight ?? base) / base : 1.0;
       return {
         'meal_name': _aiResult!['name'] ?? 'Alimento',
-        'calories': (_aiResult!['calories'] as num).toInt(),
-        'protein': (_aiResult!['protein'] as num).toDouble(),
-        'carbs': (_aiResult!['carbs'] as num).toDouble(),
-        'fat': (_aiResult!['fat'] as num).toDouble(),
+        'calories': ((_aiResult!['calories'] as num) * ratio).round(),
+        'protein':
+            ((_aiResult!['protein'] as num) * ratio * 10).round() / 10,
+        'carbs': ((_aiResult!['carbs'] as num) * ratio * 10).round() / 10,
+        'fat': ((_aiResult!['fat'] as num) * ratio * 10).round() / 10,
       };
     }
     if (_mode == _MealInputMode.foto && _photoResult != null) {
@@ -3284,16 +3291,93 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
 
         if (_aiResult != null) ...[
           const SizedBox(height: 16),
-          _NutritionPreview(
-            name: _aiResult!['name'] as String? ?? 'Alimento',
-            weightG:
-                (_aiResult!['weight_g'] as num?)?.toDouble() ?? 100,
-            calories: (_aiResult!['calories'] as num).toInt(),
-            protein: (_aiResult!['protein'] as num).toDouble(),
-            carbs: (_aiResult!['carbs'] as num).toDouble(),
-            fat: (_aiResult!['fat'] as num).toDouble(),
-            isAi: true,
-          ),
+          Builder(builder: (_) {
+            final base =
+                (_aiResult!['weight_g'] as num?)?.toDouble() ?? 100;
+            final w = _aiAdjustedWeight ?? base;
+            final ratio = base > 0 ? w / base : 1.0;
+            final maxSlider = (base * 3).clamp(200.0, 2000.0);
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _NutritionPreview(
+                  name: _aiResult!['name'] as String? ?? 'Alimento',
+                  weightG: w,
+                  calories:
+                      ((_aiResult!['calories'] as num) * ratio).round(),
+                  protein:
+                      ((_aiResult!['protein'] as num) * ratio * 10).round() /
+                          10,
+                  carbs:
+                      ((_aiResult!['carbs'] as num) * ratio * 10).round() / 10,
+                  fat: ((_aiResult!['fat'] as num) * ratio * 10).round() / 10,
+                  isAi: true,
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(14),
+                    border:
+                        Border.all(color: AppColors.surfaceContainerHigh),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.tune,
+                              size: 14, color: AppColors.onSurfaceVariant),
+                          const SizedBox(width: 6),
+                          Text('AJUSTAR PESO',
+                              style: AppTypography.labelSm.copyWith(
+                                  fontSize: 10, letterSpacing: 1.5)),
+                          const Spacer(),
+                          Text('${w.round()}g',
+                              style: AppTypography.labelSm.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w700)),
+                          if (_aiAdjustedWeight != null) ...[
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () => setState(
+                                  () => _aiAdjustedWeight = null),
+                              child: Text('resetar',
+                                  style: AppTypography.bodySm.copyWith(
+                                      color: AppColors.onSurfaceVariant,
+                                      fontSize: 11,
+                                      decoration:
+                                          TextDecoration.underline)),
+                            ),
+                          ],
+                        ],
+                      ),
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          activeTrackColor: AppColors.primary,
+                          inactiveTrackColor:
+                              AppColors.primary.withOpacity(0.15),
+                          thumbColor: AppColors.primary,
+                          overlayColor: AppColors.primary.withOpacity(0.1),
+                          trackHeight: 3,
+                          thumbShape: const RoundSliderThumbShape(
+                              enabledThumbRadius: 8),
+                        ),
+                        child: Slider(
+                          value: w.clamp(10, maxSlider),
+                          min: 10,
+                          max: maxSlider,
+                          onChanged: (v) => setState(
+                              () => _aiAdjustedWeight = v.roundToDouble()),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          }),
         ],
       ],
     );

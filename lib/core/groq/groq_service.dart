@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'groq_config.dart';
+import 'taco_table.dart';
 
 class GroqService {
   GroqService._();
@@ -351,9 +352,108 @@ Não invente acompanhamentos que não foram citados/vistos.''';
 
   /// Busca a densidade oficial pelo nome do alimento. Prefere a correspondência
   /// mais específica (ex: "peito de frango" antes de "frango").
-  static (double, double, double, double)? _lookupDensity(String? name) {
+  /// Densidade por categoria — usada quando o alimento não está em nenhuma
+  /// tabela. A IA classifica (tarefa que ela faz bem) em vez de estimar
+  /// números (tarefa que ela faz mal).
+  static const Map<String, (double, double, double, double)> _kCategoria = {
+    'verdura': (25, 1.8, 4.5, 0.3),
+    'legume': (40, 2.0, 8.0, 0.3),
+    'fruta': (55, 0.8, 13.0, 0.3),
+    'fruta_seca': (280, 3.0, 70.0, 0.5),
+    'cereal': (130, 3.0, 27.0, 0.5),
+    'leguminosa': (90, 6.0, 15.0, 0.6),
+    'tuberculo': (90, 1.8, 20.0, 0.2),
+    'massa': (150, 5.5, 30.0, 1.0),
+    'pao': (280, 8.5, 53.0, 3.5),
+    'biscoito': (450, 7.0, 70.0, 15.0),
+    'carne_magra': (150, 28.0, 0.0, 4.0),
+    'carne_gorda': (280, 26.0, 0.0, 19.0),
+    'embutido': (300, 16.0, 2.0, 25.0),
+    'peixe': (140, 24.0, 0.0, 4.5),
+    'ovo': (143, 13.0, 1.1, 9.5),
+    'laticinio': (70, 4.0, 5.0, 3.5),
+    'queijo': (300, 20.0, 3.0, 23.0),
+    'oleaginosa': (570, 20.0, 20.0, 48.0),
+    'gordura': (880, 0.0, 0.0, 99.0),
+    'doce_cremoso': (220, 4.0, 35.0, 7.0),
+    'doce_concentrado': (420, 6.0, 60.0, 18.0),
+    'frito': (320, 8.0, 32.0, 18.0),
+    'prato_pronto': (170, 10.0, 15.0, 8.0),
+    'sanduiche': (250, 12.0, 26.0, 11.0),
+    'sopa': (50, 3.0, 6.0, 1.5),
+    'bebida_zero': (2, 0.0, 0.4, 0.0),
+    'bebida_acucarada': (45, 0.2, 11.0, 0.0),
+    'suco_natural': (45, 0.6, 10.5, 0.2),
+    'bebida_alcoolica': (70, 0.3, 3.0, 0.0),
+    'suplemento': (380, 60.0, 20.0, 6.0),
+  };
+
+  static List<String> _tokens(String s) =>
+      _slug(s).split(' ').where((t) => t.length > 2).toList();
+
+  /// Busca na TACO por sobreposição de palavras — os nomes lá são formais
+  /// ("Arroz, integral, cozido"), então `contains` não funciona.
+  /// Radical da palavra: corta a desinência de gênero/número para que
+  /// "moido"/"moida", "cozido"/"cozida" e "file"/"files" casem.
+  static String _raiz(String t) =>
+      t.length <= 4 ? t : t.substring(0, t.length - 1);
+
+  static bool _casaToken(String a, String b) =>
+      a == b || (a.length > 4 && b.length > 4 && _raiz(a) == _raiz(b));
+
+  /// Palavras que apenas descrevem preparo/corte — podem sobrar na chave da
+  /// TACO sem mudar de qual alimento se trata.
+  static const Set<String> _kPreparo = {
+    'cru', 'crua', 'crus', 'cruas', 'cozido', 'cozida', 'cozidos', 'cozidas',
+    'grelhado', 'grelhada', 'assado', 'assada', 'refogado', 'refogada',
+    'frito', 'frita', 'fritas', 'torrado', 'torrada', 'tostado', 'tostada',
+    'seco', 'seca', 'fresco', 'fresca', 'natural', 'defumado', 'defumada',
+    'sem', 'com', 'pele', 'osso', 'casca', 'sal', 'agua', 'file', 'files',
+    'seco3', 'maduro', 'madura', 'seleta', 'inteiro', 'inteira',
+  };
+
+  /// Busca na TACO de forma CONSERVADORA: só aceita quando a correspondência
+  /// é inequívoca. Um valor plausível porém errado (ex: "abacaxi" cair em
+  /// "abacaxi polpa congelada", 31kcal em vez de 48) é pior que não achar —
+  /// sem match, a categoria assume, e ela é calibrada.
+  ///
+  /// Critérios: o substantivo principal casa exatamente, todas as palavras da
+  /// consulta são explicadas pela chave, e o que sobra na chave é só preparo.
+  static (double, double, double, double)? _lookupTaco(String name) {
+    final q = _tokens(name);
+    if (q.isEmpty) return null;
+    final cabeca = q.first;
+
+    String? melhor;
+    var menosSobra = 1 << 30;
+    for (final chave in kTacoTable.keys) {
+      final kt = chave.split(' ').where((t) => t.length > 2).toList();
+      if (kt.isEmpty || kt.first != cabeca) continue; // principal exato
+
+      // toda palavra da consulta precisa aparecer na chave
+      if (!q.every((x) => kt.any((k) => _casaToken(k, x)))) continue;
+
+      // o que sobra na chave só pode ser descrição de preparo
+      final sobra =
+          kt.where((k) => !q.any((x) => _casaToken(k, x))).toList();
+      if (sobra.any((s) => !_kPreparo.contains(s))) continue;
+
+      // entre as válidas, a mais simples (menos palavras sobrando)
+      if (sobra.length < menosSobra) {
+        menosSobra = sobra.length;
+        melhor = chave;
+      }
+    }
+    return melhor == null ? null : kTacoTable[melhor];
+  }
+
+  /// Cascata: tabela curada → TACO → categoria informada pela IA.
+  static (double, double, double, double)? _lookupDensity(String? name,
+      [String? categoria]) {
     if (name == null || name.isEmpty) return null;
     final n = _slug(name);
+
+    // 1) tabela curada (calibrada à mão, cobre pratos prontos e bebidas)
     String? melhor;
     for (final chave in _kDensity.keys) {
       if (n.contains(chave) &&
@@ -361,7 +461,18 @@ Não invente acompanhamentos que não foram citados/vistos.''';
         melhor = chave;
       }
     }
-    return melhor == null ? null : _kDensity[melhor];
+    if (melhor != null) return _kDensity[melhor];
+
+    // 2) TACO (581 alimentos básicos brasileiros)
+    final taco = _lookupTaco(name);
+    if (taco != null) return taco;
+
+    // 3) categoria classificada pela IA
+    if (categoria != null) {
+      final c = _slug(categoria).replaceAll(' ', '_');
+      if (_kCategoria.containsKey(c)) return _kCategoria[c];
+    }
+    return null;
   }
 
   /// Normaliza e valida a resposta nutricional da IA.
@@ -401,7 +512,7 @@ Não invente acompanhamentos que não foram citados/vistos.''';
             .clamp(0.0, 3000.0);
         if (w <= 0) continue;
         // Alimento conhecido → usa os valores oficiais, ignora os da IA
-        final oficial = _lookupDensity(nome);
+        final oficial = _lookupDensity(nome, m['categoria'] as String?);
         var p = (oficial?.$2 ?? num0(m['protein_per_100g'])) * w / 100;
         var c = (oficial?.$3 ?? num0(m['carbs_per_100g'])) * w / 100;
         var f = (oficial?.$4 ?? num0(m['fat_per_100g'])) * w / 100;
@@ -445,7 +556,8 @@ Não invente acompanhamentos que não foram citados/vistos.''';
 
     // Caminho preferido: a IA informou os valores por 100g → app faz a conta.
     // Se o alimento for conhecido, a densidade oficial tem prioridade.
-    final oficial = _lookupDensity(raw['name'] as String?);
+    final oficial =
+        _lookupDensity(raw['name'] as String?, raw['categoria'] as String?);
     final p100 = oficial?.$2 ?? num0(raw['protein_per_100g']);
     final c100 = oficial?.$3 ?? num0(raw['carbs_per_100g']);
     final f100 = oficial?.$4 ?? num0(raw['fat_per_100g']);
@@ -571,13 +683,21 @@ Informe a medida do jeito que o usuário falou, em "qty" (número) e "unit":
 Retorne SOMENTE JSON válido, sem texto antes ou depois, com UM item por
 alimento citado (mesmo que seja só um):
 {"name":"Resumo curto da refeição","items":[
-  {"name":"ovo cozido","qty":2,"unit":"unidade","protein_per_100g":13.0,"carbs_per_100g":1.1,"fat_per_100g":9.5},
-  {"name":"pizza de calabresa","qty":1,"unit":"fatia","protein_per_100g":12.0,"carbs_per_100g":30.0,"fat_per_100g":11.0}
+  {"name":"ovo cozido","qty":2,"unit":"unidade","categoria":"ovo","protein_per_100g":13.0,"carbs_per_100g":1.1,"fat_per_100g":9.5},
+  {"name":"pizza de calabresa","qty":1,"unit":"fatia","categoria":"prato_pronto","protein_per_100g":12.0,"carbs_per_100g":30.0,"fat_per_100g":11.0}
 ]}
 - "name" do topo: resumo curto em português da refeição inteira
 - "name" do item: o alimento SEM a quantidade (use "ovo cozido", não "2 ovos")
 - os *_per_100g: densidade daquele alimento, nunca multiplicada pela quantidade
-- NÃO envie "calories", "weight_g", totais nem médias — o app calcula tudo''',
+- NÃO envie "calories", "weight_g", totais nem médias — o app calcula tudo
+
+"categoria" — escolha UMA desta lista (o app usa como rede de segurança
+quando não reconhece o alimento):
+verdura, legume, fruta, fruta_seca, cereal, leguminosa, tuberculo, massa,
+pao, biscoito, carne_magra, carne_gorda, embutido, peixe, ovo, laticinio,
+queijo, oleaginosa, gordura, doce_cremoso, doce_concentrado, frito,
+prato_pronto, sanduiche, sopa, bebida_zero, bebida_acucarada, suco_natural,
+bebida_alcoolica, suplemento''',
         },
         {
           'role': 'user',
