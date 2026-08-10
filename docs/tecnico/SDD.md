@@ -26,7 +26,7 @@ Usuários brasileiros interessados em fitness que querem rastreamento simples e 
 | Usuário autenticado | Gerar treino, registrar exercício, adicionar refeição (foto/texto), ver ranking, gerenciar amigos, editar perfil, ver dashboard |
 | Sistema (Supabase triggers) | Criar profile após cadastro, registrar pontos, atualizar streaks |
 | IA Groq (LLaMA 3.3 70B) | Gerar lista de exercícios, calcular macros por texto |
-| IA Groq (LLaMA 4 Scout Vision) | Identificar alimentos em fotos e retornar macros |
+| IA Groq (Qwen 3.6 27B Vision) | Identificar alimentos em fotos e retornar macros |
 
 ### 1.4 Escopo do sistema
 ```
@@ -177,7 +177,7 @@ Ver `docs/tecnico/DEPENDENCIES.md` para análise completa.
 | `generateWorkout(muscleGroup)` | llama-3.3-70b-versatile | 0.7 | padrão | `{"exercises":[{name, sets, reps, tip}]}` |
 | `calculateFoodMacros(description)` | llama-3.3-70b-versatile | 0.2 | padrão | `{name, weight_g, calories, protein, carbs, fat}` |
 | `generateDietPlan(calories, goalType, {goalProtein?, goalCarbs?, goalFat?})` | llama-3.3-70b-versatile | 0.3 | padrão | `{target_calories, goal_protein_g, goal_carbs_g, goal_fat_g, meals:[{type, foods:[...]}]}` |
-| `analyzeFoodPhoto(base64, portionHint?)` | llama-4-scout-17b-16e-instruct | 0.2 | 300 | `{name, weight_g, calories, protein, carbs, fat}` ou `{error}` |
+| `analyzeFoodPhoto(base64, portionHint?)` | qwen3.6-27b | 0.2 | 300 | `{name, weight_g, calories, protein, carbs, fat}` ou `{error}` |
 
 ### 4.4 Variáveis de configuração
 
@@ -188,7 +188,7 @@ Ver `docs/tecnico/DEPENDENCIES.md` para análise completa.
 | Groq apiKey | Supabase Vault (`groq_api_key`) | server-side; NUNCA no cliente |
 | Groq proxy | `core/groq/groq_config.dart` | `${supabaseUrl}/functions/v1/groq-proxy` |
 | Groq textModel | `core/groq/groq_config.dart` | `llama-3.3-70b-versatile` |
-| Groq visionModel | `core/groq/groq_config.dart` | `meta-llama/llama-4-scout-17b-16e-instruct` |
+| Groq visionModel | `core/groq/groq_config.dart` | `qwen/qwen3.6-27b` |
 
 ⚠️ **Ambas as chaves estão hardcoded no código-fonte.** Para produção, considerar obfuscação mínima ou variáveis de ambiente via `--dart-define`.
 
@@ -237,7 +237,7 @@ DietPage (foto mode)
     → decode image → resize ≤768px → encode JPEG 80%
     → detect MIME (PNG magic bytes vs JPEG)
   → GroqService.analyzeFoodPhoto(optimized, portionHint?)
-    → POST /openai/v1/chat/completions (LLaMA 4 Scout Vision)
+    → POST /openai/v1/chat/completions (Qwen 3.6 27B Vision)
     → extract JSON via RegExp (\\{[\\s\\S]*\\})
   → show result + weight slider
     → _adjustedWeight altera calorias/macros proporcionalmente

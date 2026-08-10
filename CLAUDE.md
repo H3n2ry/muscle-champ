@@ -194,7 +194,7 @@ Four static methods, all POSTing to the proxy (which forwards to `https://api.gr
 
 **Image optimization** (`_optimizeImage()`): detects PNG via magic bytes; resizes to max 768px; encodes as JPEG 80%. Returns `(String b64, String mime)`. Never reduce `_maxImagePx` below 768.
 
-**Models**: text → `llama-3.3-70b-versatile`, vision → `meta-llama/llama-4-scout-17b-16e-instruct`
+**Models**: text → `llama-3.3-70b-versatile`, vision → `qwen/qwen3.6-27b`
 
 ## Interactive Tutorial (`tutorial_overlay.dart`)
 

@@ -10,7 +10,10 @@ class GroqConfig {
       '${Secrets.supabaseUrl}/functions/v1/groq-proxy';
 
   static const String textModel  = 'llama-3.3-70b-versatile';
-  static const String visionModel = 'meta-llama/llama-4-scout-17b-16e-instruct';
+  // meta-llama/llama-4-scout-17b-16e-instruct foi desligado pela Groq em
+  // 17/07/2026. Substituto oficial para visão: qwen/qwen3.6-27b (multimodal,
+  // 131k de contexto, aceita até 5 imagens por request e suporta JSON mode).
+  static const String visionModel = 'qwen/qwen3.6-27b';
 
   static bool get isConfigured =>
       Supabase.instance.client.auth.currentSession != null;

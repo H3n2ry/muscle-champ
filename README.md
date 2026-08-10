@@ -20,7 +20,7 @@ App fitness gamificado para Android e Web. Registre treinos, acompanhe sua dieta
 | State management | Riverpod 2.x |
 | Navegação | GoRouter |
 | Backend | Supabase (Auth + PostgreSQL + Storage) |
-| IA | Groq API — LLaMA 3.3 70B (texto) + LLaMA 4 Scout (visão) |
+| IA | Groq API — LLaMA 3.3 70B (texto) + Qwen 3.6 27B (visão) |
 | Hospedagem web | Vercel |
 
 ## Setup

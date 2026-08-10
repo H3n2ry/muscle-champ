@@ -75,7 +75,7 @@ DietPage (photo mode)
   → base64 encode
   → GroqService._optimizeImage()   ← resize ≤768px, JPEG 80%
   → GroqService.analyzeFoodPhoto()
-  → Groq llama-4-scout-17b (vision)
+  → Groq qwen3.6-27b (vision)
   → JSON {name, weight_g, calories, protein, carbs, fat}
   → User ajusta peso via slider (recalcula macros proporcionalmente)
   → DietController.addMeal()
@@ -129,7 +129,7 @@ O `DietRepository` verifica diariamente se já existe uma linha `diet_goal_met` 
 |---------|--------|-----------------|
 | `generateWorkout` | llama-3.3-70b | ~400 tokens |
 | `calculateFoodMacros` | llama-3.3-70b | ~200 tokens |
-| `analyzeFoodPhoto` | llama-4-scout | ~590 tokens (imagem 768px JPEG 80%) |
+| `analyzeFoodPhoto` | qwen3.6-27b | ~590 tokens (imagem 768px JPEG 80%) |
 
 Com 10 usuários × 4 fotos/dia ≈ 23.600 tokens/dia (~5% da cota gratuita Groq de ~500k tokens/dia).
 

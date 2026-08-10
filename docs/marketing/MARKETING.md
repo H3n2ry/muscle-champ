@@ -8,7 +8,7 @@
 ## 1. Elevator Pitch
 
 ### Versão Técnica (30 segundos — devs/investidores)
-> "Muscle Champ é um app Flutter multiplataforma para fitness com IA integrada. Usa LLaMA 4 Vision para análise nutricional de fotos e LLaMA 3.3 para geração de treinos, com backend serverless no Supabase. Sistema de gamificação com pontos, ranking global e social via grafo de amizades."
+> "Muscle Champ é um app Flutter multiplataforma para fitness com IA integrada. Usa Qwen 3.6 27B Vision para análise nutricional de fotos e LLaMA 3.3 para geração de treinos, com backend serverless no Supabase. Sistema de gamificação com pontos, ranking global e social via grafo de amizades."
 
 ### Versão Usuário Final (15 segundos)
 > "Gera seu treino na hora com IA, tira foto da refeição e já calcula as calorias, e você ainda compete no ranking com seus amigos."
