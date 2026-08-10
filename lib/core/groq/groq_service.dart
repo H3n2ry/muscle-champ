@@ -29,8 +29,25 @@ Pão francês: 300kcal P8 C58 G3 | Pão de forma: 253kcal P9 C48 G3
 Aveia em flocos: 389kcal P17 C66 G7 | Tapioca (goma): 240kcal P0 C60 G0
 Leite integral: 61kcal P3.2 C4.8 G3.3 | Iogurte natural: 60kcal P4 C4.7 G3
 Queijo minas frescal: 264kcal P17 C3 G20 | Requeijão: 257kcal P10 C4 G22
-Banana: 89kcal P1.1 C23 G0.3 | Maçã: 52kcal P0.3 C14 G0.2 | Laranja: 47kcal P0.9 C12 G0.1
 Salada de folhas: 15kcal P1.4 C2.9 G0.2 | Legumes cozidos: 35kcal P2 C7 G0.3
+
+FRUTAS (por 100g, fruta fresca sem casca/semente — quase todas ficam entre
+30 e 70kcal; você costuma SUPERESTIMAR frutas, use exatamente estes valores):
+Abacaxi: 48kcal P0.9 C12.3 G0.1 | Melancia: 33kcal P0.9 C8.1 G0.2
+Melão: 29kcal P0.7 C7.5 G0.1 | Mamão: 45kcal P0.8 C11.6 G0.1
+Morango: 32kcal P0.7 C7.7 G0.3 | Acerola: 33kcal P0.9 C8 G0.2
+Laranja: 47kcal P0.9 C12 G0.1 | Tangerina: 53kcal P0.8 C13 G0.3
+Limão: 29kcal P1.1 C9 G0.3 | Maracujá (polpa): 68kcal P2 C13 G0.4
+Maçã: 52kcal P0.3 C14 G0.2 | Pera: 57kcal P0.4 C15 G0.1
+Pêssego: 39kcal P0.9 C10 G0.3 | Ameixa: 46kcal P0.7 C11 G0.3
+Goiaba: 54kcal P1.1 C13 G0.4 | Caju (fruta): 43kcal P0.8 C10 G0.3
+Kiwi: 61kcal P1.1 C15 G0.5 | Uva: 69kcal P0.7 C18 G0.2
+Manga: 60kcal P0.8 C15 G0.4 | Banana: 89kcal P1.1 C23 G0.3
+Caqui: 71kcal P0.6 C18 G0.2 | Figo: 74kcal P0.8 C19 G0.3
+Jaca: 95kcal P1.7 C24 G0.6 | Graviola: 62kcal P1 C15 G0.3
+Abacate: 96kcal P1.2 C6 G8.4 | Coco fresco: 354kcal P3.3 C15 G33
+Frutas secas (mais concentradas): Uva passa: 299kcal P3.1 C79 G0.5
+Damasco seco: 241kcal P3.4 C63 G0.5 | Tâmara: 282kcal P2.5 C75 G0.4
 Azeite/óleo: 884kcal P0 C0 G100 | Manteiga: 717kcal P0.9 C0.1 G81
 Castanhas/amendoim: 567kcal P26 C16 G49 | Whey protein (pó): 380kcal P78 C8 G5
 Açúcar: 387kcal P0 C100 G0 | Refrigerante: 42kcal P0 C10.6 G0
@@ -90,7 +107,9 @@ DE ONDE TIRAR OS VALORES POR 100g:
    force o alimento a virar outro só porque não está listada.
 3. ATENÇÃO — você tende a SUPERESTIMAR a densidade calórica. Sempre que usar
    conhecimento próprio, escolha o valor mais BAIXO da faixa plausível:
-   Verduras/legumes: 15-80 kcal/100g | Frutas: 30-100 (abacate/coco: 150-350)
+   Verduras/legumes: 15-80 kcal/100g
+   Frutas frescas: 30-70 (raras passam disso: banana 89, jaca 95, abacate 96;
+   só coco 354 e frutas SECAS 240-300 sao realmente caloricas)
    Carnes/peixes magros: 100-180 | Carnes gordas/embutidos: 250-400
    Grãos e massas cozidos: 100-160 | Pães e biscoitos: 250-450
    Laticínios: 40-120 (queijos duros: 250-400) | Castanhas/sementes: 500-650
@@ -123,11 +142,117 @@ EXEMPLO CORRETO — "2 ovos cozidos":
   {"name":"2 ovos cozidos","weight_g":100,"protein_per_100g":13,"carbs_per_100g":1.1,"fat_per_100g":9.5}
   (ERRADO seria dobrar para 26/2.2/19 — o peso já representa os 2 ovos)
 
-Se houver VÁRIOS alimentos diferentes, calcule a média ponderada por 100g do
-conjunto e informe o peso total.
-
 IMPORTANTE: seja conservador no peso. Na dúvida entre dois pesos, use o MENOR.
 Não invente acompanhamentos que não foram citados/vistos.''';
+
+  /// Densidades oficiais (por 100g) dos alimentos mais comuns — fonte TACO/USDA.
+  ///
+  /// Mesmo com a tabela no prompt, o modelo desvia ~10-15% para cima. Aqui os
+  /// valores são aplicados pelo app: quando o nome do item casa com um destes,
+  /// a densidade da IA é descartada e esta é usada. Alimento fora da lista
+  /// continua usando o valor do modelo.
+  /// Valores: (kcal, proteína, carboidrato, gordura) por 100g.
+  ///
+  /// As kcal são as oficiais da tabela, não a soma 4/4/9 — em alimentos com
+  /// fibra (frutas, vegetais, grãos) Atwater superestima ~10%, porque conta
+  /// fibra como 4kcal/g quando ela rende ~2.
+  static const Map<String, (double, double, double, double)> _kDensity = {
+    // Frutas — (kcal, P, C, G)
+    'abacaxi': (48, 0.9, 12.3, 0.1),      'melancia': (33, 0.9, 8.1, 0.2),
+    'melao': (29, 0.7, 7.5, 0.1),         'mamao': (45, 0.8, 11.6, 0.1),
+    'morango': (32, 0.7, 7.7, 0.3),       'acerola': (33, 0.9, 8.0, 0.2),
+    'laranja': (47, 0.9, 12.0, 0.1),      'tangerina': (53, 0.8, 13.0, 0.3),
+    'mexerica': (53, 0.8, 13.0, 0.3),     'limao': (29, 1.1, 9.0, 0.3),
+    'maracuja': (68, 2.0, 13.0, 0.4),     'maca': (52, 0.3, 14.0, 0.2),
+    'pera': (57, 0.4, 15.0, 0.1),         'pessego': (39, 0.9, 10.0, 0.3),
+    'ameixa': (46, 0.7, 11.0, 0.3),       'goiaba': (54, 1.1, 13.0, 0.4),
+    'kiwi': (61, 1.1, 15.0, 0.5),         'uva': (69, 0.7, 18.0, 0.2),
+    'manga': (60, 0.8, 15.0, 0.4),        'banana': (89, 1.1, 23.0, 0.3),
+    'caqui': (71, 0.6, 18.0, 0.2),        'figo': (74, 0.8, 19.0, 0.3),
+    'jaca': (95, 1.7, 24.0, 0.6),         'graviola': (62, 1.0, 15.0, 0.3),
+    'abacate': (96, 1.2, 6.0, 8.4),       'coco': (354, 3.3, 15.0, 33.0),
+    'uva passa': (299, 3.1, 79.0, 0.5),   'damasco seco': (241, 3.4, 63.0, 0.5),
+    'tamara': (282, 2.5, 75.0, 0.4),
+    // Base da dieta
+    'arroz branco': (128, 2.5, 28.0, 0.2), 'arroz integral': (124, 2.6, 26.0, 1.0),
+    'feijao': (76, 4.8, 13.6, 0.5),        'lentilha': (116, 9.0, 20.0, 0.4),
+    'batata': (87, 1.9, 20.0, 0.1),        'batata doce': (86, 1.6, 20.0, 0.1),
+    'macarrao': (158, 5.8, 31.0, 0.9),     'mandioca': (125, 1.0, 30.0, 0.3),
+    'aveia': (389, 17.0, 66.0, 7.0),       'tapioca': (240, 0.0, 60.0, 0.0),
+    'cuscuz': (113, 2.5, 25.0, 0.5),       'polenta': (85, 2.0, 18.0, 0.5),
+    'pao frances': (300, 8.0, 58.0, 3.0),  'pao de forma': (253, 9.0, 48.0, 3.0),
+    // Proteínas
+    'frango': (165, 31.0, 0.0, 3.6),       'peito de frango': (165, 31.0, 0.0, 3.6),
+    'coxa de frango': (209, 26.0, 0.0, 11.0), 'patinho': (219, 32.0, 0.0, 9.0),
+    'contrafile': (278, 29.0, 0.0, 18.0),  'picanha': (290, 26.0, 0.0, 20.0),
+    'carne moida': (220, 24.0, 0.0, 14.0), 'tilapia': (128, 26.0, 0.0, 2.7),
+    'salmao': (208, 22.0, 0.0, 13.0),      'sardinha': (200, 24.0, 0.0, 11.0),
+    'atum': (116, 26.0, 0.0, 1.0),         'ovo': (143, 13.0, 1.1, 9.5),
+    'clara de ovo': (52, 11.0, 0.7, 0.2),  'linguica': (300, 16.0, 1.0, 26.0),
+    'bacon': (540, 37.0, 1.4, 42.0),       'presunto': (145, 18.0, 1.5, 7.5),
+    'peito de peru': (100, 18.0, 2.0, 2.0),
+    // Laticínios e gorduras
+    'leite integral': (61, 3.2, 4.8, 3.3), 'iogurte natural': (60, 4.0, 4.7, 3.0),
+    'queijo minas': (264, 17.0, 3.0, 20.0), 'requeijao': (257, 10.0, 4.0, 22.0),
+    'azeite': (884, 0.0, 0.0, 100.0),      'oleo': (884, 0.0, 0.0, 100.0),
+    'manteiga': (717, 0.9, 0.1, 81.0),     'maionese': (680, 1.0, 2.0, 75.0),
+    'castanha': (567, 26.0, 16.0, 49.0),   'amendoim': (567, 26.0, 16.0, 49.0),
+    'whey': (380, 78.0, 8.0, 5.0),
+    // Doces
+    'doce de leite': (306, 5.5, 58.5, 6.0), 'leite condensado': (321, 7.9, 55.0, 8.7),
+    'brigadeiro': (400, 5.0, 55.0, 18.0),  'pudim': (150, 5.0, 24.0, 4.0),
+    'mousse de chocolate': (200, 4.0, 25.0, 10.0),
+    'bolo de chocolate': (370, 5.0, 52.0, 16.0), 'bolo': (300, 5.0, 50.0, 9.0),
+    'brownie': (400, 5.0, 50.0, 20.0),     'pacoca': (480, 14.0, 50.0, 25.0),
+    'goiabada': (270, 0.4, 68.0, 0.1),     'geleia': (250, 0.4, 62.0, 0.1),
+    'mel': (309, 0.3, 84.0, 0.0),          'acai': (58, 0.8, 6.2, 3.9),
+    'sorvete': (207, 3.5, 24.0, 11.0),     'chocolate': (535, 7.6, 59.0, 30.0),
+    'acucar': (387, 0.0, 100.0, 0.0),
+    // Pratos prontos
+    'sushi': (150, 8.0, 30.0, 1.5),        'yakisoba': (140, 7.0, 20.0, 3.5),
+    'estrogonofe': (150, 11.0, 6.0, 9.0),  'strogonoff': (150, 11.0, 6.0, 9.0),
+    'feijoada': (180, 12.0, 10.0, 10.0),   'pizza': (270, 12.0, 30.0, 11.0),
+    'lasanha': (165, 9.0, 15.0, 7.5),      'coxinha': (280, 8.0, 30.0, 14.0),
+    'pastel': (320, 8.0, 32.0, 18.0),      'hamburguer': (250, 12.0, 25.0, 11.0),
+    'batata frita': (312, 3.4, 41.0, 15.0), 'pao de queijo': (300, 6.0, 36.0, 14.0),
+    'esfiha': (250, 10.0, 30.0, 10.0),     'escondidinho': (150, 8.0, 15.0, 6.0),
+    'farofa': (400, 4.0, 60.0, 16.0),
+    // Vegetais e bebidas
+    'salada': (15, 1.4, 2.9, 0.2),         'alface': (15, 1.4, 2.9, 0.2),
+    'brocolis': (35, 2.8, 7.0, 0.4),       'tomate': (18, 0.9, 3.9, 0.2),
+    'cenoura': (41, 0.9, 10.0, 0.2),       'legumes': (35, 2.0, 7.0, 0.3),
+    'molho de tomate': (35, 1.5, 7.0, 0.3), 'ketchup': (100, 1.2, 24.0, 0.2),
+    'suco de laranja': (45, 0.7, 10.4, 0.2), 'refrigerante': (42, 0.0, 10.6, 0.0),
+    'cerveja': (43, 0.5, 3.6, 0.0),        'cafe': (2, 0.1, 0.3, 0.0),
+    'achocolatado': (80, 3.0, 13.0, 2.0),
+  };
+
+  static String _slug(String s) {
+    const de = 'àáâãäåçèéêëìíîïñòóôõöùúûüý';
+    const para = 'aaaaaaceeeeiiiinooooouuuuy';
+    var r = s.toLowerCase().trim();
+    for (var i = 0; i < de.length; i++) {
+      r = r.replaceAll(de[i], para[i]);
+    }
+    return r.replaceAll(RegExp(r'[^a-z0-9 ]'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+
+  /// Busca a densidade oficial pelo nome do alimento. Prefere a correspondência
+  /// mais específica (ex: "peito de frango" antes de "frango").
+  static (double, double, double, double)? _lookupDensity(String? name) {
+    if (name == null || name.isEmpty) return null;
+    final n = _slug(name);
+    String? melhor;
+    for (final chave in _kDensity.keys) {
+      if (n.contains(chave) &&
+          (melhor == null || chave.length > melhor.length)) {
+        melhor = chave;
+      }
+    }
+    return melhor == null ? null : _kDensity[melhor];
+  }
 
   /// Normaliza e valida a resposta nutricional da IA.
   ///
@@ -151,14 +276,20 @@ Não invente acompanhamentos que não foram citados/vistos.''';
     final items = raw['items'];
     if (items is List && items.isNotEmpty) {
       var totalW = 0.0, totalP = 0.0, totalC = 0.0, totalF = 0.0;
+      // kcal somadas item a item: de tabela quando o alimento é conhecido,
+      // por Atwater quando não é. Misturar os dois é mais preciso do que
+      // aplicar Atwater no total (que superestima fibra dos conhecidos).
+      var totalKcal = 0.0;
       for (final it in items) {
         if (it is! Map) continue;
         final m = Map<String, dynamic>.from(it);
         final w = num0(m['weight_g']).clamp(0.0, 3000.0);
         if (w <= 0) continue;
-        var p = num0(m['protein_per_100g']) * w / 100;
-        var c = num0(m['carbs_per_100g']) * w / 100;
-        var f = num0(m['fat_per_100g']) * w / 100;
+        // Alimento conhecido → usa os valores oficiais, ignora os da IA
+        final oficial = _lookupDensity(m['name'] as String?);
+        var p = (oficial?.$2 ?? num0(m['protein_per_100g'])) * w / 100;
+        var c = (oficial?.$3 ?? num0(m['carbs_per_100g'])) * w / 100;
+        var f = (oficial?.$4 ?? num0(m['fat_per_100g'])) * w / 100;
         // Trava física por item: macros não pesam mais que o alimento
         final s = p + c + f;
         if (s > w) {
@@ -167,13 +298,16 @@ Não invente acompanhamentos que não foram citados/vistos.''';
           c *= k;
           f *= k;
         }
+        totalKcal += oficial != null
+            ? oficial.$1 * w / 100
+            : p * 4 + c * 4 + f * 9;
         totalW += w;
         totalP += p;
         totalC += c;
         totalF += f;
       }
       if (totalW > 0) {
-        var kcal = totalP * 4 + totalC * 4 + totalF * 9;
+        var kcal = totalKcal;
         if (kcal > totalW * 9) kcal = totalW * 9;
         double r1(double v) => (v * 10).round() / 10;
         return {
@@ -190,9 +324,11 @@ Não invente acompanhamentos que não foram citados/vistos.''';
     final weight = num0(raw['weight_g']).clamp(1.0, 3000.0);
 
     // Caminho preferido: a IA informou os valores por 100g → app faz a conta.
-    final p100 = num0(raw['protein_per_100g']);
-    final c100 = num0(raw['carbs_per_100g']);
-    final f100 = num0(raw['fat_per_100g']);
+    // Se o alimento for conhecido, a densidade oficial tem prioridade.
+    final oficial = _lookupDensity(raw['name'] as String?);
+    final p100 = oficial?.$2 ?? num0(raw['protein_per_100g']);
+    final c100 = oficial?.$3 ?? num0(raw['carbs_per_100g']);
+    final f100 = oficial?.$4 ?? num0(raw['fat_per_100g']);
     final hasDensity = (p100 + c100 + f100) > 0;
 
     var protein = hasDensity ? p100 * weight / 100 : num0(raw['protein']);
@@ -213,13 +349,15 @@ Não invente acompanhamentos que não foram citados/vistos.''';
 
     // Com densidade, a conta é nossa e Atwater é a verdade. Sem densidade,
     // aceita o valor da IA só se for coerente com os macros.
-    var calories = hasDensity
-        ? atwater
-        : ((reported > 0 &&
-                atwater > 0 &&
-                (reported - atwater).abs() / atwater <= 0.12)
-            ? reported
-            : atwater);
+    var calories = oficial != null
+        ? oficial.$1 * weight / 100 // kcal de tabela
+        : (hasDensity
+            ? atwater
+            : ((reported > 0 &&
+                    atwater > 0 &&
+                    (reported - atwater).abs() / atwater <= 0.12)
+                ? reported
+                : atwater));
 
     // Teto físico: nenhum alimento passa de 9 kcal/g (gordura pura)
     final maxByWeight = weight * 9;
@@ -467,6 +605,9 @@ Regras OBRIGATÓRIAS — respeite com precisão:
       'temperature': 0,
       'top_p': 1,
       'seed': 42,
+      // Qwen pensa antes de responder por padrão; sem isso o raciocínio
+      // consome o max_tokens e o JSON vem cortado.
+      'reasoning_effort': 'none',
       'max_tokens': 400,
       'messages': [
         {
@@ -534,6 +675,7 @@ Regras OBRIGATÓRIAS — respeite com precisão:
     final body = jsonEncode({
       'model': GroqConfig.visionModel,
       'temperature': 0.1,
+      'reasoning_effort': 'none',
       'max_tokens': 200,
       'messages': [
         {
