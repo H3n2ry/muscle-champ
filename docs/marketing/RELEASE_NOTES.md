@@ -27,6 +27,41 @@
 
 ---
 
+## Versão 1.1.0 — Hidratação e precisão nutricional
+**Data:** 10/08/2026
+
+### 🎉 Novidades
+- **Contador de água** — registre o quanto bebeu com um toque (200ml, 350ml ou
+  500ml) e acompanhe o progresso do dia. A meta diária é calculada
+  automaticamente pelo seu peso e idade
+- **Dieta montada por você** — além do plano gerado pela IA, agora dá para criar
+  suas próprias refeições escolhendo os alimentos e as quantidades
+- **Data de nascimento** no cadastro e no perfil, usada para calcular a
+  hidratação ideal
+
+### ✨ Melhorias
+- **Contagem de calorias muito mais precisa.** O app passou a usar a Tabela
+  Brasileira de Composição de Alimentos (TACO) com 581 alimentos, além de uma
+  tabela própria de pratos prontos e bebidas. Antes a IA exagerava — 30g de
+  doce de leite marcava 147 kcal quando o correto é ~92
+- **Entenda medidas do dia a dia.** Digite "2 ovos", "1 concha de feijão" ou
+  "1 fatia de pizza" — não precisa mais converter para gramas
+- **Bebidas incluídas** — refrigerante, suco, café, leite, cerveja, vinho,
+  energético e mais
+- **Ajuste o peso** no resultado da IA quando a porção for diferente da sua
+- O mesmo alimento agora sempre resulta no mesmo valor, tornando o
+  acompanhamento semanal confiável
+
+### 🐛 Correções
+- Excluir um treino deixava a tela preta
+- Editar um treino não permitia adicionar novos exercícios
+- Aba Ranking travava ao exibir o pódio
+- Cronômetro de descanso ficava cortado em telas menores
+- Análise de foto voltou a funcionar (o serviço de IA havia descontinuado o
+  modelo anterior)
+
+---
+
 ## Template para Versões Futuras
 
 ```markdown

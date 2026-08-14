@@ -75,9 +75,15 @@ Todas as operações são feitas via `supabase_flutter` SDK com Row Level Securi
 | `current_weight` | numeric | kg |
 | `target_weight` | numeric | kg |
 | `height_cm` | numeric | cm |
-| `daily_calories` | int | Meta calórica diária |
+| `daily_calories` | int | Meta calórica diária (recalculada por trigger) |
 | `weekly_workout_goal` | int | Número de treinos por semana |
+| `birth_date` | date? | Data de nascimento — usada na meta de água |
+| `daily_water_ml` | int? | Meta diária de água (recalculada por trigger) |
 | `updated_at` | timestamptz | |
+
+**Triggers:** `trg_goals_recalc` recalcula `daily_calories` e `daily_water_ml`
+no INSERT e sempre que `current_weight`, `height_cm`, `goal_type` ou
+`birth_date` mudarem. Fórmulas em `calc_daily_calories()` e `calc_daily_water()`.
 
 ---
 
@@ -205,6 +211,20 @@ Todas as operações são feitas via `supabase_flutter` SDK com Row Level Securi
 | `user_id` | uuid (FK) | |
 | `weight_kg` | numeric | Peso em kg |
 | `measured_at` | date | Constraint único: `(user_id, measured_at)` |
+
+---
+
+### `water_logs`
+
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| `id` | uuid (PK) | |
+| `user_id` | uuid (FK → auth.users, ON DELETE CASCADE) | |
+| `date` | date | Padrão `CURRENT_DATE` |
+| `amount_ml` | int | Quantidade em ml (CHECK > 0) — uma linha por registro |
+| `created_at` | timestamptz | Usado para o "desfazer" (remove o mais recente) |
+
+Índice: `(user_id, date)`. RLS owner-scoped em SELECT, INSERT e DELETE.
 
 ---
 
