@@ -23,24 +23,41 @@ $env:PATH         = "$env:JAVA_HOME\bin;$env:ANDROID_HOME\cmdline-tools\latest\b
 flutter run                          # Run on connected device/emulator
 flutter build apk --release          # Release APK → build/app/outputs/flutter-apk/app-release.apk
 flutter build appbundle --release    # AAB for Play Store
-flutter build web --release          # Web build → build/web/
+flutter build web --release --no-web-resources-cdn   # Web build → build/web/ (flag obrigatória, ver abaixo)
 flutter clean                        # Clear build cache
 flutter pub get                      # Install dependencies
 flutter analyze                      # Static analysis (pre-existing errors in doh_http_overrides.dart are known/ignored)
 ```
 
 ### Web deploy to Vercel
-```bash
-cd build/web
-npx vercel --prod --yes --scope "af-dev"   # → https://muscle-champ.vercel.app
-```
 
-### Build + deploy completo
+**Use `./deploy_web.sh`** (Git Bash). Ele faz build + deploy com as duas
+correções abaixo já aplicadas. Rodar os comandos na mão é o que quebrou o site.
+
+⚠️ **`--no-web-resources-cdn` é obrigatório no build web.** Por padrão o Flutter
+baixa o CanvasKit de `www.gstatic.com` no boot, mesmo já existindo cópia em
+`build/web/canvaskit/`. Se o gstatic estiver inacessível (DNS de operadora, rede
+corporativa, bloqueador de anúncios), o app fica eternamente em "Carregando" —
+comportamento verificado em navegador real. Com a flag, o CanvasKit é servido
+pelo próprio domínio e o app não depende de CDN de terceiro no caminho crítico.
+
+⚠️ **Sempre `vercel link` antes do deploy.** O nome do projeto Vercel vinha do
+`.vercel/project.json` gravado dentro de `build/web` — e `build/` é apagado por
+`flutter clean` e recriado a cada build. Sem esse arquivo, o CLI trata a pasta
+como projeto novo e usa o nome do **diretório** (`web`), então o deploy vai para
+outro projeto e `muscle-champ.vercel.app` fica órfão → 404 `DEPLOYMENT_NOT_FOUND`.
+
 ```bash
 flutter pub get
-flutter build web --release
-cd build/web && npx vercel --prod --yes --scope "af-dev"
+flutter build web --release --no-web-resources-cdn
+cd build/web
+npx vercel link --yes --scope "af-dev" --project "muscle-champ"   # idempotente
+npx vercel deploy --prod --yes --scope "af-dev"                   # → https://muscle-champ.vercel.app
 ```
+
+`web/vercel.json` (rewrites de SPA + `no-store` nos pontos de entrada) é copiado
+para `build/web/` pelo build, então o deploy o encontra na raiz. Não mova para a
+raiz do repo: o deploy roda de dentro de `build/web` e não leria de lá.
 
 ### If build fails with path errors
 ```powershell
