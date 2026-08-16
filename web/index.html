@@ -1,46 +1,103 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
   <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
+    Se o app for servido num caminho diferente da raiz, ajuste o href abaixo.
+    O valor é substituído pelo argumento --base-href do `flutter build`.
   -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="Muscle Champ — treino, dieta e ranking. Transforme seu progresso em pontos.">
+  <meta name="theme-color" content="#121413">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="muscle_camp">
+  <meta name="apple-mobile-web-app-title" content="Muscle Champ">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>muscle_camp</title>
+  <title>Muscle Champ</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background-color: #121413;
+    }
+    /* Enquanto o main.dart.js baixa (alguns MB), sem isto a tela fica
+       totalmente branca/preta e parece que o app quebrou. */
+    #boot {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      background-color: #121413;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      transition: opacity .3s ease;
+    }
+    #boot .spinner {
+      width: 38px;
+      height: 38px;
+      border: 3px solid #343535;
+      border-top-color: #7EFC00;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    #boot .label {
+      color: #BDCBAE;
+      font-size: 13px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    #boot .slow {
+      display: none;
+      max-width: 300px;
+      text-align: center;
+      color: #8A9580;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
+  <div id="boot">
+    <div class="spinner"></div>
+    <div class="label">Carregando</div>
+    <div class="slow" id="boot-slow">
+      Está demorando mais que o normal. Se a tela não sair daqui, recarregue a
+      página com Ctrl+Shift+R.
+    </div>
+  </div>
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
+  <script>
+    // Se em 12s o Flutter não assumiu a tela, o usuário merece uma dica em vez
+    // de encarar um spinner infinito.
+    setTimeout(function () {
+      var el = document.getElementById('boot-slow');
+      if (el) el.style.display = 'block';
+    }, 12000);
+
+    // O Flutter remove o #boot quando o primeiro frame é pintado.
+    window.addEventListener('flutter-first-frame', function () {
+      var boot = document.getElementById('boot');
+      if (!boot) return;
+      boot.style.opacity = '0';
+      setTimeout(function () { boot.remove(); }, 300);
+    });
+  </script>
+
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

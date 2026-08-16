@@ -1,11 +1,11 @@
 {
-    "name": "muscle_camp",
-    "short_name": "muscle_camp",
+    "name": "Muscle Champ",
+    "short_name": "Muscle Champ",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#121413",
+    "theme_color": "#121413",
+    "description": "Treino, dieta e ranking. Transforme seu progresso em pontos.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
