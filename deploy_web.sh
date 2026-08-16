@@ -34,11 +34,23 @@ flutter build web --release --no-web-resources-cdn
 
 cd build/web
 
+echo "==> conta autenticada"
+npx vercel whoami --scope "$SCOPE" || true
+
+echo "==> projetos existentes no scope (o '$PROJECT' precisa aparecer aqui)"
+npx vercel project ls --scope "$SCOPE" || true
+
 echo "==> vinculando ao projeto '$PROJECT' (scope $SCOPE)"
 npx vercel link --yes --scope "$SCOPE" --project "$PROJECT"
 
+echo "==> vínculo gravado:"
+cat .vercel/project.json || true
+
 echo "==> deploy de produção"
 npx vercel deploy --prod --yes --scope "$SCOPE"
+
+echo "==> aliases apontando para o deploy"
+npx vercel alias ls --scope "$SCOPE" 2>/dev/null | head -20 || true
 
 echo
 echo "Pronto. Confirme em: https://$PROJECT.vercel.app"
