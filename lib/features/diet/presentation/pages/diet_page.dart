@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../core/legal/legal_texts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/groq/groq_config.dart';
@@ -3982,6 +3983,26 @@ class _NutritionPreview extends StatelessWidget {
                   color: const Color(0xFFFF6B6B)),
             ],
           ),
+          // Disclaimer obrigatório sempre que o valor vier de IA —
+          // política de apps de saúde do Google Play + restrição do CFN
+          // (o app estima, não faz avaliação nutricional).
+          if (isAi) ...[
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.info_outline,
+                    color: AppColors.onSurfaceVariant, size: 13),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    LegalTexts.nutritionDisclaimer,
+                    style: AppTypography.bodySm.copyWith(fontSize: 10),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

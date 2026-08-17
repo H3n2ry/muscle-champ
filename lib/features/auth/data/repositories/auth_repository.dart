@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/legal/legal_texts.dart';
 import '../models/user_model.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((_) => AuthRepository());
@@ -8,6 +9,22 @@ final authRepositoryProvider = Provider<AuthRepository>((_) => AuthRepository())
 class EmailConfirmationPendingException implements Exception {
   final String email;
   const EmailConfirmationPendingException(this.email);
+}
+
+/// Lançado quando o titular não atinge a idade mínima (LegalTexts.minimumAge).
+class UnderageException implements Exception {
+  const UnderageException();
+  @override
+  String toString() => LegalTexts.underageMessage;
+}
+
+/// Lançado quando falta um consentimento obrigatório para operar o serviço.
+class MissingConsentException implements Exception {
+  final String consentType;
+  const MissingConsentException(this.consentType);
+  @override
+  String toString() =>
+      'É necessário aceitar todos os itens obrigatórios para criar a conta.';
 }
 
 class AuthRepository {
@@ -33,8 +50,23 @@ class AuthRepository {
     required double currentWeight,
     required double targetWeight,
     required int weeklyWorkoutGoal,
+    required Map<String, bool> consents,
     DateTime? birthDate,
   }) async {
+    // Barreira de idade — dado de saúde exige consentimento parental
+    // verificável abaixo de LegalTexts.minimumAge, fluxo que o app não tem.
+    if (birthDate == null || !LegalTexts.isOldEnough(birthDate)) {
+      throw const UnderageException();
+    }
+
+    // Os consentimentos obrigatórios são checados na UI, mas revalidar aqui
+    // impede que uma chamada direta ao repositório crie conta sem base legal.
+    for (final item in LegalTexts.signupConsents.where((c) => c.required)) {
+      if (consents[item.type] != true) {
+        throw MissingConsentException(item.type);
+      }
+    }
+
     final response = await _client.auth.signUp(
       email: email,
       password: password,
@@ -45,8 +77,15 @@ class AuthRepository {
         'current_weight':       currentWeight,
         'target_weight':        targetWeight,
         'weekly_workout_goal':  weeklyWorkoutGoal,
-        if (birthDate != null)
-          'birth_date': birthDate.toIso8601String().substring(0, 10),
+        'birth_date':           birthDate.toIso8601String().substring(0, 10),
+        // Lidos pelo trigger handle_new_user, que grava em user_consents
+        'consent_version':      LegalTexts.documentVersion,
+        'consent_locale':       'pt-BR',
+        'consent_terms':        consents['terms'] ?? false,
+        'consent_privacy':      consents['privacy'] ?? false,
+        'consent_health':       consents['health_data'] ?? false,
+        'consent_ai_photo':     consents['ai_photo_transfer'] ?? false,
+        'consent_marketing':    consents['marketing'] ?? false,
       },
     );
 

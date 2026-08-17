@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/legal/legal_documents.dart';
+import '../../../../core/legal/legal_texts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../shared/widgets/legal_document_sheet.dart';
 import '../../../../shared/widgets/mk_date_field.dart';
 import '../../../../shared/widgets/mk_error_banner.dart';
 import '../../../../shared/widgets/mk_text_field.dart';
@@ -45,6 +48,17 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   // ── Step 2 ────────────────────────────────────────────────────────────────
   int _weeklyGoal = 3;
+
+  /// Consentimentos. Todos começam desmarcados — consentimento pré-marcado
+  /// não é consentimento válido (GDPR Art. 4(11) / LGPD Art. 5 XII).
+  final Map<String, bool> _consents = {
+    for (final c in LegalTexts.signupConsents) c.type: false,
+  };
+  bool _consentError = false;
+
+  bool get _requiredConsentsGiven => LegalTexts.signupConsents
+      .where((c) => c.required)
+      .every((c) => _consents[c.type] == true);
 
   // Infere automaticamente o objetivo a partir dos pesos
   String get _goalType {
@@ -113,6 +127,17 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       final formOk = _step1Key.currentState!.validate();
       if (_birthDate == null) setState(() => _birthDateError = true);
       if (!formOk || _birthDate == null) return;
+
+      // Barreira de idade — abaixo do mínimo a lei exige consentimento
+      // parental verificável, fluxo que o app não implementa.
+      if (!LegalTexts.isOldEnough(_birthDate!)) {
+        setState(() => _errorMessage = LegalTexts.underageMessage);
+        return;
+      }
+    }
+    if (_step == 2 && !_requiredConsentsGiven) {
+      setState(() => _consentError = true);
+      return;
     }
     if (_step < 2) {
       setState(() => _step++);
@@ -151,6 +176,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       currentWeight:     currWt,
       targetWeight:      targWt,
       weeklyWorkoutGoal: _weeklyGoal,
+      consents:          _consents,
       birthDate:         _birthDate,
     );
 
@@ -174,11 +200,28 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     if (msg.contains('já está cadastrado') || msg.contains('already registered')) {
       return 'Este email já está cadastrado. Faça login.';
     }
-    if (msg.contains('weak_password') || msg.contains('senha')) {
-      return 'Senha fraca. Use letras, números e símbolos.';
+    // O Supabase responde 422 em INGLÊS ("Password should contain at least one
+    // character of each: ..."). Sem casar por 'password' a mensagem caía no
+    // genérico e o usuário não tinha como saber o que corrigir.
+    if (msg.contains('weak_password') ||
+        msg.contains('password') ||
+        msg.contains('senha')) {
+      return 'A senha precisa ter no mínimo 8 caracteres, com letra minúscula, '
+          'maiúscula, número e símbolo.';
     }
-    if (msg.contains('network') || msg.contains('socketexception')) {
+    if (msg.contains('underage') || msg.contains('anos para criar')) {
+      return LegalTexts.underageMessage;
+    }
+    if (msg.contains('consent') || msg.contains('consentimento')) {
+      return 'É necessário aceitar todos os itens obrigatórios para criar a conta.';
+    }
+    if (msg.contains('network') ||
+        msg.contains('socketexception') ||
+        msg.contains('failed host lookup')) {
       return 'Sem conexão com a internet.';
+    }
+    if (msg.contains('rate') || msg.contains('too many')) {
+      return 'Muitas tentativas. Espere alguns minutos e tente de novo.';
     }
     return 'Algo deu errado. Tente novamente.';
   }
@@ -272,6 +315,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     goalType:      _goalType,
                     currentWeight: double.tryParse(_currWtCtrl.text) ?? 0,
                     targetWeight:  double.tryParse(_targWtCtrl.text) ?? 0,
+                    consentBlock: _ConsentBlock(
+                      values:    _consents,
+                      showError: _consentError,
+                      onChanged: (type, value) => setState(() {
+                        _consents[type] = value;
+                        if (_requiredConsentsGiven) _consentError = false;
+                      }),
+                    ),
                   ),
                 ],
               ),
@@ -466,15 +517,25 @@ class _Step0AccountState extends ConsumerState<_Step0Account> {
   }
 
   // ── Regras da senha ──────────────────────────────────────────────────────
+  //
+  // ⚠️ Precisam espelhar EXATAMENTE a política do Supabase Auth
+  // (Authentication → Policies): mínimo 8 + minúscula + maiúscula + dígito +
+  // símbolo. Qualquer regra a menos aqui deixa o usuário enviar uma senha que
+  // o servidor recusa com 422, e ele não descobre o motivo.
+  //
+  // Conjunto de símbolos aceito pelo Supabase:
+  //   !@#$%^&*()_+-=[]{};':"|<>?,./`~
   static bool _hasMin8(String v)   => v.length >= 8;
+  static bool _hasLower(String v)  => v.contains(RegExp(r'[a-z]'));
   static bool _hasUpper(String v)  => v.contains(RegExp(r'[A-Z]'));
   static bool _hasNumber(String v) => v.contains(RegExp(r'[0-9]'));
   static bool _hasSymbol(String v) =>
-      v.contains(RegExp(r'[!@#\$%^&*()\-_=+\[\]{};:,.<>?/|\\]'));
+      v.contains(RegExp('[!@#\\\$%^&*()_+\\-=\\[\\]{};\':"|<>?,./`~\\\\]'));
 
   String? _validatePass(String? v) {
     final s = v ?? '';
     if (!_hasMin8(s))   return 'Mínimo 8 caracteres';
+    if (!_hasLower(s))  return 'Precisa de letra minúscula (a-z)';
     if (!_hasUpper(s))  return 'Precisa de letra maiúscula (A-Z)';
     if (!_hasNumber(s)) return 'Precisa de número (0-9)';
     if (!_hasSymbol(s)) return r'Precisa de símbolo (!@#$%...)';
@@ -580,8 +641,9 @@ class _Step0AccountState extends ConsumerState<_Step0Account> {
                         color: AppColors.onSurfaceVariant,
                       )),
                   const SizedBox(height: 10),
-                  _Req('Mínimo 8 caracteres',   _hasMin8(passValue)),
-                  _Req('Letra maiúscula (A-Z)', _hasUpper(passValue)),
+                  _Req('Mínimo 8 caracteres',    _hasMin8(passValue)),
+                  _Req('Letra minúscula (a-z)',  _hasLower(passValue)),
+                  _Req('Letra maiúscula (A-Z)',  _hasUpper(passValue)),
                   _Req('Número (0-9)',           _hasNumber(passValue)),
                   _Req('Símbolo (!@#\$%...)',    _hasSymbol(passValue)),
                 ],
@@ -823,6 +885,7 @@ class _Step2Frequency extends StatelessWidget {
   final String goalType;
   final double currentWeight;
   final double targetWeight;
+  final Widget consentBlock;
 
   const _Step2Frequency({
     required this.selected,
@@ -830,6 +893,7 @@ class _Step2Frequency extends StatelessWidget {
     required this.goalType,
     required this.currentWeight,
     required this.targetWeight,
+    required this.consentBlock,
   });
 
   static const _options = [2, 3, 4, 5, 6];
@@ -1009,7 +1073,164 @@ class _Step2Frequency extends StatelessWidget {
             ),
           ),
 
+          const SizedBox(height: 28),
+
+          // Consentimentos — LGPD Art. 8/11 e GDPR Art. 6/7/9
+          consentBlock,
+
           const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+/// Bloco de consentimento exibido no último passo do cadastro.
+///
+/// Os itens obrigatórios bloqueiam a criação da conta; os opcionais vêm
+/// desmarcados por padrão — consentimento tem que ser afirmativo e não pode
+/// ser pré-selecionado (GDPR Art. 4(11), LGPD Art. 5 XII).
+///
+/// Termos e Política têm documento associado. Para esses, marcar o checkbox
+/// **só é possível abrindo e aceitando o popup** — assim o consentimento é
+/// necessariamente informado (LGPD Art. 9 / GDPR Art. 13). Desmarcar é livre.
+class _ConsentBlock extends StatelessWidget {
+  final Map<String, bool> values;
+  final void Function(String type, bool value) onChanged;
+  final bool showError;
+
+  const _ConsentBlock({
+    required this.values,
+    required this.onChanged,
+    required this.showError,
+  });
+
+  Future<void> _handleTap(BuildContext context, ConsentItem item) async {
+    final checked = values[item.type] ?? false;
+    final doc = LegalDocuments.forConsent(item.type);
+
+    // Sem documento (dados de saúde, foto por IA, marketing) → alterna direto.
+    if (doc == null || checked) {
+      onChanged(item.type, !checked);
+      return;
+    }
+
+    final accepted = await LegalDocumentSheet.show(context, doc);
+    if (accepted == true) onChanged(item.type, true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: showError
+              ? AppColors.error.withOpacity(0.6)
+              : AppColors.surfaceContainerHigh,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('PRIVACIDADE',
+              style: AppTypography.labelSm.copyWith(letterSpacing: 2)),
+          const SizedBox(height: 4),
+          Text(
+            'O app trata dados de saúde. Precisamos da sua autorização '
+            'explícita para isso.',
+            style: AppTypography.bodySm,
+          ),
+          const SizedBox(height: 12),
+
+          for (final item in LegalTexts.signupConsents)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => _handleTap(context, item),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 26,
+                      height: 26,
+                      child: IgnorePointer(
+                        child: Checkbox(
+                          value: values[item.type] ?? false,
+                          onChanged: (_) {},
+                          activeColor: AppColors.primary,
+                          checkColor: AppColors.onPrimary,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  item.label,
+                                  style: AppTypography.bodyMd.copyWith(
+                                    fontSize: 13,
+                                    color:
+                                        LegalDocuments.forConsent(item.type) !=
+                                                null
+                                            ? AppColors.primary
+                                            : AppColors.onSurface,
+                                    decoration:
+                                        LegalDocuments.forConsent(item.type) !=
+                                                null
+                                            ? TextDecoration.underline
+                                            : null,
+                                  ),
+                                ),
+                              ),
+                              if (item.required)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 6),
+                                  child: Text('*',
+                                      style: AppTypography.bodyMd.copyWith(
+                                          color: AppColors.primary)),
+                                ),
+                              if (LegalDocuments.forConsent(item.type) != null)
+                                const Padding(
+                                  padding: EdgeInsets.only(left: 6),
+                                  child: Icon(Icons.article_outlined,
+                                      size: 13, color: AppColors.primary),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(item.detail,
+                              style: AppTypography.bodySm
+                                  .copyWith(fontSize: 11)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          if (showError)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'Marque os itens obrigatórios (*) para continuar.',
+                style: AppTypography.bodySm
+                    .copyWith(color: AppColors.error, fontSize: 11),
+              ),
+            ),
+
+          const SizedBox(height: 6),
         ],
       ),
     );

@@ -2,13 +2,20 @@
 ## Muscle Champ
 
 > **Status:** Rascunho finalizado. Revisar com advogado antes de publicar.
-> **URL pública:** `https://musclechamp.com.br/privacidade`
+> **Versão dos documentos:** `2026-08-17` — precisa bater com `LegalTexts.documentVersion`.
+> **Publicado em:** `web/privacidade.html` → `https://muscle-champ.vercel.app/privacidade.html`
+> **URL futura:** `https://musclechamp.com.br/privacidade` (aguarda domínio próprio)
+>
+> ⚠️ **A versão canônica publicada é o HTML.** Ao alterar este arquivo, replicar em
+> `web/privacidade.html` e subir `LegalTexts.documentVersion` se a mudança for material.
 
 ---
 
 # Política de Privacidade — Muscle Champ
 
-**Última atualização:** 15 de junho de 2025
+**Última atualização:** 17 de agosto de 2026
+
+Aplicável a usuários no Brasil (LGPD) e no EEE/Reino Unido (GDPR e UK GDPR).
 
 ---
 
@@ -69,19 +76,41 @@ Para dúvidas sobre privacidade ou para exercer seus direitos, entre em contato:
 
 ---
 
-## 5. Seus direitos (LGPD — Lei 13.709/2018)
+## 5. Seus direitos (LGPD Art. 18 · GDPR Art. 15-22)
 
-Você tem direito a:
+### Direto no app — Perfil → ícone de escudo → Privacidade e dados
 
-- ✅ **Acessar** seus dados — solicite por e-mail: afd3vs@gmail.com
-- ✅ **Corrigir** dados incorretos — disponível diretamente no perfil do app
-- ✅ **Excluir** sua conta e todos os dados — disponível no perfil do app ou por e-mail
-- ✅ **Portabilidade** — exportar histórico de treinos e dieta mediante solicitação
-- ✅ **Revogar consentimento** — ao excluir a conta
-- ✅ **Informação** sobre com quem compartilhamos seus dados — neste documento
+| Direito | Como | Base |
+|---------|------|------|
+| **Acesso e portabilidade** | "Baixar meus dados" gera JSON completo | LGPD 18 II/V · GDPR 15 e 20 |
+| **Exclusão** | "Excluir minha conta" apaga tudo na hora | LGPD 18 VI · GDPR 17 |
+| **Revogar consentimento** | Alternar os consentimentos opcionais | LGPD 8 §5 · GDPR 7(3) |
+| **Correção** | Editar perfil e metas | LGPD 18 III · GDPR 16 |
 
-Para exercer qualquer direito: **afd3vs@gmail.com**
-Prazo de resposta: até **15 dias úteis**.
+Os consentimentos obrigatórios (Termos, Privacidade, dados de saúde) não são
+revogáveis mantendo a conta — sem eles não há base legal para operar o serviço.
+O caminho para retirá-los é excluir a conta, o que apaga tudo.
+
+### Por e-mail — afd3vs@gmail.com
+
+- **Oposição e limitação do tratamento** — GDPR Art. 18 e 21
+- **Informação sobre compartilhamento** — LGPD Art. 18 VII
+- **Revisão de decisões automatizadas** — LGPD Art. 20 · GDPR Art. 22
+
+Prazo de resposta: até **15 dias**.
+
+### Reclamação a autoridade
+
+- **Brasil:** ANPD — https://www.gov.br/anpd
+- **EEE:** autoridade de proteção de dados do seu país
+- **Reino Unido:** ICO — https://ico.org.uk
+
+## 5.1 Registro de consentimento
+
+Guardamos, para cada finalidade, se você consentiu, em que versão do documento e
+quando. Esse registro é append-only — revogar não apaga o histórico, grava uma nova
+entrada. É o que a lei chama de responsabilização (LGPD Art. 6 X / GDPR Art. 5(2)).
+O registro é apagado junto com a conta.
 
 ---
 
@@ -94,17 +123,28 @@ Prazo de resposta: até **15 dias úteis**.
 
 ---
 
-## 7. Menores de idade
+## 7. Idade mínima
 
-O Muscle Champ **não é destinado a menores de 13 anos**. Se você tiver conhecimento de que um menor forneceu dados sem consentimento dos responsáveis, entre em contato imediatamente pelo e-mail afd3vs@gmail.com para exclusão dos dados.
+O Muscle Champ exige **16 anos ou mais**, e a data de nascimento é validada no
+cadastro — contas abaixo dessa idade não são criadas.
+
+O limite é 16 porque tratamos dados de saúde: o GDPR Art. 8 fixa 16 anos como piso
+para consentimento sem autorização parental (alguns Estados-Membros reduzem para 13,
+mas 16 é seguro em todos), e a LGPD Art. 14 exige consentimento de responsável para
+menores de 12. Adotar 16 cobre os dois regimes com uma regra só e dispensa construir
+um fluxo de consentimento parental verificável.
+
+Se souber de uma conta de menor de 16, escreva para afd3vs@gmail.com e ela será
+excluída.
 
 ---
 
 ## 8. Retenção de dados
 
 - Dados mantidos enquanto a conta estiver ativa
-- Após solicitação de exclusão: dados removidos em até **30 dias**
+- Após pedido de exclusão: **removidos imediatamente**, não após período de carência
 - O banco de dados utiliza o plano gratuito do Supabase, que **não possui backups automáticos** — os dados são mantidos apenas enquanto a conta estiver ativa no servidor
+- Fotos de alimentos: nunca armazenadas
 
 ---
 

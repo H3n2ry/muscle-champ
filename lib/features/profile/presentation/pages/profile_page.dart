@@ -141,6 +141,22 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               onPressed: () => context.push('/edit-profile', extra: p),
             ),
             const SizedBox(width: 4),
+            // Privacidade e dados (LGPD Art. 18 / GDPR Art. 15-22)
+            IconButton(
+              tooltip: 'Privacidade e dados',
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.surfaceContainerHigh),
+                ),
+                child: const Icon(Icons.shield_outlined,
+                    color: AppColors.onSurface, size: 16),
+              ),
+              onPressed: () => context.push('/privacy'),
+            ),
+            const SizedBox(width: 4),
             // Sair
             IconButton(
               tooltip: 'Sair',
