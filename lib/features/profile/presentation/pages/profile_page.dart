@@ -1300,13 +1300,20 @@ class _SectionLabel extends StatelessWidget {
 
 // ── Streak card ───────────────────────────────────────────────────────────────
 
-class _StreakCard extends StatelessWidget {
+/// Card de sequência: 7 caixas terminando HOJE na direita.
+///
+/// A versão anterior tinha dois bugs. Os rótulos eram um array fixo começando
+/// na segunda, então a faixa nunca batia com o dia real; e o preenchimento
+/// acendia as N primeiras caixas da esquerda, sem relação com o dia que cada
+/// uma representava. Agora cada caixa é um dia concreto vindo do servidor.
+class _StreakCard extends ConsumerWidget {
   final int streak;
   const _StreakCard({required this.streak});
 
   @override
-  Widget build(BuildContext context) {
-    const displayDays = 7;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final semana = ref.watch(weekActivityProvider);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -1330,41 +1337,74 @@ class _StreakCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(displayDays, (i) {
-              final active = i <
-                  (streak % displayDays == 0 && streak > 0
-                      ? displayDays
-                      : streak % displayDays);
-              return Column(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: active
-                          ? AppColors.warning.withOpacity(0.2)
-                          : AppColors.surfaceContainerHigh,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: active
-                            ? AppColors.warning
-                            : AppColors.outlineVariant,
-                      ),
-                    ),
-                    child: active
-                        ? const Icon(Icons.local_fire_department,
-                            color: AppColors.warning, size: 16)
-                        : null,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(['S', 'T', 'Q', 'Q', 'S', 'S', 'D'][i],
-                      style:
-                          AppTypography.labelSm.copyWith(fontSize: 9)),
-                ],
-              );
-            }),
+          semana.when(
+            loading: () => const SizedBox(
+              height: 52,
+              child: Center(
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+            error: (_, __) => SizedBox(
+              height: 52,
+              child: Center(
+                child: Text('Não foi possível carregar a semana',
+                    style: AppTypography.bodySm.copyWith(fontSize: 11)),
+              ),
+            ),
+            data: (dias) => Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                for (var i = 0; i < dias.length; i++)
+                  Builder(builder: (_) {
+                    final d = dias[i];
+                    final hoje = i == dias.length - 1;
+                    return Column(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: d.treinou
+                                ? AppColors.warning.withOpacity(0.2)
+                                : AppColors.surfaceContainerHigh,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: d.treinou
+                                  ? AppColors.warning
+                                  : hoje
+                                      // Hoje sem treino: contorno destacado,
+                                      // para o usuário achar o dia atual.
+                                      ? AppColors.primary.withOpacity(0.7)
+                                      : AppColors.outlineVariant,
+                              width: hoje ? 1.5 : 1,
+                            ),
+                          ),
+                          child: d.treinou
+                              ? const Icon(Icons.local_fire_department,
+                                  color: AppColors.warning, size: 16)
+                              : null,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          d.inicial,
+                          style: AppTypography.labelSm.copyWith(
+                            fontSize: 9,
+                            color: hoje
+                                ? AppColors.primary
+                                : AppColors.onSurfaceVariant,
+                            fontWeight:
+                                hoje ? FontWeight.w700 : FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+              ],
+            ),
           ),
         ],
       ),

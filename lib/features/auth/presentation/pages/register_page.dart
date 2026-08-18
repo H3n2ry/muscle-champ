@@ -60,6 +60,34 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       .where((c) => c.required)
       .every((c) => _consents[c.type] == true);
 
+  /// Habilita o botão do passo atual. Nos passos 0 e 1 a validação é do
+  /// Form (só dá para saber ao tocar); no passo 2 dá para saber de antemão,
+  /// então o botão fica visivelmente apagado até os obrigatórios entrarem.
+  bool get _canAdvance => _step < 2 || _requiredConsentsGiven;
+
+  /// "Li e aceito todos os termos": marca tudo de uma vez.
+  ///
+  /// Os itens com documento (Termos e Privacidade) normalmente exigem abrir o
+  /// popup e rolar até o fim. Este atalho é uma declaração explícita e
+  /// separada de que o usuário leu — continua sendo ato afirmativo dele, que é
+  /// o que a lei pede (GDPR Art. 4(11) / LGPD Art. 5 XII). Desmarcar aqui
+  /// limpa apenas os obrigatórios, deixando as escolhas opcionais intactas.
+  void _toggleAceitarTudo(bool aceitar) {
+    setState(() {
+      for (final c in LegalTexts.signupConsents) {
+        if (aceitar) {
+          _consents[c.type] = true;
+        } else if (c.required) {
+          _consents[c.type] = false;
+        }
+      }
+      if (_requiredConsentsGiven) _consentError = false;
+    });
+  }
+
+  bool get _tudoAceito =>
+      LegalTexts.signupConsents.every((c) => _consents[c.type] == true);
+
   // Infere automaticamente o objetivo a partir dos pesos
   String get _goalType {
     final curr = double.tryParse(_currWtCtrl.text.replaceAll(',', '.')) ?? 0;
@@ -316,8 +344,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     currentWeight: double.tryParse(_currWtCtrl.text) ?? 0,
                     targetWeight:  double.tryParse(_targWtCtrl.text) ?? 0,
                     consentBlock: _ConsentBlock(
-                      values:    _consents,
-                      showError: _consentError,
+                      values:      _consents,
+                      showError:   _consentError,
+                      tudoAceito:  _tudoAceito,
+                      onAceitarTudo: _toggleAceitarTudo,
                       onChanged: (type, value) => setState(() {
                         _consents[type] = value;
                         if (_requiredConsentsGiven) _consentError = false;
@@ -345,12 +375,16 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: isLoading ? null : _goNext,
+                  // No último passo o botão fica apagado até os consentimentos
+                  // obrigatórios entrarem — o usuário vê que falta algo em vez
+                  // de tocar e receber erro.
+                  onPressed: (isLoading || !_canAdvance) ? null : _goNext,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.onPrimary,
                     disabledBackgroundColor:
                         AppColors.surfaceContainerHigh,
+                    disabledForegroundColor: AppColors.onSurfaceVariant,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16)),
                     elevation: 0,
@@ -368,7 +402,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                             Text(
                               _step < 2 ? 'PRÓXIMO' : 'CRIAR CONTA',
                               style: AppTypography.labelMd.copyWith(
-                                color: AppColors.onPrimary,
+                                color: _canAdvance
+                                    ? AppColors.onPrimary
+                                    : AppColors.onSurfaceVariant,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 1.5,
@@ -379,7 +415,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               _step < 2
                                   ? Icons.arrow_forward
                                   : Icons.check,
-                              color: AppColors.onPrimary,
+                              color: _canAdvance
+                                  ? AppColors.onPrimary
+                                  : AppColors.onSurfaceVariant,
                               size: 18,
                             ),
                           ],
@@ -1098,11 +1136,15 @@ class _ConsentBlock extends StatelessWidget {
   final Map<String, bool> values;
   final void Function(String type, bool value) onChanged;
   final bool showError;
+  final bool tudoAceito;
+  final void Function(bool) onAceitarTudo;
 
   const _ConsentBlock({
     required this.values,
     required this.onChanged,
     required this.showError,
+    required this.tudoAceito,
+    required this.onAceitarTudo,
   });
 
   Future<void> _handleTap(BuildContext context, ConsentItem item) async {
@@ -1219,6 +1261,45 @@ class _ConsentBlock extends StatelessWidget {
                 ),
               ),
             ),
+
+          // ── Aceitar tudo de uma vez ──────────────────────────────────
+          Divider(color: AppColors.surfaceContainerHigh, height: 20),
+          InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () => onAceitarTudo(!tudoAceito),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 26,
+                    height: 26,
+                    child: IgnorePointer(
+                      child: Checkbox(
+                        value: tudoAceito,
+                        onChanged: (_) {},
+                        activeColor: AppColors.primary,
+                        checkColor: AppColors.onPrimary,
+                        materialTapTargetSize:
+                            MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Li e aceito todos os termos',
+                      style: AppTypography.bodyMd.copyWith(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
 
           if (showError)
             Padding(

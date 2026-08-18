@@ -50,3 +50,6 @@ package-lock.json
 
 # Secrets — nunca commitar
 lib/core/secrets.dart
+
+# Cache local do Cloudflare Wrangler
+.wrangler/

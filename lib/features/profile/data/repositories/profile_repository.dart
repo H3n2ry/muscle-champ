@@ -6,8 +6,45 @@ import '../models/profile_model.dart';
 final profileRepositoryProvider =
     Provider<ProfileRepository>((_) => ProfileRepository());
 
+/// Um dia da faixa de 7 dias que o card de sequência desenha.
+class DayActivity {
+  final DateTime dia;
+  /// 1 = segunda … 7 = domingo (ISO)
+  final int weekday;
+  final bool treinou;
+
+  const DayActivity({
+    required this.dia,
+    required this.weekday,
+    required this.treinou,
+  });
+
+  /// Inicial do dia da semana em português: S T Q Q S S D
+  String get inicial => const ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'][weekday - 1];
+}
+
+/// Os 7 dias terminando HOJE, com o dia da semana real de cada um.
+///
+/// Vem do servidor porque o "hoje" precisa ser o mesmo que o banco usa para
+/// gravar — o relógio do aparelho pode divergir do fuso resolvido lá.
+final weekActivityProvider =
+    FutureProvider.autoDispose<List<DayActivity>>((ref) {
+  return ref.watch(profileRepositoryProvider).getWeekActivity();
+});
+
 class ProfileRepository {
   final _client = Supabase.instance.client;
+
+  Future<List<DayActivity>> getWeekActivity() async {
+    final rows = await _client.rpc('get_week_activity');
+    return (rows as List)
+        .map((r) => DayActivity(
+              dia: DateTime.parse(r['dia'] as String),
+              weekday: (r['dow'] as num).toInt(),
+              treinou: r['treinou'] as bool? ?? false,
+            ))
+        .toList();
+  }
 
   // ── Leitura ─────────────────────────────────────────────────────
 
@@ -18,7 +55,9 @@ class ProfileRepository {
       _client.from('profiles').select().eq('id', userId).single(),
       _client.from('goals').select().eq('user_id', userId).maybeSingle(),
       _client.from('points').select('amount').eq('user_id', userId),
-      _client.from('workouts').select('id').eq('user_id', userId).eq('completed', true),
+      // workout_completions é o sistema atual; `workouts` é legado e ficou
+      // parado, entao o total de treinos aparecia congelado.
+      _client.from('workout_completions').select('id').eq('user_id', userId),
       _client.rpc('get_streak', params: {'p_user_id': userId}),
       // Última leitura de bioimpedância (opcional)
       _client
