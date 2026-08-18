@@ -238,7 +238,44 @@ Known foods use the **official kcal from the table, not Atwater**: the 4/4/9 for
 
 **Image optimization** (`_optimizeImage()`): detects PNG via magic bytes; resizes to max 768px; encodes as JPEG 80%. Returns `(String b64, String mime)`. Never reduce `_maxImagePx` below 768.
 
-**Models**: text → `llama-3.3-70b-versatile`, vision → `qwen/qwen3.6-27b`
+### Model selection lives in the proxy, not the app
+
+**The app never names a model.** It sends `"task": "text"` or `"task": "vision"`; the
+Edge Function resolves that to the current model id via `MODEL_CHAINS`.
+
+This is deliberate. Groq retires models with little notice (twice in 30 days) and the app
+breaks instantly with *"The model X does not exist or you do not have access to it"*.
+With the id compiled into the client, an installed APK would stay broken until every user
+updated through the Play Store — days to weeks. Now a model swap is a function redeploy.
+
+**To change models**: edit `MODEL_CHAINS` in `supabase/functions/groq-proxy/index.ts` and
+redeploy. Nothing in Dart changes. Retirements so far:
+`meta-llama/llama-4-scout-17b-16e-instruct` (vision, 2026-07-17) and
+`llama-3.3-70b-versatile` (text, 2026-08-16).
+
+**Fallback**: each task has an ordered chain. If the primary answers "model does not
+exist", the proxy retries the next one and logs `ATUALIZAR MODEL_CHAINS`. Only that error
+triggers a retry — a rate limit or bad payload would fail identically on any model. The
+response carries `x-model-used`, and `x-model-fallback` when a retry happened.
+⚠️ `vision` has a chain of one: qwen3.6-27b is the only multimodal model in use, so the
+FOTO mode has no automatic recovery.
+
+**Reasoning models need per-model tuning.** `gpt-oss-120b` spends output tokens *thinking*
+before emitting content. Left alone it consumed the entire `max_tokens` budget on
+reasoning and returned **empty `content` with `finish_reason: "length"`** — a silent
+failure, not an error. The proxy fixes this per model via `ModelSpec`:
+`reasoningEffort: "low"` and `tokenHeadroom: 2.5`. Measured: ~65% of output is reasoning
+on short JSON prompts, and reasoning tokens are billed as output.
+Note `reasoning_effort` accepts only `low|medium|high` on gpt-oss — the `"none"` that
+`calibrateHand` sends is valid on qwen, and the proxy only injects when the caller
+did not set it.
+
+Determinism survives the swap: `temperature: 0, top_p: 1, seed: 42` still yields identical
+output for identical input (verified).
+
+The nutrition calibration below was tuned on Llama 3.3. After a text-model swap, the
+parsing half ("2 ovos cozidos" → food + qty + unit) may drift — the arithmetic half is
+in Dart and is unaffected. Re-validate before trusting the numbers.
 
 ## Interactive Tutorial (`tutorial_overlay.dart`)
 
@@ -278,7 +315,22 @@ UI mockups: `../dashboard_de_progresso_v3/` and `../perfil_e_evolu_o_v3/` (HTML 
 | Supabase | Auth + PostgreSQL + Storage + Edge Functions + Vault | `supabase_config.dart` / `secrets.dart` (project `jryetjysjiyuuoznaejc`) |
 | Groq | LLM inference (via `groq-proxy` Edge Function) | key in Supabase Vault, never in client |
 | Vercel | Web hosting | Project: `muscle-champ`, scope: `af-dev` |
-| GitHub Actions | Keepalive (anti free-tier pause) | `.github/workflows/supabase-keepalive.yml` |
+| GitHub Actions | Keepalive, backup, AI healthcheck | `.github/workflows/` |
+
+**Workflows** (all run on GitHub's infra, only once pushed):
+
+| File | What it does |
+|------|--------------|
+| `supabase-keepalive.yml` | Daily RPC ping so the free tier doesn't pause after ~7 idle days |
+| `supabase-backup.yml` | Database backup |
+| `ai-healthcheck.yml` | Daily probe of both model chains — fails the run (→ email) if a model died |
+
+`ai-healthcheck.yml` checks four things per task, and the second one is the reason it
+exists: HTTP 200 · **`content` non-empty** · `finish_reason == "stop"` · no
+`x-model-fallback` header. A retired reasoning model returns *200 with empty content*, so
+status-code-only monitoring would report everything healthy while the app is broken. A
+present `x-model-fallback` means the chain already fell to the reserve — working, but
+`MODEL_CHAINS` needs updating.
 
 ## Security (hardened 2026-06)
 
@@ -290,7 +342,12 @@ UI mockups: `../dashboard_de_progresso_v3/` and `../perfil_e_evolu_o_v3/` (HTML 
 
 **Keepalive**: the Supabase free tier pauses after ~7 idle days. `.github/workflows/supabase-keepalive.yml` pings a light RPC daily (runs on GitHub's infra) to keep the project active. It only runs once pushed to GitHub.
 
-**Known/accepted advisor warnings** (not real issues): the 8 `authenticated_security_definer` warnings (ranking/workout RPCs must be `SECURITY DEFINER` and are guarded internally), `check_email_exists` being anon-callable (intentional), and leaked-password protection being off (Pro-only; compensated with Auth → Email password requirements: min length 8 + lowercase/uppercase/digits/symbols).
+**Known/accepted advisor warnings** (not real issues): the 12 `authenticated_security_definer` warnings — ranking/workout RPCs plus the four privacy RPCs (`export_my_data`, `delete_my_account`, `grant_consent`, `revoke_consent`); all must be `SECURITY DEFINER` and all enforce `auth.uid()` internally. Also `check_email_exists` being anon-callable (intentional), and leaked-password protection being off (Pro-only; compensated with Auth → Email password requirements: min length 8 + lowercase/uppercase/digits/symbols).
+
+⚠️ **`delete_my_account()` must not touch `storage.objects`.** Postgres blocks direct
+`DELETE` there (`storage.protect_delete`), and since the function is one transaction,
+attempting it aborts the whole deletion and nothing is removed. The avatar is deleted
+client-side via the Storage API in `PrivacyRepository.deleteMyAccount()` before the RPC.
 
 ## Supabase Tables
 
@@ -336,13 +393,52 @@ Files in `../` (parent of `app/`):
 
 **Rule**: before implementing any feature with legal implications (payments, health data, minors, geolocation, data sharing), check `docs/juridico/LEGAL.md` and update it if needed.
 
+## Legal & Compliance (`lib/core/legal/`)
+
+LGPD + GDPR implementation landed 2026-08-17. Migration:
+`supabase/migrations/20260817_lgpd_gdpr_compliance.sql`.
+
+**`LegalTexts`** (`legal_texts.dart`) is the single source of truth: document version,
+minimum age, public URLs, disclaimers, and the list of signup consents. Bump
+`documentVersion` whenever a legal text changes materially — it is written into
+`user_consents.document_version`, and the privacy screen flags stale consents.
+
+**`PrivacyRepository`** (`privacy_repository.dart`) wraps four RPCs:
+
+| RPC | Right |
+|-----|-------|
+| `export_my_data()` | LGPD 18 II/V · GDPR 15 e 20 — full JSON dump |
+| `delete_my_account()` | LGPD 18 VI · GDPR 17 — deletes table by table, avatar in Storage, then the `auth` user |
+| `grant_consent()` / `revoke_consent()` | GDPR 7(3) — revoking is as easy as granting |
+
+`user_consents` is **append-only** (no UPDATE/DELETE policy) — revoking writes a new
+row. That trail is the accountability evidence (LGPD 6 X / GDPR 5(2)).
+
+**Age gate**: 16 (`LegalTexts.minimumAge`), enforced in `register_page._goNext()` and
+re-validated in `AuthRepository.register()`. Covers GDPR Art. 8 and LGPD Art. 14 with
+one rule, avoiding a verifiable parental-consent flow.
+
+**Disclaimers** are mandatory (Play health-apps policy + CFN): nutrition shows on every
+AI result via `_NutritionPreview(isAi: true)`; workout shows in the AI generation sheet.
+
+**Public legal pages** live in `web/` and ship with the web build:
+`privacidade.html`, `termos.html`, `excluir-conta.html`. Play requires the deletion URL
+to be reachable without login. Keep them in sync with `docs/juridico/`.
+
+⚠️ Consent flags travel through `signUp()` metadata and are persisted by the
+`handle_new_user` trigger. Changing the consent list means changing **both**
+`LegalTexts.signupConsents` and that trigger.
+
 ## Pre-Play Store Checklist
 
 From `docs/juridico/LEGAL.md` — pending before publishing:
+- [ ] **Apply the compliance migration to the Supabase project** (not yet applied)
 - [ ] Change `applicationId` from `com.example.muscle_camp` (in `android/app/build.gradle.kts`)
 - [ ] Generate release keystore (currently debug-signed)
-- [ ] Host `docs/juridico/PRIVACY.md` at `https://musclechamp.com.br/privacidade`
-- [ ] Add consent checkbox for health data in registration screen
-- [ ] Add "Excluir minha conta" button in profile
-- [ ] Add Privacy Policy link inside the app
+- [ ] Point the legal URLs at the owned domain once `musclechamp.com.br` exists
 - [ ] Fill Play Console Data Safety form (declares health data + Groq photo sharing)
+- [ ] Decide on EU distribution — GDPR Art. 27 requires an EU representative, or
+      restrict the EEA in Play Console
+- [x] Consent checkbox for health data in registration
+- [x] "Excluir minha conta" in profile + public deletion URL
+- [x] Privacy Policy link inside the app
