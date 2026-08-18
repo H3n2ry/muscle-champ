@@ -29,17 +29,62 @@ flutter pub get                      # Install dependencies
 flutter analyze                      # Static analysis (pre-existing errors in doh_http_overrides.dart are known/ignored)
 ```
 
-### Web deploy to Vercel
+### Web deploy — Cloudflare Pages (destino final)
+
 ```bash
-cd build/web
-npx vercel --prod --yes --scope "af-dev"   # → https://muscle-champ.vercel.app
+npx wrangler pages deploy build/web --project-name=muscle-champ --branch=main
 ```
+
+First time only — `wrangler login` opens a browser OAuth flow, so a human has to
+do it:
+
+```bash
+npx wrangler login
+```
+
+**Why Cloudflare and not Vercel.** The app is 48 static files; Vercel executes
+nothing for it (the `groq-proxy` runs on Supabase). But Vercel's Hobby plan
+**forbids commercial use** — their fair-use policy counts "advertising the sale
+of a product or service", so merely announcing the subscription violates it.
+Staying would mean Pro at US$20/month ≈ R$1.296/year, which at the projected
+Year-1 volume eats the entire revenue. Cloudflare Pages free has no such clause
+and no documented bandwidth cap.
+
+Free-tier limits vs this app: 25 MiB per file (largest is `canvaskit.wasm` at
+6.9 MB), 20,000 files (we ship 48), 500 builds/month. Comfortable.
+
+No `_redirects` file is needed: the app uses **hash routing** (`/#/register`)
+because `usePathUrlStrategy` is not called, so every route resolves through
+`index.html` on its own. If someone ever switches to path URLs, a SPA fallback
+becomes mandatory or deep links will 404.
+
+### Web deploy — Vercel (legado, em transição)
+
+```bash
+cd build/web && npx vercel --prod --yes --scope "af-dev"
+```
+
+Kept alive during the migration so testing can continue on
+`muscle-champ.vercel.app`. Both hosts serve the same build and hit the same
+Supabase, so accounts and data are shared. Retire this once the domain points
+at Cloudflare.
 
 ### Build + deploy completo
 ```bash
 flutter pub get
 flutter build web --release
-cd build/web && npx vercel --prod --yes --scope "af-dev"
+npx wrangler pages deploy build/web --project-name=muscle-champ --branch=main
+```
+
+⚠️ **Never deploy without confirming the build succeeded.** `flutter build web`
+fails intermittently on Windows with `Unable to determine engine version`
+(a lock on `bin/cache/engine.realm`, usually a leftover `dart`/`flutter run`
+process). The deploy command happily ships whatever is already in `build/web`,
+so a failed build silently republishes the previous version. Check for
+`✓ Built build\web` first, or compare hashes afterwards:
+
+```bash
+curl -s -o /tmp/served.js https://muscle-champ.pages.dev/main.dart.js && sha256sum /tmp/served.js build/web/main.dart.js
 ```
 
 ### If build fails with path errors
@@ -314,7 +359,8 @@ UI mockups: `../dashboard_de_progresso_v3/` and `../perfil_e_evolu_o_v3/` (HTML 
 |---------|---------|--------|
 | Supabase | Auth + PostgreSQL + Storage + Edge Functions + Vault | `supabase_config.dart` / `secrets.dart` (project `jryetjysjiyuuoznaejc`) |
 | Groq | LLM inference (via `groq-proxy` Edge Function) | key in Supabase Vault, never in client |
-| Vercel | Web hosting | Project: `muscle-champ`, scope: `af-dev` |
+| Cloudflare Pages | Web hosting (destino) | Project: `muscle-champ` → `muscle-champ.pages.dev` |
+| Vercel | Web hosting (legado, sair antes de vender) | Project: `muscle-champ`, scope: `af-dev` |
 | GitHub Actions | Keepalive, backup, AI healthcheck | `.github/workflows/` |
 
 **Workflows** (all run on GitHub's infra, only once pushed):
