@@ -1,0 +1,106 @@
+name: AI Healthcheck
+
+# Verifica diariamente se os modelos de IA continuam vivos e respondendo direito.
+#
+# Existe porque a Groq aposenta modelos com pouco aviso — duas vezes em 30 dias
+# (visão em 17/07/2026, texto em 16/08/2026) — e até agora só descobríamos por
+# reclamação de usuário. O proxy tem cadeia de fallback, mas fallback silencioso
+# é dívida: você fica rodando no reserva sem saber.
+#
+# Falha do workflow dispara e-mail do GitHub para o dono do repositório.
+
+on:
+  schedule:
+    # 08:23 UTC (~05:23 BRT), deslocado do keepalive das 09:17 para não
+    # concorrerem. Horário quebrado de propósito: crons redondos atrasam.
+    - cron: "23 8 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verificar modelos de texto e visão
+        run: |
+          set -uo pipefail
+
+          # A anon key é pública por design (vai embutida no app).
+          ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpyeWV0anlzaml5dXVvem5hZWpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzMDE5OTIsImV4cCI6MjA5NDg3Nzk5Mn0.XMl5qb30XRhBB4mhPU42l5mtUXKj15s5lr_dJggrzOA"
+          URL="https://jryetjysjiyuuoznaejc.supabase.co/functions/v1/groq-proxy"
+
+          failed=0
+
+          check_task() {
+            task="$1"
+            echo "─────────────────────────────────────────"
+            echo "task: $task"
+
+            # Prompt trivial e determinístico. Poucos tokens: o custo mensal
+            # deste workflow fica na casa dos centavos.
+            body=$(cat <<EOF
+          {
+            "task": "$task",
+            "temperature": 0,
+            "max_tokens": 200,
+            "messages": [{"role": "user", "content": "Responda apenas com a palavra: OK"}]
+          }
+          EOF
+            )
+
+            code=$(curl -sS -D /tmp/h_$task.txt -o /tmp/b_$task.json \
+              -w "%{http_code}" -X POST "$URL" \
+              -H "Authorization: Bearer $ANON" \
+              -H "Content-Type: application/json" \
+              -d "$body")
+
+            model=$(grep -i '^x-model-used:'     /tmp/h_$task.txt | tr -d '\r' | cut -d' ' -f2-)
+            fb=$(   grep -i '^x-model-fallback:' /tmp/h_$task.txt | tr -d '\r' | cut -d' ' -f2-)
+
+            echo "HTTP        : $code"
+            echo "modelo usado: ${model:-<ausente>}"
+
+            # 1) Precisa responder 200
+            if [ "$code" != "200" ]; then
+              echo "::error::[$task] HTTP $code — modelo pode ter sido descontinuado."
+              cat /tmp/b_$task.json
+              failed=1
+              return
+            fi
+
+            content=$(jq -r '.choices[0].message.content // ""' /tmp/b_$task.json)
+            finish=$( jq -r '.choices[0].finish_reason // ""'    /tmp/b_$task.json)
+
+            # 2) Conteúdo vazio é a falha SILENCIOSA: o gpt-oss-120b gasta todo
+            #    o max_tokens raciocinando e devolve 200 com content vazio.
+            if [ -z "$content" ]; then
+              echo "::error::[$task] resposta 200 mas content VAZIO (finish=$finish). Revisar reasoningEffort/tokenHeadroom em MODEL_CHAINS."
+              failed=1
+              return
+            fi
+
+            # 3) Truncamento indica orçamento de tokens curto para o modelo atual
+            if [ "$finish" != "stop" ]; then
+              echo "::error::[$task] finish_reason=$finish (esperado 'stop'). Resposta truncada."
+              failed=1
+              return
+            fi
+
+            # 4) Fallback ativo: funciona, mas está no reserva — precisa de ação
+            if [ -n "$fb" ]; then
+              echo "::error::[$task] FALLBACK ATIVO — '$fb' morreu, respondendo por '$model'. Atualizar MODEL_CHAINS em supabase/functions/groq-proxy/index.ts."
+              failed=1
+              return
+            fi
+
+            echo "ok (finish=$finish)"
+          }
+
+          check_task text
+          check_task vision
+
+          echo "─────────────────────────────────────────"
+          if [ "$failed" -ne 0 ]; then
+            echo "::error::Healthcheck de IA falhou. Ver detalhes acima."
+            exit 1
+          fi
+          echo "Todos os modelos respondendo normalmente."

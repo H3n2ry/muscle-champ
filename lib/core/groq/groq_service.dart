@@ -610,7 +610,7 @@ Não invente acompanhamentos que não foram citados/vistos.''';
   static Future<List<Map<String, dynamic>>> generateWorkout(
       String muscleGroup) async {
     final body = jsonEncode({
-      'model': GroqConfig.textModel,
+      'task': 'text',
       'temperature': 0.7,
       'response_format': {'type': 'json_object'},
       'messages': [
@@ -651,7 +651,7 @@ Regras:
   static Future<Map<String, dynamic>> calculateFoodMacros(
       String description) async {
     final body = jsonEncode({
-      'model': GroqConfig.textModel,
+      'task': 'text',
       // temperature 0 + seed fixo: a mesma descrição sempre gera o mesmo
       // resultado, e descrições parecidas param de oscilar.
       'temperature': 0,
@@ -740,7 +740,7 @@ bebida_alcoolica, suplemento''',
     final fatMeta   = goalFat?.round()     ?? (calories * 0.30 ~/ 9);
 
     final body = jsonEncode({
-      'model': GroqConfig.textModel,
+      'task': 'text',
       'temperature': 0.3,
       'response_format': {'type': 'json_object'},
       'messages': [
@@ -847,7 +847,7 @@ Regras OBRIGATÓRIAS — respeite com precisão:
             'Se não aparecer, use essas medidas como noção do porte físico do usuário para calibrar melhor a estimativa.'
         : '';
     final body = jsonEncode({
-      'model': GroqConfig.visionModel,
+      'task': 'vision',
       'temperature': 0,
       'top_p': 1,
       'seed': 42,
@@ -919,7 +919,7 @@ Regras OBRIGATÓRIAS — respeite com precisão:
       String base64Input, double coinDiameterMm) async {
     final (optimized, mime) = _optimizeImage(base64Input);
     final body = jsonEncode({
-      'model': GroqConfig.visionModel,
+      'task': 'vision',
       'temperature': 0.1,
       'reasoning_effort': 'none',
       'max_tokens': 200,
