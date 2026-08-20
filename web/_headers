@@ -1,0 +1,41 @@
+# Cabeçalhos de cache — lidos pelo Cloudflare Pages.
+#
+# O Flutter web registra um service worker que cacheia tudo agressivamente.
+# Sem revalidar os pontos de entrada, o navegador continua servindo o build
+# anterior mesmo depois do deploy — o usuário testa uma correção que já subiu
+# e vê o comportamento antigo.
+#
+# A regra: pontos de entrada sempre revalidam; o resto pode cachear por muito
+# tempo, porque tem hash no nome ou é atualizado junto com o bootstrap.
+
+/index.html
+  Cache-Control: no-cache, must-revalidate
+
+/flutter_bootstrap.js
+  Cache-Control: no-cache, must-revalidate
+
+/flutter_service_worker.js
+  Cache-Control: no-cache, must-revalidate
+
+/main.dart.js
+  Cache-Control: no-cache, must-revalidate
+
+/version.json
+  Cache-Control: no-cache, must-revalidate
+
+# Páginas legais: precisam refletir mudanças de texto sem esperar cache
+/privacidade.html
+  Cache-Control: no-cache, must-revalidate
+
+/termos.html
+  Cache-Control: no-cache, must-revalidate
+
+/excluir-conta.html
+  Cache-Control: no-cache, must-revalidate
+
+# CanvasKit e assets versionados podem cachear longo
+/canvaskit/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/*
+  Cache-Control: public, max-age=2592000
