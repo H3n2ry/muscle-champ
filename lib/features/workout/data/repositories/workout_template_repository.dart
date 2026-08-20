@@ -18,13 +18,38 @@ class WorkoutTemplateRepository {
         .toList();
   }
 
+  // ── Ordem manual dos treinos ───────────────────────────────────────
+
+  /// Persiste a ordem da lista. [ids] vem na sequência final desejada.
+  ///
+  /// A RPC filtra por `user_id`, então mandar o id de outro usuário
+  /// simplesmente não afeta linha nenhuma.
+  Future<void> reorderTemplates(List<String> ids) =>
+      _client.rpc('reorder_workout_templates', params: {'p_ids': ids});
+
+  /// Próximo índice livre, para o template novo entrar no fim.
+  Future<int> _proximaOrdem() async {
+    try {
+      final r = await _client.rpc('next_template_order');
+      return (r as num?)?.toInt() ?? 0;
+    } catch (_) {
+      // Falhar aqui não pode impedir a criação do treino: o template entra
+      // com 0 e o usuário reordena se quiser.
+      return 0;
+    }
+  }
+
   // ── Exercícios de um template ──────────────────────────────────────
   Future<List<TemplateExerciseModel>> getExercises(String templateId) async {
     final data = await _client
         .from('template_exercises')
         .select()
         .eq('template_id', templateId)
-        .order('order_index');
+        // ⚠️ `ascending` é OBRIGATÓRIO aqui: ao contrário do SQL, o
+        // postgrest-dart assume `ascending: false`. Sem isto os exercícios
+        // saíam de trás para frente, e a ordem escolhida pelo usuário aparecia
+        // invertida no card — parecia ordenação alfabética por coincidência.
+        .order('order_index', ascending: true);
     return (data as List)
         .map((e) => TemplateExerciseModel.fromJson(e as Map<String, dynamic>))
         .toList();
@@ -37,9 +62,13 @@ class WorkoutTemplateRepository {
   }) async {
     final userId = _client.auth.currentUser!.id;
 
+    // Entra no fim da lista. Sem isso o template novo cai com order_index 0 e
+    // aparece no topo, misturado com o primeiro da ordem que o usuário montou.
+    final proximaOrdem = await _proximaOrdem();
+
     final template = await _client
         .from('workout_templates')
-        .insert({'user_id': userId, 'name': name})
+        .insert({'user_id': userId, 'name': name, 'order_index': proximaOrdem})
         .select()
         .single();
 
