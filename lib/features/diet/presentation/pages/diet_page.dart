@@ -3228,6 +3228,10 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
           maxLines: 3,
           minLines: 1,
           textCapitalization: TextCapitalization.sentences,
+          // Sem isto o widget não reconstrói ao digitar, e o botão CALCULAR
+          // MACROS — que lê _aiCtrl.text — continuava desabilitado até algo
+          // mais forçar rebuild (sair e voltar ao campo, por exemplo).
+          onChanged: (_) => setState(() {}),
           decoration: InputDecoration(
             hintText:
                 'Ex: "200g de frango grelhado"\n"arroz integral com feijão"',

@@ -18,7 +18,11 @@ class DietRepository {
           .select()
           .eq('user_id', userId)
           .eq('date', today)
-          .order('created_at'),
+          // Direção explícita: o postgrest-dart assume `ascending: false`,
+          // então isto sempre foi decrescente — refeição mais recente no topo.
+          // Mantido como está para não mudar o comportamento; o ponto é que
+          // agora está escrito, e não dependendo de um padrão surpreendente.
+          .order('created_at', ascending: false),
       _client
           .from('goals')
           .select('daily_calories, goal_type')
