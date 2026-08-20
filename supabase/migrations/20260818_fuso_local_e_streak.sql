@@ -78,7 +78,11 @@ BEGIN
             FROM workout_completions
            WHERE user_id = v_uid AND completed_date <= v_ancora) d
   ) t
-  WHERE completed_date = v_ancora - (rn - 1);
+  -- O cast para int é obrigatório: ROW_NUMBER() devolve bigint e o Postgres
+  -- só tem operador `date - integer`. Sem ele a função lança
+  -- "operator does not exist: date - bigint" e, como o perfil monta os dados
+  -- com Future.wait, a tela INTEIRA cai junto.
+  WHERE completed_date = v_ancora - (rn - 1)::int;
 
   RETURN COALESCE(v_total, 0);
 END;

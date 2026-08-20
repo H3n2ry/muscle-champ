@@ -48,25 +48,49 @@ class ProfileRepository {
 
   // ── Leitura ─────────────────────────────────────────────────────
 
+  /// Executa [query] e devolve [fallback] se ela falhar.
+  ///
+  /// `Future.wait` rejeita inteiro quando qualquer futuro lança. Uma RPC
+  /// secundária quebrada derrubava o perfil TODO — foi o que aconteceu quando
+  /// `get_streak` passou a lançar `date - bigint`: a tela ficou vazia inteira
+  /// por causa de um número no card de sequência. Só `profiles` é essencial;
+  /// o resto degrada.
+  Future<T> _opcional<T>(Future<dynamic> query, T fallback) async {
+    try {
+      return (await query) as T;
+    } catch (_) {
+      return fallback;
+    }
+  }
+
   Future<ProfileModel> getProfile() async {
     final userId = _client.auth.currentUser!.id;
 
     final results = await Future.wait<dynamic>([
+      // Essencial: sem perfil não há tela.
       _client.from('profiles').select().eq('id', userId).single(),
-      _client.from('goals').select().eq('user_id', userId).maybeSingle(),
-      _client.from('points').select('amount').eq('user_id', userId),
+
+      _opcional<Map<String, dynamic>?>(
+          _client.from('goals').select().eq('user_id', userId).maybeSingle(), null),
+      _opcional<List>(
+          _client.from('points').select('amount').eq('user_id', userId), const []),
       // workout_completions é o sistema atual; `workouts` é legado e ficou
       // parado, entao o total de treinos aparecia congelado.
-      _client.from('workout_completions').select('id').eq('user_id', userId),
-      _client.rpc('get_streak', params: {'p_user_id': userId}),
+      _opcional<List>(
+          _client.from('workout_completions').select('id').eq('user_id', userId),
+          const []),
+      _opcional<int?>(
+          _client.rpc('get_streak', params: {'p_user_id': userId}), 0),
       // Última leitura de bioimpedância (opcional)
-      _client
-          .from('bioimpedance_logs')
-          .select()
-          .eq('user_id', userId)
-          .order('measured_at', ascending: false)
-          .limit(1)
-          .maybeSingle(),
+      _opcional<Map<String, dynamic>?>(
+          _client
+              .from('bioimpedance_logs')
+              .select()
+              .eq('user_id', userId)
+              .order('measured_at', ascending: false)
+              .limit(1)
+              .maybeSingle(),
+          null),
     ]);
 
     final profile     = results[0] as Map<String, dynamic>;
