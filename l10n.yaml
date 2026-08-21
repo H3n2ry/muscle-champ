@@ -1,0 +1,9 @@
+# Configuração do gerador de traduções do Flutter.
+#
+# Português é o template: o app nasceu em pt-BR e é onde os textos são
+# escritos primeiro. Inglês e espanhol derivam dele.
+arb-dir: lib/l10n
+template-arb-file: app_pt.arb
+output-localization-file: app_localizations.dart
+output-class: L
+nullable-getter: false

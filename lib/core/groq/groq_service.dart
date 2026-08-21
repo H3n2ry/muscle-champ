@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../i18n/locale_provider.dart';
 import 'groq_config.dart';
 import 'taco_table.dart';
 
@@ -512,7 +513,14 @@ Não invente acompanhamentos que não foram citados/vistos.''';
             .clamp(0.0, 3000.0);
         if (w <= 0) continue;
         // Alimento conhecido → usa os valores oficiais, ignora os da IA
-        final oficial = _lookupDensity(nome, m['categoria'] as String?);
+        //
+        // A busca casa por nome em PORTUGUÊS (_kDensity, kTacoTable). Com o app
+        // em inglês ou espanhol o `name` vem traduzido e não casaria nada, caindo
+        // na densidade crua da IA. Por isso o modelo devolve `name_pt` junto: o
+        // usuário lê no idioma dele, a tabela continua sendo consultada em
+        // português. Sem `name_pt` (resposta antiga), usa `name`.
+        final nomeBusca = (m['name_pt'] as String?) ?? nome;
+        final oficial = _lookupDensity(nomeBusca, m['categoria'] as String?);
         var p = (oficial?.$2 ?? num0(m['protein_per_100g'])) * w / 100;
         var c = (oficial?.$3 ?? num0(m['carbs_per_100g'])) * w / 100;
         var f = (oficial?.$4 ?? num0(m['fat_per_100g'])) * w / 100;
@@ -556,8 +564,10 @@ Não invente acompanhamentos que não foram citados/vistos.''';
 
     // Caminho preferido: a IA informou os valores por 100g → app faz a conta.
     // Se o alimento for conhecido, a densidade oficial tem prioridade.
-    final oficial =
-        _lookupDensity(raw['name'] as String?, raw['categoria'] as String?);
+    // name_pt: mesmo motivo do caminho por itens — a tabela é em português.
+    final oficial = _lookupDensity(
+        (raw['name_pt'] as String?) ?? raw['name'] as String?,
+        raw['categoria'] as String?);
     final p100 = oficial?.$2 ?? num0(raw['protein_per_100g']);
     final c100 = oficial?.$3 ?? num0(raw['carbs_per_100g']);
     final f100 = oficial?.$4 ?? num0(raw['fat_per_100g']);
@@ -620,9 +630,11 @@ Não invente acompanhamentos que não foram citados/vistos.''';
 Gere um treino completo para o agrupamento muscular solicitado.
 Retorne SOMENTE JSON válido no formato exato:
 {"exercises":[{"name":"Nome do Exercício","sets":3,"reps":12,"tip":"dica curta de execução"}]}
+
+IDIOMA: ${AiLocale.instrucao}
+
 Regras:
 - 5 a 8 exercícios por treino
-- Nomes dos exercícios em português
 - "reps" deve ser um número inteiro (ex: 12, não "8-12")
 - "sets" entre 3 e 4
 - "tip" máximo 60 caracteres''',
@@ -663,6 +675,12 @@ Regras:
           'role': 'system',
           'content': '''Você é um nutricionista brasileiro. Calcule os macronutrientes
 do alimento ou refeição descrito pelo usuário.
+
+IDIOMA: ${AiLocale.instrucao}
+Além de `name` no idioma do usuário, inclua SEMPRE `name_pt` com o nome do
+alimento em português do Brasil. O aplicativo consulta a tabela nutricional
+brasileira por esse campo — sem ele a precisão cai. Quando o idioma já for
+português, repita o mesmo valor nos dois campos.
 
 $_kNutritionReference
 
@@ -748,6 +766,9 @@ bebida_alcoolica, suplemento''',
           'role': 'system',
           'content': '''Você é nutricionista esportivo brasileiro especializado em dietas para atletas.
 Crie um plano alimentar diário completo com alimentos típicos do Brasil.
+
+IDIOMA: ${AiLocale.instrucao}
+Mantenha os alimentos brasileiros, apenas escreva os nomes no idioma pedido.
 Retorne SOMENTE JSON válido neste formato exato:
 {
   "goal_protein_g": $protMeta,
@@ -869,6 +890,10 @@ Regras OBRIGATÓRIAS — respeite com precisão:
               'type': 'text',
               'text': 'Você é nutricionista. Analise a foto e identifique o(s) alimento(s).\n'
                   'Se houver um prato com vários itens, calcule item a item e some tudo.\n'
+                  'IDIOMA: ${AiLocale.instrucao}\n'
+                  'Inclua SEMPRE `name_pt` com o nome em português do Brasil, além '
+                  'de `name` no idioma do usuário: o app consulta a tabela '
+                  'nutricional brasileira por esse campo.\n'
                   'Use objetos de referência visíveis (garfo~20cm, faca~22cm, prato~26cm) '
                   'para estimar o peso.$portionCtx$handCtx\n'
                   '\n$_kNutritionReference\n'

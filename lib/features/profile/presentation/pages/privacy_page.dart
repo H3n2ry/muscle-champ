@@ -11,6 +11,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/legal_document_sheet.dart';
 import '../../../../shared/widgets/mk_snack.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// Central de privacidade — exercício dos direitos do titular.
 ///
@@ -29,7 +30,7 @@ class _PrivacyPageState extends ConsumerState<PrivacyPage> {
   Future<void> _open(String url) async {
     final uri = Uri.parse(url);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      if (mounted) MkSnack.error(context, 'Não foi possível abrir $url');
+      if (mounted) MkSnack.error(context, L.of(context).priv_naoFoiPossivelAbrir(url));
     }
   }
 
@@ -61,7 +62,7 @@ class _PrivacyPageState extends ConsumerState<PrivacyPage> {
       await ref.read(privacyRepositoryProvider).deleteMyAccount();
       if (!mounted) return;
       context.go('/login');
-      MkSnack.success(context, 'Conta e dados excluídos.');
+      MkSnack.success(context, L.of(context).priv_contaExcluida);
     } catch (e) {
       if (mounted) {
         setState(() => _deleting = false);
@@ -76,7 +77,7 @@ class _PrivacyPageState extends ConsumerState<PrivacyPage> {
       value ? await repo.grantConsent(type) : await repo.revokeConsent(type);
       ref.invalidate(myConsentsProvider);
     } catch (e) {
-      if (mounted) MkSnack.error(context, 'Não foi possível atualizar: $e');
+      if (mounted) MkSnack.error(context, '${L.of(context).priv_naoFoiPossivelAtualizar}: $e');
     }
   }
 
@@ -87,32 +88,32 @@ class _PrivacyPageState extends ConsumerState<PrivacyPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Privacidade e dados'),
+        title: Text(L.of(context).privacidade_titulo),
         backgroundColor: AppColors.background,
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
         children: [
           _Section(
-            title: 'DOCUMENTOS',
+            title: L.of(context).privacidade_documentos,
             children: [
               _LinkTile(
                 icon: Icons.privacy_tip_outlined,
-                label: 'Política de Privacidade',
+                label: L.of(context).privacidade_politicaPrivacidade,
                 onTap: () => LegalDocumentSheet.show(
                     context, LegalDocuments.privacy,
                     showAcceptButton: false),
               ),
               _LinkTile(
                 icon: Icons.description_outlined,
-                label: 'Termos de Uso',
+                label: L.of(context).privacidade_termosUso,
                 onTap: () => LegalDocumentSheet.show(
                     context, LegalDocuments.terms,
                     showAcceptButton: false),
               ),
               _LinkTile(
                 icon: Icons.open_in_browser,
-                label: 'Ver no navegador',
+                label: L.of(context).privacidade_verNoNavegador,
                 onTap: () => _open(LegalTexts.privacyUrl),
               ),
             ],
@@ -120,7 +121,7 @@ class _PrivacyPageState extends ConsumerState<PrivacyPage> {
 
           const SizedBox(height: 24),
           _Section(
-            title: 'SEUS CONSENTIMENTOS',
+            title: L.of(context).privacidade_seusConsentimentos,
             children: [
               consents.when(
                 loading: () => const Padding(
@@ -129,7 +130,7 @@ class _PrivacyPageState extends ConsumerState<PrivacyPage> {
                 ),
                 error: (e, _) => Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Text('Não foi possível carregar: $e',
+                  child: Text('${L.of(context).priv_naoFoiPossivelCarregar}: $e',
                       style: AppTypography.bodySm),
                 ),
                 data: (map) => Column(
@@ -150,23 +151,21 @@ class _PrivacyPageState extends ConsumerState<PrivacyPage> {
 
           const SizedBox(height: 24),
           _Section(
-            title: 'SEUS DIREITOS',
+            title: L.of(context).privacidade_seusDireitos,
             children: [
               _ActionTile(
                 icon: Icons.download_outlined,
-                label: 'Baixar meus dados',
+                label: L.of(context).privacidade_baixarDados,
                 detail:
-                    'Exporta tudo que guardamos sobre você em JSON — perfil, '
-                    'treinos, dieta, peso, pontos e consentimentos.',
+                    'L.of(context).priv_exportaTudo',
                 busy: _exporting,
                 onTap: _export,
               ),
               _ActionTile(
                 icon: Icons.delete_forever_outlined,
-                label: 'Excluir minha conta',
+                label: L.of(context).privacidade_excluirConta,
                 detail:
-                    'Apaga a conta e todos os dados permanentemente. '
-                    'Não há como desfazer.',
+                    'L.of(context).priv_apagaConta',
                 danger: true,
                 busy: _deleting,
                 onTap: _confirmDelete,
@@ -176,7 +175,7 @@ class _PrivacyPageState extends ConsumerState<PrivacyPage> {
 
           const SizedBox(height: 24),
           _Section(
-            title: 'CONTATO',
+            title: L.of(context).privacidade_contato,
             children: [
               Padding(
                 padding: const EdgeInsets.all(16),
@@ -184,8 +183,7 @@ class _PrivacyPageState extends ConsumerState<PrivacyPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Para dúvidas ou pedidos sobre seus dados, fale com o '
-                      'encarregado de proteção de dados:',
+                      'L.of(context).priv_faleComEncarregado',
                       style: AppTypography.bodySm,
                     ),
                     const SizedBox(height: 8),
@@ -203,7 +201,7 @@ class _PrivacyPageState extends ConsumerState<PrivacyPage> {
           const SizedBox(height: 24),
           Text(
             '${LegalTexts.generalHealthDisclaimer}\n\n'
-            'Versão dos documentos: ${LegalTexts.documentVersion}',
+            '${L.of(context).priv_versaoDocs(LegalTexts.documentVersion)}',
             style: AppTypography.bodySm,
           ),
         ],
@@ -237,23 +235,23 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
 
     return AlertDialog(
       backgroundColor: AppColors.surfaceContainerLow,
-      title: Text('Excluir conta', style: AppTypography.headlineSm),
+      title: Text(L.of(context).priv_excluirConta, style: AppTypography.headlineSm),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Isto apaga permanentemente:\n\n'
-            '• Perfil, foto e metas\n'
-            '• Histórico de peso e bioimpedância\n'
-            '• Treinos, modelos e conclusões\n'
-            '• Registros de dieta e água\n'
-            '• Pontos, ranking e amizades\n\n'
-            'Não há backup e não há como desfazer.',
+            L.of(context).priv_apagaPermanentemente +
+                L.of(context).priv_itemPerfil +
+                L.of(context).priv_itemPesoBio +
+                L.of(context).priv_itemTreinos +
+                L.of(context).priv_itemDieta +
+                L.of(context).priv_itemPontos +
+                L.of(context).priv_semBackup,
             style: AppTypography.bodySm,
           ),
           const SizedBox(height: 16),
-          Text('Digite $_phrase para confirmar:', style: AppTypography.bodySm),
+          Text(L.of(context).priv_digiteParaConfirmar(_phrase), style: AppTypography.bodySm),
           const SizedBox(height: 8),
           TextField(
             controller: _controller,
@@ -267,12 +265,12 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Cancelar'),
+          child: Text(L.of(context).comum_cancelar),
         ),
         TextButton(
           onPressed: canDelete ? () => Navigator.of(context).pop(true) : null,
           child: Text(
-            'Excluir',
+            L.of(context).priv_excluir,
             style: TextStyle(
               color: canDelete ? AppColors.error : AppColors.secondary,
             ),
@@ -298,7 +296,7 @@ class _ExportResultDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Exportação gerada — $sizeKb KB de JSON.',
+          Text(L.of(context).priv_exportacaoGerada(sizeKb),
               style: AppTypography.bodySm),
           const SizedBox(height: 12),
           Container(
@@ -320,11 +318,11 @@ class _ExportResultDialog extends StatelessWidget {
             Clipboard.setData(ClipboardData(text: json));
             Navigator.of(context).pop();
           },
-          child: const Text('Copiar'),
+          child: Text(L.of(context).comum_copiar),
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Fechar'),
+          child: Text(L.of(context).comum_fechar),
         ),
       ],
     );
@@ -438,7 +436,7 @@ class _ConsentTile extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
-                'Obrigatório para usar o app — para retirar, exclua a conta.',
+                L.of(context).priv_obrigatorioParaUsar,
                 style: AppTypography.bodySm
                     .copyWith(color: AppColors.onSurfaceVariant),
               ),
@@ -447,8 +445,7 @@ class _ConsentTile extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
-                'Aceito na versão ${status!.documentVersion} — os documentos '
-                'mudaram desde então.',
+                'L.of(context).priv_aceitoNaVersao(status!.documentVersion)',
                 style: AppTypography.bodySm.copyWith(color: AppColors.warning),
               ),
             ),

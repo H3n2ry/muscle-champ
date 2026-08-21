@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/app_localizations.dart';
 
 import '../../core/legal/legal_documents.dart';
 import '../../core/legal/legal_texts.dart';
@@ -115,7 +116,7 @@ class _LegalDocumentSheetState extends State<LegalDocumentSheet> {
                       Text(widget.document.title,
                           style: AppTypography.headlineSm),
                       const SizedBox(height: 2),
-                      Text('Versão ${LegalTexts.documentVersion}',
+                      Text(L.of(context).doc_versao(LegalTexts.documentVersion),
                           style: AppTypography.bodySm.copyWith(fontSize: 11)),
                     ],
                   ),
@@ -173,7 +174,7 @@ class _LegalDocumentSheetState extends State<LegalDocumentSheet> {
                           const Icon(Icons.keyboard_double_arrow_down,
                               size: 14, color: AppColors.onSurfaceVariant),
                           const SizedBox(width: 6),
-                          Text('Role até o fim para aceitar',
+                          Text(L.of(context).doc_roleAteOFim,
                               style: AppTypography.bodySm
                                   .copyWith(fontSize: 11)),
                         ],

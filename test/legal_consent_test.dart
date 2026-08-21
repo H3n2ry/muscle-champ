@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:muscle_camp/core/legal/legal_documents.dart';
+import 'package:muscle_camp/l10n/app_localizations.dart';
 import 'package:muscle_camp/core/legal/legal_texts.dart';
 import 'package:muscle_camp/shared/widgets/legal_document_sheet.dart';
 
@@ -83,6 +84,9 @@ void main() {
         {bool showAccept = true}) async {
       bool? resultado;
       await tester.pumpWidget(MaterialApp(
+        locale: const Locale('pt'), // asserções abaixo são no texto em português
+        localizationsDelegates: L.localizationsDelegates,
+        supportedLocales: L.supportedLocales,
         home: Builder(
           builder: (context) => Scaffold(
             body: Center(
@@ -137,6 +141,9 @@ void main() {
     testWidgets('aceitar retorna true', (tester) async {
       bool? resultado;
       await tester.pumpWidget(MaterialApp(
+        locale: const Locale('pt'), // asserções abaixo são no texto em português
+        localizationsDelegates: L.localizationsDelegates,
+        supportedLocales: L.supportedLocales,
         home: Builder(
           builder: (context) => Scaffold(
             body: Center(
@@ -165,6 +172,9 @@ void main() {
     testWidgets('fechar sem aceitar não retorna true', (tester) async {
       bool? resultado;
       await tester.pumpWidget(MaterialApp(
+        locale: const Locale('pt'), // asserções abaixo são no texto em português
+        localizationsDelegates: L.localizationsDelegates,
+        supportedLocales: L.supportedLocales,
         home: Builder(
           builder: (context) => Scaffold(
             body: Center(

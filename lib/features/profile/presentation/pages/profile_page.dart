@@ -7,6 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../core/gamification/level_system.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../../../shared/widgets/language_selector.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/repositories/profile_repository.dart';
 import '../providers/profile_provider.dart';
@@ -32,7 +34,7 @@ class ProfilePage extends ConsumerWidget {
               const Icon(Icons.error_outline,
                   color: AppColors.error, size: 40),
               const SizedBox(height: 12),
-              Text('Erro ao carregar perfil',
+              Text(L.of(context).perfil_erroCarregar,
                   style: AppTypography.bodyMd
                       .copyWith(color: AppColors.error)),
               const SizedBox(height: 16),
@@ -72,11 +74,11 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
   String get _goalLabel {
     switch (widget.profile.goalType as String) {
       case 'lose_weight':
-        return 'PERDA DE PESO';
+        return L.of(context).objetivo_perdaPeso;
       case 'gain_weight':
-        return 'GANHO DE MASSA';
+        return L.of(context).objetivo_ganhoMassa;
       default:
-        return 'MANUTENÇÃO';
+        return L.of(context).objetivo_manutencaoUp;
     }
   }
 
@@ -105,7 +107,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erro ao carregar foto: $e'),
+            content: Text('${L.of(context).perfil_erroFoto}: $e'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -314,14 +316,14 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               Row(
                 children: [
                   _StatBox(
-                      label: 'PONTOS',
+                      label: L.of(context).perfil_pontos,
                       value: '${p.totalPoints}',
                       accent: true),
                   const SizedBox(width: 10),
-                  _StatBox(label: 'TREINOS', value: '${p.totalWorkouts}'),
+                  _StatBox(label: L.of(context).perfil_treinos, value: '${p.totalWorkouts}'),
                   const SizedBox(width: 10),
                   _StatBox(
-                      label: 'SEQUÊNCIA', value: '${p.streak}d'),
+                      label: L.of(context).perfil_sequencia, value: '${p.streak}d'),
                 ],
               ),
 
@@ -332,7 +334,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
 
               // ── IMC ──────────────────────────────────────────
               if ((p.heightCm as double? ?? 0) > 0) ...[
-                _SectionLabel(label: 'ÍNDICE DE MASSA CORPORAL'),
+                _SectionLabel(label: L.of(context).perfil_imc),
                 const SizedBox(height: 12),
                 _ProfileBmiCard(
                   heightCm:      p.heightCm as double,
@@ -343,14 +345,14 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               ],
 
               // ── Sequência ─────────────────────────────────────
-              _SectionLabel(label: 'SEQUÊNCIA ATIVA'),
+              _SectionLabel(label: L.of(context).perfil_sequenciaAtiva),
               const SizedBox(height: 12),
               _StreakCard(streak: p.streak as int),
 
               const SizedBox(height: 24),
 
               // ── Meta ──────────────────────────────────────────
-              _SectionLabel(label: 'META DE COMPOSIÇÃO'),
+              _SectionLabel(label: L.of(context).perfil_metaComposicao),
               const SizedBox(height: 12),
               _GoalProgressCard(
                 goalType:      p.goalType as String,
@@ -361,34 +363,52 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               const SizedBox(height: 24),
 
               // ── Bioimpedância ─────────────────────────────────
-              _SectionLabel(label: 'BIOIMPEDÂNCIA CORPORAL'),
+              _SectionLabel(label: L.of(context).perfil_bioimpedanciaCorporal),
               const SizedBox(height: 12),
               _BioimpedanceCard(profile: p),
 
               const SizedBox(height: 24),
 
               // ── Pontuação ─────────────────────────────────────
-              _SectionLabel(label: 'SISTEMA DE PONTUAÇÃO'),
+              _SectionLabel(label: L.of(context).perfil_sistemaPontuacao),
               const SizedBox(height: 12),
               _PointsGuideCard(),
 
               const SizedBox(height: 24),
 
               // ── Evolução ──────────────────────────────────────
-              _SectionLabel(label: 'EVOLUÇÃO DE PONTOS'),
+              _SectionLabel(label: L.of(context).perfil_evolucaoPontos),
               const SizedBox(height: 12),
               _EvolutionChart(totalPoints: p.totalPoints as int),
 
               const SizedBox(height: 24),
 
               // ── Conquistas ────────────────────────────────────
-              _SectionLabel(label: 'CONQUISTAS CHAMP'),
+              _SectionLabel(label: L.of(context).perfil_conquistas),
               const SizedBox(height: 12),
               _BadgeGallery(
                 totalPoints:   p.totalPoints as int,
                 totalWorkouts: p.totalWorkouts as int,
                 streak:        p.streak as int,
               ),
+
+              const SizedBox(height: 28),
+
+              // ── Idioma ────────────────────────────────────────
+              // No fim da página, como no login: é ajuste de preferência, não
+              // algo que se consulta a toda hora.
+              _SectionLabel(label: L.of(context).idioma_titulo),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.surfaceContainerHigh),
+                ),
+                child: const LanguageListTile(),
+              ),
+
+              const SizedBox(height: 20),
             ]),
           ),
         ),
@@ -442,7 +462,7 @@ class _BioimpedanceCard extends ConsumerWidget {
                             color: AppColors.onSurface,
                             fontWeight: FontWeight.w700)),
                     const SizedBox(height: 2),
-                    Text('Registre sua composição corporal',
+                    Text(L.of(context).perfil_registreComposicao,
                         style: AppTypography.bodySm.copyWith(
                             color: AppColors.onSurfaceVariant)),
                   ],
@@ -488,7 +508,7 @@ class _BioimpedanceCard extends ConsumerWidget {
                       color: AppColors.primary, size: 16),
                 ),
                 const SizedBox(width: 10),
-                Text('COMPOSIÇÃO CORPORAL',
+                Text(L.of(context).perfil_composicaoCorporal,
                     style: AppTypography.labelSm
                         .copyWith(letterSpacing: 1.5, color: AppColors.primary)),
                 const Spacer(),
@@ -517,25 +537,25 @@ class _BioimpedanceCard extends ConsumerWidget {
                       color: const Color(0xFFFF6B6B)),
                 if (profile.muscleMassKg != null)
                   _BioStat(
-                      label: 'MÚSCULO',
+                      label: L.of(context).perfil_musculo,
                       value: '${(profile.muscleMassKg as double).toStringAsFixed(1)} kg',
                       icon: Icons.fitness_center,
                       color: AppColors.primary),
                 if (profile.visceralFat != null)
                   _BioStat(
                       label: 'VISCERAL',
-                      value: 'Nível ${profile.visceralFat}',
+                      value: L.of(context).perfil_nivelN2(profile.visceralFat),
                       icon: Icons.monitor_heart_outlined,
                       color: const Color(0xFFFFD700)),
                 if (profile.hydrationPct != null)
                   _BioStat(
-                      label: 'HIDRATAÇÃO',
+                      label: L.of(context).perfil_hidratacao,
                       value: '${(profile.hydrationPct as double).toStringAsFixed(1)}%',
                       icon: Icons.opacity,
                       color: const Color(0xFF5B8DF6)),
                 if (profile.boneMassKg != null)
                   _BioStat(
-                      label: 'ÓSSEA',
+                      label: L.of(context).perfil_ossea,
                       value: '${(profile.boneMassKg as double).toStringAsFixed(1)} kg',
                       icon: Icons.accessibility_new,
                       color: AppColors.warning),
@@ -675,7 +695,7 @@ class _BioimpedanceSheetState extends ConsumerState<_BioimpedanceSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro: $e'),
+          SnackBar(content: Text('${L.of(context).comum_erro}: $e'),
               backgroundColor: AppColors.error),
         );
       }
@@ -729,7 +749,7 @@ class _BioimpedanceSheetState extends ConsumerState<_BioimpedanceSheet> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('BIOIMPEDÂNCIA',
+                      Text(L.of(context).perfil_bioimpedanciaUp,
                           style: AppTypography.headlineSm
                               .copyWith(fontWeight: FontWeight.w700)),
                       Text('dados opcionais',
@@ -742,8 +762,7 @@ class _BioimpedanceSheetState extends ConsumerState<_BioimpedanceSheet> {
 
               const SizedBox(height: 4),
               Text(
-                'Preencha os valores gerados pelo aparelho de bioimpedância. '
-                'Todos os campos são opcionais.',
+                'L.of(context).perfil_preenchaValores',
                 style: AppTypography.bodySm
                     .copyWith(color: AppColors.onSurfaceVariant),
               ),
@@ -784,7 +803,7 @@ class _BioimpedanceSheetState extends ConsumerState<_BioimpedanceSheet> {
                       ctrl: _visceralCtrl,
                       label: 'GORDURA VISCERAL',
                       hint: '1–20',
-                      suffix: 'nível',
+                      suffix: L.of(context).perfil_nivelMinusculo,
                       icon: Icons.monitor_heart_outlined,
                       color: const Color(0xFFFFD700),
                       isInt: true,
@@ -794,7 +813,7 @@ class _BioimpedanceSheetState extends ConsumerState<_BioimpedanceSheet> {
                   Expanded(
                     child: _BioField(
                       ctrl: _hydroCtrl,
-                      label: 'HIDRATAÇÃO',
+                      label: L.of(context).perfil_hidratacao,
                       hint: '60.0',
                       suffix: '%',
                       icon: Icons.opacity,
@@ -809,7 +828,7 @@ class _BioimpedanceSheetState extends ConsumerState<_BioimpedanceSheet> {
                   Expanded(
                     child: _BioField(
                       ctrl: _boneCtrl,
-                      label: 'MASSA ÓSSEA',
+                      label: L.of(context).perfil_massaOssea,
                       hint: '3.0',
                       suffix: 'kg',
                       icon: Icons.accessibility_new,
@@ -852,7 +871,7 @@ class _BioimpedanceSheetState extends ConsumerState<_BioimpedanceSheet> {
                           child: CircularProgressIndicator(
                               strokeWidth: 2.5,
                               color: AppColors.onPrimary))
-                      : Text('SALVAR BIOIMPEDÂNCIA',
+                      : Text(L.of(context).perfil_salvarBioimpedancia,
                           style: AppTypography.labelMd.copyWith(
                             color: AppColors.onPrimary,
                             fontWeight: FontWeight.w700,
@@ -946,11 +965,11 @@ class _PointsGuideCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const items = [
-      (Icons.fitness_center,    '+10 pts', 'Treino concluído'),
-      (Icons.restaurant,        '+10 pts', 'Meta de dieta atingida'),
-      (Icons.trending_up,       '+5 pts',  'Progressão de carga (por exercício)'),
-      (Icons.monitor_weight,    '+20 pts', 'Evolução de peso na direção da meta'),
+    final items = [
+      (Icons.fitness_center,    '+10 pts', L.of(context).perfil_pontosTreino),
+      (Icons.restaurant,        '+10 pts', L.of(context).perfil_pontosDieta),
+      (Icons.trending_up,       '+5 pts',  L.of(context).perfil_pontosProgressao),
+      (Icons.monitor_weight,    '+20 pts', L.of(context).perfil_pontosEvolucao),
     ];
 
     return Container(
@@ -1026,12 +1045,12 @@ class _ProfileBmiCard extends StatelessWidget {
     return targetWeight / (hm * hm);
   }
 
-  String _label(double bmi) {
-    if (bmi < 18.5) return 'Abaixo do peso';
-    if (bmi < 25.0) return 'Normal ✓';
-    if (bmi < 30.0) return 'Sobrepeso';
-    if (bmi < 35.0) return 'Obesidade I';
-    return 'Obesidade II+';
+  String _label(double bmi, L l) {
+    if (bmi < 18.5) return l.imc_abaixoPeso;
+    if (bmi < 25.0) return l.imc_normalOk;
+    if (bmi < 30.0) return l.imc_sobrepeso;
+    if (bmi < 35.0) return l.imc_obesidade1;
+    return l.imc_obesidade2;
   }
 
   Color _color(double bmi) {
@@ -1065,7 +1084,7 @@ class _ProfileBmiCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('IMC ATUAL',
+                    Text(L.of(context).perfil_imcAtual,
                         style: AppTypography.labelSm
                             .copyWith(letterSpacing: 2)),
                     const SizedBox(height: 4),
@@ -1079,7 +1098,7 @@ class _ProfileBmiCard extends StatelessWidget {
                             )),
                         Padding(
                           padding: const EdgeInsets.only(bottom: 4),
-                          child: Text('  ${_label(bmi)}',
+                          child: Text('  ${_label(bmi, L.of(context))}',
                               style: AppTypography.bodySm),
                         ),
                       ],
@@ -1091,11 +1110,11 @@ class _ProfileBmiCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   _MiniInfo(
-                      label: 'ALTURA',
+                      label: L.of(context).perfil_altura,
                       value: '${heightCm.toInt()} cm'),
                   const SizedBox(height: 4),
                   _MiniInfo(
-                      label: 'PESO',
+                      label: L.of(context).perfil_peso,
                       value: '${currentWeight.toStringAsFixed(1)} kg'),
                 ],
               ),
@@ -1178,8 +1197,9 @@ class _ProfileBmiCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Meta: IMC ${tBmi.toStringAsFixed(1)} (${_label(tBmi)})  '
-                      'com ${targetWeight.toStringAsFixed(1)} kg',
+                      '${L.of(context).perfil_metaImc} ${tBmi.toStringAsFixed(1)} '
+                      '(${_label(tBmi, L.of(context))})  '
+                      '${L.of(context).perfil_comKg(targetWeight.toStringAsFixed(1))}',
                       style: AppTypography.bodySm.copyWith(fontSize: 11),
                     ),
                   ),
@@ -1276,12 +1296,12 @@ class _LevelProgressCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text('NÍVEL $nivel',
+              Text(L.of(context).nivel_nivelN(nivel),
                   style: AppTypography.labelMd
                       .copyWith(color: AppColors.primary)),
               const Spacer(),
               if (!noTeto)
-                Text('NÍVEL ${nivel + 1}',
+                Text(L.of(context).nivel_nivelN(nivel + 1),
                     style: AppTypography.labelSm
                         .copyWith(color: AppColors.onSurfaceVariant)),
             ],
@@ -1299,7 +1319,7 @@ class _LevelProgressCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           if (noTeto)
-            Text('Nível máximo alcançado.',
+            Text(L.of(context).perfil_nivelMaximoAlcancado,
                 style: AppTypography.bodySm.copyWith(fontSize: 12))
           else
             Row(
@@ -1319,8 +1339,8 @@ class _LevelProgressCard extends StatelessWidget {
                         ),
                         TextSpan(
                           text: falta == 1
-                              ? 'ponto para o nível ${nivel + 1}'
-                              : 'pontos para o nível ${nivel + 1}',
+                              ? L.of(context).nivel_pontoParaNivelResto(nivel + 1)
+                              : L.of(context).nivel_pontosParaNivelResto(nivel + 1),
                         ),
                       ],
                     ),
@@ -1423,7 +1443,7 @@ class _StreakCard extends ConsumerWidget {
               const Icon(Icons.local_fire_department,
                   color: AppColors.warning, size: 22),
               const SizedBox(width: 8),
-              Text('$streak dias consecutivos',
+              Text(L.of(context).perfil_diasConsecutivos(streak),
                   style: AppTypography.bodyMd.copyWith(
                     color: AppColors.onSurface,
                     fontWeight: FontWeight.w600,
@@ -1445,7 +1465,7 @@ class _StreakCard extends ConsumerWidget {
             error: (_, __) => SizedBox(
               height: 52,
               child: Center(
-                child: Text('Não foi possível carregar a semana',
+                child: Text(L.of(context).perfil_semanaNaoCarregou,
                     style: AppTypography.bodySm.copyWith(fontSize: 11)),
               ),
             ),
@@ -1518,14 +1538,14 @@ class _GoalProgressCard extends StatelessWidget {
     required this.targetWeight,
   });
 
-  String get _goalLabel {
+  String _goalLabel(L l) {
     switch (goalType) {
       case 'lose_weight':
-        return 'Perder Peso';
+        return l.objetivo_perderPesoCap;
       case 'gain_weight':
-        return 'Ganhar Massa';
+        return l.objetivo_ganharMassaCap;
       default:
-        return 'Manutenção';
+        return l.objetivo_manutencaoCap;
     }
   }
 
@@ -1556,7 +1576,7 @@ class _GoalProgressCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(_goalLabel, style: AppTypography.bodyMd),
+              Text(_goalLabel(L.of(context)), style: AppTypography.bodyMd),
               Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 10, vertical: 4),
@@ -1625,7 +1645,7 @@ class _GoalProgressCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '${(_progress * 100).toStringAsFixed(0)}% do objetivo',
+            L.of(context).perfil_percentualObjetivo((_progress * 100).toStringAsFixed(0)),
             style: AppTypography.bodySm,
           ),
         ],
@@ -1737,7 +1757,7 @@ class _BadgeGallery extends StatelessWidget {
           unlocked: totalWorkouts >= 1),
       _Badge(
           icon: Icons.local_fire_department,
-          label: 'SEQUÊNCIA\nDE 7 DIAS',
+          label: L.of(context).perfil_sequencia7Dias,
           unlocked: streak >= 7),
       _Badge(
           icon: Icons.bolt,

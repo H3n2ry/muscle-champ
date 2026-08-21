@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   # Supabase (auth + banco + storage em um só)
   supabase_flutter: ^2.5.0
@@ -36,7 +38,9 @@ dependencies:
   http: ^1.2.1
 
   # Utils
-  intl: ^0.19.0
+  # ^0.20.3 é exigido pelo flutter_localizations; manter em 0.19 quebra a
+  # resolução de dependências.
+  intl: ^0.20.3
   equatable: ^2.0.5
 
   # Conformidade LGPD/GDPR
@@ -59,6 +63,8 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
+  # Gera AppLocalizations a partir de lib/l10n/*.arb (config em l10n.yaml)
+  generate: true
   assets:
     - assets/images/
     - assets/animations/

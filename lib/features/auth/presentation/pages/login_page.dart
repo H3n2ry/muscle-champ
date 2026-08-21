@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../shared/widgets/language_selector.dart';
 import '../../../../shared/widgets/mk_error_banner.dart';
 import '../../../../shared/widgets/mk_text_field.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -41,21 +43,21 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   String _friendlyError(Object error) {
     final msg = error.toString().toLowerCase();
     if (msg.contains('invalid_credentials') || msg.contains('invalid login credentials')) {
-      return 'Email ou senha incorretos. Verifique e tente novamente.';
+      return L.of(context).login_credenciaisInvalidas;
     }
     if (msg.contains('email_not_confirmed') || msg.contains('not confirmed')) {
-      return 'Confirme seu email antes de entrar. Verifique sua caixa de entrada.';
+      return L.of(context).login_confirmeEmail;
     }
     if (msg.contains('user_not_found') || msg.contains('no user')) {
-      return 'Nenhuma conta encontrada com este email.';
+      return L.of(context).login_contaNaoEncontrada;
     }
     if (msg.contains('too_many_requests') || msg.contains('rate limit')) {
-      return 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
+      return L.of(context).login_muitasTentativas;
     }
     if (msg.contains('network') || msg.contains('socketexception') || msg.contains('connection')) {
-      return 'Sem conexão com a internet. Verifique sua rede.';
+      return L.of(context).login_semInternet;
     }
-    return 'Algo deu errado. Tente novamente.';
+    return L.of(context).comum_algoDeuErrado;
   }
 
   Future<void> _submit() async {
@@ -176,7 +178,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     const SizedBox(height: 16),
 
                     Text(
-                      'Compete. Evolua. Domine.',
+                      L.of(context).login_slogan,
                       style: AppTypography.bodyLg.copyWith(
                           color: AppColors.onSurfaceVariant),
                     ),
@@ -184,7 +186,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     const SizedBox(height: 56),
 
                     // ── Form ───────────────────────────────────────
-                    Text('EMAIL',
+                    Text(L.of(context).login_email,
                         style: AppTypography.labelSm.copyWith(
                           letterSpacing: 2,
                           color: AppColors.onSurfaceVariant,
@@ -192,16 +194,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     const SizedBox(height: 8),
                     MkTextField(
                       controller: _emailCtrl,
-                      label: 'seu@email.com',
+                      label: L.of(context).login_emailHint,
                       keyboardType: TextInputType.emailAddress,
                       validator: (v) => v == null || !v.contains('@')
-                          ? 'Email inválido'
+                          ? L.of(context).comum_emailInvalido
                           : null,
                     ),
 
                     const SizedBox(height: 24),
 
-                    Text('SENHA',
+                    Text(L.of(context).login_senha,
                         style: AppTypography.labelSm.copyWith(
                           letterSpacing: 2,
                           color: AppColors.onSurfaceVariant,
@@ -213,7 +215,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       obscureText: true,
                       validator: (v) =>
                           v == null || v.length < 6
-                              ? 'Mínimo 6 caracteres'
+                              ? L.of(context).login_minimo6
                               : null,
                     ),
 
@@ -250,7 +252,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                   color: AppColors.onPrimary,
                                 ),
                               )
-                            : Text('ENTRAR',
+                            : Text(L.of(context).login_entrar,
                                 style: AppTypography.labelMd.copyWith(
                                   color: AppColors.onPrimary,
                                   fontSize: 15,
@@ -276,7 +278,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        child: Text('CRIAR CONTA',
+                        child: Text(L.of(context).login_criarConta,
                             style: AppTypography.labelMd.copyWith(
                               fontSize: 15,
                               letterSpacing: 2,
@@ -292,23 +294,32 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         alignment: WrapAlignment.center,
                         spacing: 8,
                         runSpacing: 8,
-                        children: const [
+                        children: [
                           _FeaturePill(
                               icon: Icons.fitness_center,
-                              label: 'Treinos'),
+                              label: L.of(context).login_pillTreinos),
                           _FeaturePill(
                               icon: Icons.restaurant,
-                              label: 'Dieta'),
+                              label: L.of(context).login_pillDieta),
                           _FeaturePill(
                               icon: Icons.emoji_events,
-                              label: 'Ranking'),
+                              label: L.of(context).login_pillRanking),
                           _FeaturePill(
-                              icon: Icons.bolt, label: 'Pontos'),
+                              icon: Icons.bolt,
+                              label: L.of(context).login_pillPontos),
                         ],
                       ),
                     ),
 
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 24),
+
+                    // Idioma no login: é a PRIMEIRA tela do app. Quem não lê
+                    // português precisa poder trocar antes de qualquer outra
+                    // coisa — deixar só no cadastro e no perfil obriga a
+                    // navegar em um idioma que a pessoa não entende.
+                    const LanguageSelector(),
+
+                    const SizedBox(height: 32),
                   ],
                 ),
               ),

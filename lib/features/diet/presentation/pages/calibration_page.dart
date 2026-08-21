@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/groq/groq_config.dart';
@@ -44,7 +45,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
     if (xfile == null) return;
     final bytes = await xfile.readAsBytes();
     if (!GroqConfig.isConfigured) {
-      setState(() => _error = 'Sessão expirada. Faça login novamente.');
+      setState(() => _error = L.of(context).calib_sessaoExpirada);
       return;
     }
     setState(() {
@@ -60,7 +61,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
       if (!mounted) return;
       if (result.containsKey('error')) {
         setState(() => _error =
-            'Não consegui ver a moeda e a mão claramente. Tente de novo com boa luz, moeda bem no centro da palma.');
+            L.of(context).calib_naoViMoeda);
       } else {
         setState(() {
           _lengthCm = (result['hand_length_cm'] as num?)?.toDouble();
@@ -71,7 +72,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
       if (mounted) {
         final msg = e.toString().replaceFirst('Exception: ', '');
         setState(() => _error =
-            msg.length > 120 ? 'Não foi possível calibrar. Tente novamente.' : msg);
+            msg.length > 120 ? L.of(context).calib_naoFoiPossivel : msg);
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -87,14 +88,14 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
           .save(_lengthCm!, _widthCm!);
       ref.invalidate(handCalibrationProvider);
       if (mounted) {
-        MkSnack.success(context, 'IA calibrada! As análises de foto ficarão mais precisas.');
+        MkSnack.success(context, L.of(context).calib_sucesso);
         context.pop();
       }
     } catch (_) {
       if (mounted) {
         setState(() {
           _saving = false;
-          _error = 'Não foi possível salvar. Tente novamente.';
+          _error = L.of(context).calib_naoFoiPossivelSalvar;
         });
       }
     }
@@ -144,9 +145,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'A IA aprende o tamanho da sua mão usando uma moeda como régua. '
-                      'Depois, ela usa sua mão como referência para estimar as porções com mais precisão. '
-                      'É só uma vez.',
+                      'L.of(context).calib_explicacao',
                       style: AppTypography.bodySm.copyWith(
                           color: AppColors.onSurfaceVariant, height: 1.5),
                     ),
@@ -210,7 +209,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
               _StepLine(
                   n: '2',
                   text:
-                      'Abra a palma e coloque a moeda no centro. Boa luz, foto de cima.'),
+                      L.of(context).calib_abraPalma),
               const SizedBox(height: 12),
 
               // ── Foto / preview ────────────────────────────────────
@@ -220,7 +219,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
                     Expanded(
                       child: _PhotoBtn(
                         icon: Icons.camera_alt_outlined,
-                        label: 'CÂMERA',
+                        label: L.of(context).calib_camera,
                         onTap: () => _pickImage(ImageSource.camera),
                       ),
                     ),
@@ -273,13 +272,13 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
                             color: Colors.black.withOpacity(0.5),
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          child: const Column(
+                          child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               CircularProgressIndicator(
                                   color: _accent, strokeWidth: 2),
                               SizedBox(height: 10),
-                              Text('Medindo sua mão...',
+                              Text(L.of(context).calib_medindo,
                                   style: TextStyle(
                                       color: Colors.white, fontSize: 13)),
                             ],
@@ -313,7 +312,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
                           const Icon(Icons.check_circle_outline,
                               color: AppColors.primary, size: 18),
                           const SizedBox(width: 8),
-                          Text('Mão medida',
+                          Text(L.of(context).calib_maoMedida,
                               style: AppTypography.labelMd.copyWith(
                                   color: AppColors.primary, fontSize: 13)),
                         ],
@@ -328,14 +327,14 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
                           ),
                           Expanded(
                             child: _Measure(
-                                label: 'LARGURA DA PALMA',
+                                label: L.of(context).calib_larguraPalma,
                                 value: '${_widthCm!.toStringAsFixed(1)} cm'),
                           ),
                         ],
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        'Confira se faz sentido. Se estiver estranho, refaça a foto.',
+                        L.of(context).calib_confira,
                         style: AppTypography.bodySm.copyWith(
                             color: AppColors.onSurfaceVariant, fontSize: 11),
                       ),
@@ -362,7 +361,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
                             height: 20,
                             child: CircularProgressIndicator(
                                 strokeWidth: 2.5, color: AppColors.onPrimary))
-                        : Text('SALVAR CALIBRAÇÃO',
+                        : Text(L.of(context).calib_salvar,
                             style: AppTypography.labelMd.copyWith(
                                 color: AppColors.onPrimary,
                                 fontSize: 14,

@@ -3,19 +3,30 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import '../../l10n/app_localizations.dart';
 import 'tutorial_overlay.dart';
 
 class MainScaffold extends ConsumerWidget {
   final Widget child;
   const MainScaffold({super.key, required this.child});
 
+  // Só rota e ícone ficam aqui; o rótulo vem da tradução no build, porque
+  // uma lista `const` não pode chamar L.of(context).
   static const _tabs = [
-    (path: '/dashboard', icon: Icons.bolt,           label: 'INÍCIO'),
-    (path: '/workout',   icon: Icons.fitness_center,  label: 'TREINO'),
-    (path: '/diet',      icon: Icons.restaurant,      label: 'DIETA'),
-    (path: '/ranking',   icon: Icons.emoji_events,    label: 'RANKING'),
-    (path: '/profile',   icon: Icons.person,          label: 'PERFIL'),
+    (path: '/dashboard', icon: Icons.bolt),
+    (path: '/workout',   icon: Icons.fitness_center),
+    (path: '/diet',      icon: Icons.restaurant),
+    (path: '/ranking',   icon: Icons.emoji_events),
+    (path: '/profile',   icon: Icons.person),
   ];
+
+  static List<String> _labels(BuildContext c) => [
+        L.of(c).navInicio,
+        L.of(c).navTreino,
+        L.of(c).navDieta,
+        L.of(c).navRanking,
+        L.of(c).navPerfil,
+      ];
 
   int _currentIndex(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
@@ -71,7 +82,7 @@ class MainScaffold extends ConsumerWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          _tabs[i].label,
+                          _labels(context)[i],
                           style: AppTypography.labelSm.copyWith(
                             fontSize: 9,
                             color: active

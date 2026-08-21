@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/repositories/auth_repository.dart';
@@ -43,7 +44,7 @@ class _ConfirmEmailPageState extends ConsumerState<ConfirmEmailPage> {
   Future<void> _verify() async {
     final code = _code;
     if (code.length < 8) {
-      setState(() => _errorMsg = 'Digite todos os 8 dígitos');
+      setState(() => _errorMsg = L.of(context).conf_digite8);
       return;
     }
 
@@ -61,7 +62,7 @@ class _ConfirmEmailPageState extends ConsumerState<ConfirmEmailPage> {
     } on AuthException catch (_) {
       if (!mounted) return;
       setState(() {
-        _errorMsg = 'Código inválido ou expirado. Verifique e tente novamente.';
+        _errorMsg = L.of(context).conf_codigoInvalido;
       });
       // Limpar caixinhas e focar na primeira
       for (final c in _controllers) { c.clear(); }
@@ -85,7 +86,7 @@ class _ConfirmEmailPageState extends ConsumerState<ConfirmEmailPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Código reenviado para ${widget.email}'),
+          content: Text(L.of(context).conf_codigoReenviado(widget.email)),
           backgroundColor: AppColors.surfaceContainerHighest,
           behavior: SnackBarBehavior.floating,
         ),
@@ -94,8 +95,8 @@ class _ConfirmEmailPageState extends ConsumerState<ConfirmEmailPage> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Erro ao reenviar o código. Tente novamente.'),
+        SnackBar(
+          content: Text(L.of(context).conf_erroReenviar),
           backgroundColor: AppColors.errorContainer,
           behavior: SnackBarBehavior.floating,
         ),
@@ -212,7 +213,7 @@ class _ConfirmEmailPageState extends ConsumerState<ConfirmEmailPage> {
 
               // Descrição
               Text(
-                'Enviamos um código de 8 dígitos para:',
+                L.of(context).conf_enviamosCodigo,
                 textAlign: TextAlign.center,
                 style: AppTypography.bodyMd.copyWith(
                   color: AppColors.onSurfaceVariant,
@@ -337,8 +338,8 @@ class _ConfirmEmailPageState extends ConsumerState<ConfirmEmailPage> {
                       )
                     : Text(
                         _resendCountdown > 0
-                            ? 'Reenviar código em ${_resendCountdown}s'
-                            : 'Não recebeu o código? Reenviar',
+                            ? L.of(context).conf_reenviarEm(_resendCountdown)
+                            : L.of(context).conf_naoRecebeu,
                         style: AppTypography.bodyMd.copyWith(
                           color: _resendCountdown > 0
                               ? AppColors.onSurfaceVariant.withOpacity(0.5)

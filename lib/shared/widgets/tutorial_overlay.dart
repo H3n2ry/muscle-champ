@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../l10n/app_localizations.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 
@@ -77,103 +78,94 @@ final tutorialProvider =
 
 // ── Step definitions ───────────────────────────────────────────────────────
 
+// `title` e `body` são funções de L, não Strings: a lista continua const (rota
+// e alvo do spotlight não mudam de idioma), mas o texto só é resolvido na hora
+// de desenhar — senão o tutorial ficaria preso ao idioma do primeiro build.
 typedef _TStep = ({
   String route,
   SpotTarget target,
-  String title,
-  String body,
+  String Function(L) title,
+  String Function(L) body,
 });
 
 // 12 steps across 5 sections (INÍCIO 0-1, TREINO 2-3, DIETA 4-7, RANKING 8-9, PERFIL 10-11)
-const List<_TStep> _kSteps = [
+final List<_TStep> _kSteps = [
   // ── INÍCIO ─────────────────────────────────────
   (
     route: '/dashboard',
     target: SpotTarget.nav0,
-    title: 'Bem-vindo ao Muscle Champ!',
-    body:
-        'Seu hub de fitness gamificado. Ganhe pontos treinando e comendo bem, e suba no ranking superando seus amigos.',
+    title: (l) => l.tut_bemVindoTitulo,
+    body: (l) => l.tut_bemVindoCorpo,
   ),
   (
     route: '/dashboard',
     target: SpotTarget.pageTop,
-    title: 'Pontos, Rank e Streak',
-    body:
-        'Veja aqui seus pontos acumulados, posição no ranking global e entre amigos, e sua sequência de dias ativos.',
+    title: (l) => l.tut_pontosTitulo,
+    body: (l) => l.tut_pontosCorpo,
   ),
   // ── TREINO ─────────────────────────────────────
   (
     route: '/workout',
     target: SpotTarget.nav1,
-    title: 'Treinos com IA',
-    body:
-        'Gere treinos personalizados com inteligência artificial ou registre treinos livres com séries, repetições e cargas.',
+    title: (l) => l.tut_treinosIaTitulo,
+    body: (l) => l.tut_treinosIaCorpo,
   ),
   (
     route: '/workout',
     target: SpotTarget.pageTop,
-    title: 'Gerar Treino com IA',
-    body:
-        'Toque em "Gerar Treino", escolha o grupo muscular e a IA monta o plano completo com exercícios, séries e descanso.',
+    title: (l) => l.tut_gerarTreinoTitulo,
+    body: (l) => l.tut_gerarTreinoCorpo,
   ),
   // ── DIETA ──────────────────────────────────────
   (
     route: '/diet',
     target: SpotTarget.nav2,
-    title: 'Dieta e Nutrição',
-    body:
-        'Registre tudo que você come — por texto ou foto — e a IA calcula calorias, proteínas, carboidratos e gorduras.',
+    title: (l) => l.tut_dietaTitulo,
+    body: (l) => l.tut_dietaCorpo,
   ),
   (
     route: '/diet',
     target: SpotTarget.pageTop,
-    title: 'Registrar Refeição por Texto',
-    body:
-        'Descreva o que comeu ("100g frango grelhado + arroz branco") e a IA calcula os macros na hora.',
+    title: (l) => l.tut_refeicaoTextoTitulo,
+    body: (l) => l.tut_refeicaoTextoCorpo,
   ),
   (
     route: '/diet',
     target: SpotTarget.pageMiddle,
-    title: 'Foto do Prato — Análise por IA',
-    body:
-        'Tire uma foto do seu prato e a IA identifica os alimentos e estima automaticamente os macros e calorias.',
+    title: (l) => l.tut_fotoTitulo,
+    body: (l) => l.tut_fotoCorpo,
   ),
   (
     route: '/diet',
     target: SpotTarget.pageBottom,
-    title: 'Plano de Dieta com IA',
-    body:
-        'Gere um cardápio completo para o dia baseado nas suas metas. Troque alimentos com um toque — a IA recalcula os macros para manter as calorias.',
+    title: (l) => l.tut_planoTitulo,
+    body: (l) => l.tut_planoCorpo,
   ),
   // ── RANKING ────────────────────────────────────
   (
     route: '/ranking',
     target: SpotTarget.nav3,
-    title: 'Ranking e Competição',
-    body:
-        'Dispute posições com todos os usuários do app. Cada treino registrado e meta de dieta atingida vale pontos!',
+    title: (l) => l.tut_rankingTitulo,
+    body: (l) => l.tut_rankingCorpo,
   ),
   (
     route: '/ranking',
     target: SpotTarget.pageTop,
-    title: 'Ranking Global e Amigos',
-    body:
-        'Alterne entre o ranking global e o ranking só com seus amigos. Busque usuários pelo nome e mande solicitação de amizade.',
+    title: (l) => l.tut_amigosTitulo,
+    body: (l) => l.tut_amigosCorpo,
   ),
   // ── PERFIL ─────────────────────────────────────
   (
     route: '/profile',
     target: SpotTarget.nav4,
-    title: 'Seu Perfil',
-    body:
-        'Configure seus dados físicos, defina metas e personalize sua foto de perfil para aparecer no ranking.',
+    title: (l) => l.tut_perfilTitulo,
+    body: (l) => l.tut_perfilCorpo,
   ),
   (
     route: '/profile',
     target: SpotTarget.pageMiddle,
-    title: 'Metas e Bioimpedância',
-    body:
-        'Defina peso alvo, calorias diárias e objetivo (ganhar massa / perder peso / manter). Registre medidas de bioimpedância para acompanhar sua evolução corporal.',
+    title: (l) => l.tut_metasTitulo,
+    body: (l) => l.tut_metasCorpo,
   ),
 ];
 
@@ -345,8 +337,8 @@ class _TutorialOverlayState extends State<TutorialOverlay>
                       ),
                     ),
                     _TutorialCard(
-                      title: s.title,
-                      body: s.body,
+                      title: s.title(L.of(context)),
+                      body: s.body(L.of(context)),
                       step: widget.step,
                       section: section,
                       isLast: isLast,
@@ -366,8 +358,8 @@ class _TutorialOverlayState extends State<TutorialOverlay>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _TutorialCard(
-                      title: s.title,
-                      body: s.body,
+                      title: s.title(L.of(context)),
+                      body: s.body(L.of(context)),
                       step: widget.step,
                       section: section,
                       isLast: isLast,
@@ -542,7 +534,7 @@ class _TutorialCard extends StatelessWidget {
                 padding: EdgeInsets.zero,
               ),
               child: Text(
-                isLast ? 'COMEÇAR!' : 'PRÓXIMO  →',
+                isLast ? L.of(context).tut_comecar : L.of(context).tut_proximo,
                 style: AppTypography.labelSm.copyWith(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,

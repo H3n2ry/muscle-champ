@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../ranking/data/repositories/ranking_repository.dart';
@@ -33,12 +34,12 @@ class NotificationsPage extends ConsumerWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('NOTIFI-',
+                      Text('${L.of(context).notif_noti}-',
                           style: AppTypography.headlineLg.copyWith(
                             fontSize: 26,
                             fontWeight: FontWeight.w700,
                           )),
-                      Text('CAÇÕES',
+                      Text(L.of(context).notif_cacoes,
                           style: AppTypography.headlineLg.copyWith(
                             fontSize: 26,
                             fontWeight: FontWeight.w700,
@@ -73,7 +74,7 @@ class NotificationsPage extends ConsumerWidget {
                   const Icon(Icons.people_outline,
                       color: AppColors.onSurfaceVariant, size: 16),
                   const SizedBox(width: 8),
-                  Text('SOLICITAÇÕES DE AMIZADE',
+                  Text(L.of(context).notif_solicitacoes,
                       style: AppTypography.labelSm.copyWith(
                         color: AppColors.onSurfaceVariant,
                         letterSpacing: 1.5,
@@ -104,7 +105,7 @@ class NotificationsPage extends ConsumerWidget {
                       const Icon(Icons.wifi_off,
                           color: AppColors.onSurfaceVariant, size: 40),
                       const SizedBox(height: 12),
-                      Text('Erro ao carregar',
+                      Text(L.of(context).notif_erroCarregar,
                           style: AppTypography.bodyMd.copyWith(
                               color: AppColors.onSurfaceVariant)),
                     ],
@@ -131,7 +132,7 @@ class NotificationsPage extends ConsumerWidget {
                               style: AppTypography.headlineSm.copyWith(
                                   fontWeight: FontWeight.w700)),
                           const SizedBox(height: 8),
-                          Text('Nenhuma solicitação pendente',
+                          Text(L.of(context).notif_nenhumaPendente,
                               style: AppTypography.bodyMd.copyWith(
                                   color: AppColors.onSurfaceVariant)),
                         ],
@@ -257,7 +258,7 @@ class _RequestCardState extends State<_RequestCard> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'quer ser seu amigo',
+                  L.of(context).notif_querSerAmigo,
                   style: AppTypography.bodySm.copyWith(
                       color: AppColors.onSurfaceVariant,
                       fontSize: 11),
