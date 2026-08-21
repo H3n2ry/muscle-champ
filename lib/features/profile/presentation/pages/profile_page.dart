@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../core/gamification/level_system.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -79,7 +80,8 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
     }
   }
 
-  int _calcLevel(int points) => (points ~/ 100) + 1;
+  // _calcLevel local removido: era `(pontos ~/ 100) + 1`, linear, e divergia do
+  // dashboard. O cálculo agora é único, em LevelSystem.
 
   Future<void> _pickAndUploadAvatar() async {
     final picker = ImagePicker();
@@ -264,7 +266,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
-                                  'LVL ${_calcLevel(p.totalPoints as int)}',
+                                  'LVL ${LevelSystem.nivelDe(p.totalPoints as int)}',
                                   style: AppTypography.labelSm.copyWith(
                                     color: AppColors.onPrimary,
                                     fontSize: 10,
@@ -322,6 +324,9 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                       label: 'SEQUÊNCIA', value: '${p.streak}d'),
                 ],
               ),
+
+              const SizedBox(height: 12),
+              _LevelProgressCard(points: p.totalPoints as int),
 
               const SizedBox(height: 24),
 
@@ -1241,6 +1246,95 @@ class _TagChip extends StatelessWidget {
 }
 
 // ── Stat box ──────────────────────────────────────────────────────────────────
+
+/// Progresso rumo ao próximo nível.
+///
+/// A barra usa a faixa DO NÍVEL (do requisito atual até o próximo), não os
+/// pontos totais — senão ela ficaria quase cheia o tempo todo conforme os
+/// requisitos crescem.
+class _LevelProgressCard extends StatelessWidget {
+  final int points;
+  const _LevelProgressCard({required this.points});
+
+  @override
+  Widget build(BuildContext context) {
+    final nivel    = LevelSystem.nivelDe(points);
+    final falta    = LevelSystem.pontosParaProximo(points);
+    final progresso = LevelSystem.progressoNoNivel(points);
+    final alvo     = LevelSystem.requisito(nivel + 1);
+    final noTeto   = nivel >= LevelSystem.nivelMaximo;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.surfaceContainerHigh),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text('NÍVEL $nivel',
+                  style: AppTypography.labelMd
+                      .copyWith(color: AppColors.primary)),
+              const Spacer(),
+              if (!noTeto)
+                Text('NÍVEL ${nivel + 1}',
+                    style: AppTypography.labelSm
+                        .copyWith(color: AppColors.onSurfaceVariant)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progresso,
+              minHeight: 8,
+              backgroundColor: AppColors.surfaceContainerHigh,
+              valueColor:
+                  const AlwaysStoppedAnimation(AppColors.primary),
+            ),
+          ),
+          const SizedBox(height: 10),
+          if (noTeto)
+            Text('Nível máximo alcançado.',
+                style: AppTypography.bodySm.copyWith(fontSize: 12))
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: RichText(
+                    text: TextSpan(
+                      style: AppTypography.bodySm.copyWith(fontSize: 12),
+                      children: [
+                        TextSpan(
+                          text: '$falta ',
+                          style: AppTypography.bodySm.copyWith(
+                            fontSize: 13,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        TextSpan(
+                          text: falta == 1
+                              ? 'ponto para o nível ${nivel + 1}'
+                              : 'pontos para o nível ${nivel + 1}',
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Text('$points / $alvo',
+                    style: AppTypography.bodySm.copyWith(fontSize: 11)),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
 
 class _StatBox extends StatelessWidget {
   final String label;

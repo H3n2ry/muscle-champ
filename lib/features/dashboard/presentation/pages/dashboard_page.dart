@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/gamification/level_system.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -348,7 +349,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                             color: AppColors.primary,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Text('LVL 1',
+                          // Era 'LVL 1' fixo, então o dashboard e o perfil
+                          // mostravam níveis diferentes para o mesmo usuário.
+                          // Agora as duas telas usam LevelSystem.
+                          child: Text(
+                              'LVL ${LevelSystem.nivelDe(dashboard.valueOrNull?.totalPoints ?? user?.totalPoints ?? 0)}',
                               style: AppTypography.labelSm.copyWith(
                                 color: AppColors.onPrimary,
                                 fontSize: 8,
@@ -1014,9 +1019,16 @@ class _NextMilestoneCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Milestones at every 100
-    final nextMilestone = ((points ~/ 100) + 1) * 100;
-    final progress = points / nextMilestone;
+    // Este card já dizia "pontos para o próximo nível", mas calculava de 100
+    // em 100 — contradizendo o nível mostrado na mesma tela. Agora usa a
+    // mesma fonte das duas badges.
+    final nivel = LevelSystem.nivelDe(points);
+    final noTeto = nivel >= LevelSystem.nivelMaximo;
+    final nextMilestone =
+        noTeto ? points : LevelSystem.requisito(nivel + 1);
+    // Progresso dentro do nível, não sobre o total: senão a barra ficaria
+    // quase cheia o tempo todo nos níveis altos.
+    final progress = LevelSystem.progressoNoNivel(points);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -1072,7 +1084,10 @@ class _NextMilestoneCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '${nextMilestone - points} pontos para o próximo nível',
+            noTeto
+                ? 'Nível máximo alcançado.'
+                : '${LevelSystem.pontosParaProximo(points)} '
+                    'pontos para o nível ${nivel + 1}',
             style: AppTypography.bodySm,
           ),
         ],
