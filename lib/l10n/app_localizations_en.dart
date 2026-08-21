@@ -1627,4 +1627,20 @@ class LEn extends L {
 
   @override
   String get grupo_fullBody => 'Full Body';
+
+  @override
+  String get perfil_semanaAbrev => 'W';
+
+  @override
+  String get perfil_evolucaoNaoCarregou => 'Could not load the evolution';
+
+  @override
+  String perfil_tooltipSemana(int total, int ganhos) {
+    return '$total pts\n+$ganhos this week';
+  }
+
+  @override
+  String perfil_semanaDe(String data) {
+    return 'Week of $data';
+  }
 }

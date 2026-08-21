@@ -1656,14 +1656,18 @@ class _GoalProgressCard extends StatelessWidget {
 
 // ── Evolution chart ───────────────────────────────────────────────────────────
 
-class _EvolutionChart extends StatelessWidget {
+/// Curva acumulada de pontos das últimas 6 semanas.
+///
+/// Já foi um desenho decorativo — dividia o total em seis fatias iguais, então
+/// a escada saía idêntica para qualquer usuário em qualquer momento. Agora as
+/// barras vêm da tabela `points` e a última fecha exatamente no total do perfil.
+class _EvolutionChart extends ConsumerWidget {
   final int totalPoints;
   const _EvolutionChart({required this.totalPoints});
 
   @override
-  Widget build(BuildContext context) {
-    final weeks =
-        List.generate(6, (i) => (totalPoints * (i + 1) / 6).round());
+  Widget build(BuildContext context, WidgetRef ref) {
+    final semanas = ref.watch(pointsEvolutionProvider(totalPoints));
 
     return Container(
       height: 160,
@@ -1673,62 +1677,105 @@ class _EvolutionChart extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.surfaceContainerHigh),
       ),
-      child: BarChart(
-        BarChartData(
-          maxY: (totalPoints + 20).toDouble(),
-          barGroups: weeks.asMap().entries.map((e) {
-            return BarChartGroupData(
-              x: e.key,
-              barRods: [
-                BarChartRodData(
-                  toY: e.value.toDouble(),
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [
-                      AppColors.primary.withOpacity(0.4),
-                      AppColors.primary,
-                    ],
-                  ),
-                  width: 18,
-                  borderRadius: BorderRadius.circular(4),
+      child: semanas.when(
+        loading: () => const Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(
+                strokeWidth: 2, color: AppColors.primary),
+          ),
+        ),
+        error: (_, __) => Center(
+          child: Text(L.of(context).perfil_evolucaoNaoCarregou,
+              textAlign: TextAlign.center,
+              style: AppTypography.bodySm
+                  .copyWith(color: AppColors.onSurfaceVariant)),
+        ),
+        data: (ws) => ws.last.acumulado == 0
+            ? Center(
+                child: Text(L.of(context).perfil_semDados,
+                    style: AppTypography.bodySm
+                        .copyWith(color: AppColors.onSurfaceVariant)),
+              )
+            : _grafico(context, ws),
+      ),
+    );
+  }
+
+  Widget _grafico(BuildContext context, List<WeeklyPoints> ws) {
+    final l = L.of(context);
+    final topo = ws.last.acumulado;
+
+    return BarChart(
+      BarChartData(
+        maxY: (topo * 1.15).ceilToDouble(),
+        barGroups: ws.asMap().entries.map((e) {
+          return BarChartGroupData(
+            x: e.key,
+            barRods: [
+              BarChartRodData(
+                toY: e.value.acumulado.toDouble(),
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    AppColors.primary.withOpacity(0.4),
+                    AppColors.primary,
+                  ],
                 ),
-              ],
-            );
-          }).toList(),
-          titlesData: FlTitlesData(
-            leftTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
-            topTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                getTitlesWidget: (value, meta) {
-                  final labels = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6'];
-                  final i = value.toInt();
-                  if (i >= labels.length) return const SizedBox();
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(labels[i],
-                        style:
-                            AppTypography.labelSm.copyWith(fontSize: 9)),
-                  );
-                },
-                reservedSize: 22,
+                width: 18,
+                borderRadius: BorderRadius.circular(4),
               ),
+            ],
+          );
+        }).toList(),
+        barTouchData: BarTouchData(
+          touchTooltipData: BarTouchTooltipData(
+            getTooltipColor: (_) => AppColors.surfaceContainerHigh,
+            tooltipRoundedRadius: 8,
+            getTooltipItem: (group, _, __, ___) {
+              final w = ws[group.x];
+              return BarTooltipItem(
+                l.perfil_tooltipSemana(w.acumulado, w.ganhos),
+                AppTypography.bodySm.copyWith(
+                  color: AppColors.onSurface,
+                  fontSize: 11,
+                ),
+              );
+            },
+          ),
+        ),
+        titlesData: FlTitlesData(
+          leftTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false)),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (value, meta) {
+                final i = value.toInt();
+                if (i < 0 || i >= ws.length) return const SizedBox();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text('${l.perfil_semanaAbrev}${i + 1}',
+                      style: AppTypography.labelSm.copyWith(fontSize: 9)),
+                );
+              },
+              reservedSize: 22,
             ),
           ),
-          borderData: FlBorderData(show: false),
-          gridData: FlGridData(
-            show: true,
-            drawVerticalLine: false,
-            getDrawingHorizontalLine: (_) => FlLine(
-              color: AppColors.surfaceContainerHigh,
-              strokeWidth: 1,
-            ),
+        ),
+        borderData: FlBorderData(show: false),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          getDrawingHorizontalLine: (_) => FlLine(
+            color: AppColors.surfaceContainerHigh,
+            strokeWidth: 1,
           ),
         ),
       ),

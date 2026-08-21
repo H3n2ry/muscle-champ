@@ -1643,4 +1643,20 @@ class LEs extends L {
 
   @override
   String get grupo_fullBody => 'Cuerpo Completo';
+
+  @override
+  String get perfil_semanaAbrev => 'S';
+
+  @override
+  String get perfil_evolucaoNaoCarregou => 'No se pudo cargar la evolución';
+
+  @override
+  String perfil_tooltipSemana(int total, int ganhos) {
+    return '$total pts\n+$ganhos esta semana';
+  }
+
+  @override
+  String perfil_semanaDe(String data) {
+    return 'Semana del $data';
+  }
 }

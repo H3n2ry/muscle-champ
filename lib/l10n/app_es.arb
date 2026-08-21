@@ -593,5 +593,9 @@
   "grupo_pernas": "Piernas",
   "grupo_gluteos": "Glúteos",
   "grupo_core": "Core",
-  "grupo_fullBody": "Cuerpo Completo"
+  "grupo_fullBody": "Cuerpo Completo",
+  "perfil_semanaAbrev": "S",
+  "perfil_evolucaoNaoCarregou": "No se pudo cargar la evolución",
+  "perfil_tooltipSemana": "{total} pts\n+{ganhos} esta semana",
+  "perfil_semanaDe": "Semana del {data}"
 }

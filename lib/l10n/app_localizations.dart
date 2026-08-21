@@ -3104,6 +3104,30 @@ abstract class L {
   /// In pt, this message translates to:
   /// **'Full Body'**
   String get grupo_fullBody;
+
+  /// No description provided for @perfil_semanaAbrev.
+  ///
+  /// In pt, this message translates to:
+  /// **'S'**
+  String get perfil_semanaAbrev;
+
+  /// No description provided for @perfil_evolucaoNaoCarregou.
+  ///
+  /// In pt, this message translates to:
+  /// **'Não foi possível carregar a evolução'**
+  String get perfil_evolucaoNaoCarregou;
+
+  /// No description provided for @perfil_tooltipSemana.
+  ///
+  /// In pt, this message translates to:
+  /// **'{total} pts\n+{ganhos} nesta semana'**
+  String perfil_tooltipSemana(int total, int ganhos);
+
+  /// No description provided for @perfil_semanaDe.
+  ///
+  /// In pt, this message translates to:
+  /// **'Semana de {data}'**
+  String perfil_semanaDe(String data);
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

@@ -1638,4 +1638,21 @@ class LPt extends L {
 
   @override
   String get grupo_fullBody => 'Full Body';
+
+  @override
+  String get perfil_semanaAbrev => 'S';
+
+  @override
+  String get perfil_evolucaoNaoCarregou =>
+      'Não foi possível carregar a evolução';
+
+  @override
+  String perfil_tooltipSemana(int total, int ganhos) {
+    return '$total pts\n+$ganhos nesta semana';
+  }
+
+  @override
+  String perfil_semanaDe(String data) {
+    return 'Semana de $data';
+  }
 }

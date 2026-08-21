@@ -754,5 +754,26 @@
   "grupo_pernas": "Pernas",
   "grupo_gluteos": "Glúteos",
   "grupo_core": "Core",
-  "grupo_fullBody": "Full Body"
+  "grupo_fullBody": "Full Body",
+  "perfil_semanaAbrev": "S",
+  "perfil_evolucaoNaoCarregou": "Não foi possível carregar a evolução",
+  "perfil_tooltipSemana": "{total} pts\n+{ganhos} nesta semana",
+  "@perfil_tooltipSemana": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "ganhos": {
+        "type": "int"
+      }
+    }
+  },
+  "perfil_semanaDe": "Semana de {data}",
+  "@perfil_semanaDe": {
+    "placeholders": {
+      "data": {
+        "type": "String"
+      }
+    }
+  }
 }
