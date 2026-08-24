@@ -4,11 +4,18 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../l10n/app_localizations.dart';
+import '../../features/subscription/presentation/widgets/paywall_popup.dart';
 import 'tutorial_overlay.dart';
 
-class MainScaffold extends ConsumerWidget {
+class MainScaffold extends ConsumerStatefulWidget {
   final Widget child;
   const MainScaffold({super.key, required this.child});
+
+  @override
+  ConsumerState<MainScaffold> createState() => _MainScaffoldState();
+}
+
+class _MainScaffoldState extends ConsumerState<MainScaffold> {
 
   // Só rota e ícone ficam aqui; o rótulo vem da tradução no build, porque
   // uma lista `const` não pode chamar L.of(context).
@@ -35,12 +42,20 @@ class MainScaffold extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final currentIndex = _currentIndex(context);
     final tutorialState = ref.watch(tutorialProvider);
 
+    // Convite ao Pro a cada abertura, para quem nao assina. Espera o tutorial
+    // terminar: os dois juntos numa conta nova seria uma parede de modais.
+    if (!tutorialState.loading && !tutorialState.show) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) talvezMostrarConvitePro(context, ref);
+      });
+    }
+
     final scaffold = Scaffold(
-      body: child,
+      body: widget.child,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: AppColors.surfaceContainerLow,

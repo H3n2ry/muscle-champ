@@ -3554,6 +3554,108 @@ abstract class L {
   /// In pt, this message translates to:
   /// **'Cota do dia zerada.'**
   String get cota_zerada;
+
+  /// No description provided for @pop_titulo.
+  ///
+  /// In pt, this message translates to:
+  /// **'Sua conta está pronta'**
+  String get pop_titulo;
+
+  /// No description provided for @pop_tituloRecorrente.
+  ///
+  /// In pt, this message translates to:
+  /// **'Desbloqueie a IA sem limite'**
+  String get pop_tituloRecorrente;
+
+  /// No description provided for @pop_subtitulo.
+  ///
+  /// In pt, this message translates to:
+  /// **'{dias} dias grátis para usar tudo sem limite.'**
+  String pop_subtitulo(int dias);
+
+  /// No description provided for @pop_noGratisVoceTem.
+  ///
+  /// In pt, this message translates to:
+  /// **'NO PLANO GRATUITO VOCÊ TEM, POR DIA'**
+  String get pop_noGratisVoceTem;
+
+  /// No description provided for @pop_linhaFoto.
+  ///
+  /// In pt, this message translates to:
+  /// **'{n} foto do prato analisada'**
+  String pop_linhaFoto(int n);
+
+  /// No description provided for @pop_linhaTexto.
+  ///
+  /// In pt, this message translates to:
+  /// **'{n} alimentos calculados por texto'**
+  String pop_linhaTexto(int n);
+
+  /// No description provided for @pop_linhaTreino.
+  ///
+  /// In pt, this message translates to:
+  /// **'{n} treino gerado por IA'**
+  String pop_linhaTreino(int n);
+
+  /// No description provided for @pop_linhaDieta.
+  ///
+  /// In pt, this message translates to:
+  /// **'{n} plano de dieta'**
+  String pop_linhaDieta(int n);
+
+  /// No description provided for @pop_comPro.
+  ///
+  /// In pt, this message translates to:
+  /// **'Com o Pro, tudo isso fica ilimitado.'**
+  String get pop_comPro;
+
+  /// No description provided for @pop_continuarGratis.
+  ///
+  /// In pt, this message translates to:
+  /// **'Continuar no plano gratuito'**
+  String get pop_continuarGratis;
+
+  /// No description provided for @priv_palavraConfirmacao.
+  ///
+  /// In pt, this message translates to:
+  /// **'EXCLUIR'**
+  String get priv_palavraConfirmacao;
+
+  /// No description provided for @priv_falhaExcluir.
+  ///
+  /// In pt, this message translates to:
+  /// **'Falha ao excluir'**
+  String get priv_falhaExcluir;
+
+  /// No description provided for @priv_falhaExportar.
+  ///
+  /// In pt, this message translates to:
+  /// **'Falha ao exportar'**
+  String get priv_falhaExportar;
+
+  /// No description provided for @priv_seusDados.
+  ///
+  /// In pt, this message translates to:
+  /// **'Seus dados'**
+  String get priv_seusDados;
+
+  /// No description provided for @perfil_zonaPerigo.
+  ///
+  /// In pt, this message translates to:
+  /// **'ZONA DE PERIGO'**
+  String get perfil_zonaPerigo;
+
+  /// No description provided for @perfil_excluirMinhaConta.
+  ///
+  /// In pt, this message translates to:
+  /// **'Excluir minha conta'**
+  String get perfil_excluirMinhaConta;
+
+  /// No description provided for @perfil_excluindo.
+  ///
+  /// In pt, this message translates to:
+  /// **'Excluindo...'**
+  String get perfil_excluindo;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

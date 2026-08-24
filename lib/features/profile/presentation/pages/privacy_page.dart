@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/legal/legal_documents.dart';
 import '../../../../core/legal/legal_texts.dart';
 import '../../../../core/legal/privacy_repository.dart';
+import '../widgets/excluir_conta.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/legal_document_sheet.dart';
@@ -44,31 +45,17 @@ class _PrivacyPageState extends ConsumerState<PrivacyPage> {
         builder: (_) => _ExportResultDialog(json: json),
       );
     } catch (e) {
-      if (mounted) MkSnack.error(context, 'Falha ao exportar: $e');
+      if (mounted) MkSnack.error(context, '${L.of(context).priv_falhaExportar}: $e');
     } finally {
       if (mounted) setState(() => _exporting = false);
     }
   }
 
   Future<void> _confirmDelete() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => const _DeleteAccountDialog(),
-    );
-    if (confirmed != true || !mounted) return;
-
     setState(() => _deleting = true);
-    try {
-      await ref.read(privacyRepositoryProvider).deleteMyAccount();
-      if (!mounted) return;
-      context.go('/login');
-      MkSnack.success(context, L.of(context).priv_contaExcluida);
-    } catch (e) {
-      if (mounted) {
-        setState(() => _deleting = false);
-        MkSnack.error(context, 'Falha ao excluir: $e');
-      }
-    }
+    await excluirContaComConfirmacao(context, ref);
+    // Se excluiu, esta tela ja saiu; o mounted cobre cancelar e falhar.
+    if (mounted) setState(() => _deleting = false);
   }
 
   Future<void> _toggleConsent(String type, bool value) async {
@@ -212,75 +199,6 @@ class _PrivacyPageState extends ConsumerState<PrivacyPage> {
 
 // ── Diálogos ───────────────────────────────────────────────────────────────
 
-class _DeleteAccountDialog extends StatefulWidget {
-  const _DeleteAccountDialog();
-
-  @override
-  State<_DeleteAccountDialog> createState() => _DeleteAccountDialogState();
-}
-
-class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
-  final _controller = TextEditingController();
-  static const _phrase = 'EXCLUIR';
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final canDelete = _controller.text.trim().toUpperCase() == _phrase;
-
-    return AlertDialog(
-      backgroundColor: AppColors.surfaceContainerLow,
-      title: Text(L.of(context).priv_excluirConta, style: AppTypography.headlineSm),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            L.of(context).priv_apagaPermanentemente +
-                L.of(context).priv_itemPerfil +
-                L.of(context).priv_itemPesoBio +
-                L.of(context).priv_itemTreinos +
-                L.of(context).priv_itemDieta +
-                L.of(context).priv_itemPontos +
-                L.of(context).priv_semBackup,
-            style: AppTypography.bodySm,
-          ),
-          const SizedBox(height: 16),
-          Text(L.of(context).priv_digiteParaConfirmar(_phrase), style: AppTypography.bodySm),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _controller,
-            autofocus: true,
-            textCapitalization: TextCapitalization.characters,
-            onChanged: (_) => setState(() {}),
-            decoration: const InputDecoration(hintText: _phrase),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: Text(L.of(context).comum_cancelar),
-        ),
-        TextButton(
-          onPressed: canDelete ? () => Navigator.of(context).pop(true) : null,
-          child: Text(
-            L.of(context).priv_excluir,
-            style: TextStyle(
-              color: canDelete ? AppColors.error : AppColors.secondary,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _ExportResultDialog extends StatelessWidget {
   final String json;
   const _ExportResultDialog({required this.json});
@@ -291,7 +209,7 @@ class _ExportResultDialog extends StatelessWidget {
 
     return AlertDialog(
       backgroundColor: AppColors.surfaceContainerLow,
-      title: Text('Seus dados', style: AppTypography.headlineSm),
+      title: Text(L.of(context).priv_seusDados, style: AppTypography.headlineSm),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

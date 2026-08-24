@@ -668,5 +668,22 @@
   "cota_verPlanos": "VER PLANES",
   "cota_esperarAmanha": "Espero hasta mañana",
   "cota_zerarDemo": "Reiniciar cuota (demo)",
-  "cota_zerada": "Cuota del día reiniciada."
+  "cota_zerada": "Cuota del día reiniciada.",
+  "pop_titulo": "Tu cuenta está lista",
+  "pop_tituloRecorrente": "Desbloquea la IA sin límite",
+  "pop_subtitulo": "{dias} días gratis para usar todo sin límites.",
+  "pop_noGratisVoceTem": "EN EL PLAN GRATUITO TIENES, POR DÍA",
+  "pop_linhaFoto": "{n} foto del plato analizada",
+  "pop_linhaTexto": "{n} alimentos calculados por texto",
+  "pop_linhaTreino": "{n} entrenamiento generado por IA",
+  "pop_linhaDieta": "{n} plan de dieta",
+  "pop_comPro": "Con Pro, todo esto es ilimitado.",
+  "pop_continuarGratis": "Continuar en el plan gratuito",
+  "priv_palavraConfirmacao": "ELIMINAR",
+  "priv_falhaExcluir": "Error al eliminar",
+  "priv_falhaExportar": "Error al exportar",
+  "priv_seusDados": "Tus datos",
+  "perfil_zonaPerigo": "ZONA DE PELIGRO",
+  "perfil_excluirMinhaConta": "Eliminar mi cuenta",
+  "perfil_excluindo": "Eliminando..."
 }

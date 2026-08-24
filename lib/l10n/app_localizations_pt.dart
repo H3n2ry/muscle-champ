@@ -1909,4 +1909,65 @@ class LPt extends L {
 
   @override
   String get cota_zerada => 'Cota do dia zerada.';
+
+  @override
+  String get pop_titulo => 'Sua conta está pronta';
+
+  @override
+  String get pop_tituloRecorrente => 'Desbloqueie a IA sem limite';
+
+  @override
+  String pop_subtitulo(int dias) {
+    return '$dias dias grátis para usar tudo sem limite.';
+  }
+
+  @override
+  String get pop_noGratisVoceTem => 'NO PLANO GRATUITO VOCÊ TEM, POR DIA';
+
+  @override
+  String pop_linhaFoto(int n) {
+    return '$n foto do prato analisada';
+  }
+
+  @override
+  String pop_linhaTexto(int n) {
+    return '$n alimentos calculados por texto';
+  }
+
+  @override
+  String pop_linhaTreino(int n) {
+    return '$n treino gerado por IA';
+  }
+
+  @override
+  String pop_linhaDieta(int n) {
+    return '$n plano de dieta';
+  }
+
+  @override
+  String get pop_comPro => 'Com o Pro, tudo isso fica ilimitado.';
+
+  @override
+  String get pop_continuarGratis => 'Continuar no plano gratuito';
+
+  @override
+  String get priv_palavraConfirmacao => 'EXCLUIR';
+
+  @override
+  String get priv_falhaExcluir => 'Falha ao excluir';
+
+  @override
+  String get priv_falhaExportar => 'Falha ao exportar';
+
+  @override
+  String get priv_seusDados => 'Seus dados';
+
+  @override
+  String get perfil_zonaPerigo => 'ZONA DE PERIGO';
+
+  @override
+  String get perfil_excluirMinhaConta => 'Excluir minha conta';
+
+  @override
+  String get perfil_excluindo => 'Excluindo...';
 }

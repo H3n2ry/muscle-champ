@@ -1899,4 +1899,65 @@ class LEn extends L {
 
   @override
   String get cota_zerada => 'Daily quota reset.';
+
+  @override
+  String get pop_titulo => 'Your account is ready';
+
+  @override
+  String get pop_tituloRecorrente => 'Unlock unlimited AI';
+
+  @override
+  String pop_subtitulo(int dias) {
+    return '$dias free days to use everything without limits.';
+  }
+
+  @override
+  String get pop_noGratisVoceTem => 'ON THE FREE PLAN YOU GET, PER DAY';
+
+  @override
+  String pop_linhaFoto(int n) {
+    return '$n plate photo analyzed';
+  }
+
+  @override
+  String pop_linhaTexto(int n) {
+    return '$n foods calculated by text';
+  }
+
+  @override
+  String pop_linhaTreino(int n) {
+    return '$n AI-generated workout';
+  }
+
+  @override
+  String pop_linhaDieta(int n) {
+    return '$n diet plan';
+  }
+
+  @override
+  String get pop_comPro => 'With Pro, all of it becomes unlimited.';
+
+  @override
+  String get pop_continuarGratis => 'Continue on the free plan';
+
+  @override
+  String get priv_palavraConfirmacao => 'DELETE';
+
+  @override
+  String get priv_falhaExcluir => 'Delete failed';
+
+  @override
+  String get priv_falhaExportar => 'Export failed';
+
+  @override
+  String get priv_seusDados => 'Your data';
+
+  @override
+  String get perfil_zonaPerigo => 'DANGER ZONE';
+
+  @override
+  String get perfil_excluirMinhaConta => 'Delete my account';
+
+  @override
+  String get perfil_excluindo => 'Deleting...';
 }

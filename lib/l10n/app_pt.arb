@@ -983,5 +983,57 @@
   "cota_verPlanos": "VER PLANOS",
   "cota_esperarAmanha": "Espero até amanhã",
   "cota_zerarDemo": "Zerar cota (demo)",
-  "cota_zerada": "Cota do dia zerada."
+  "cota_zerada": "Cota do dia zerada.",
+  "pop_titulo": "Sua conta está pronta",
+  "pop_tituloRecorrente": "Desbloqueie a IA sem limite",
+  "pop_subtitulo": "{dias} dias grátis para usar tudo sem limite.",
+  "@pop_subtitulo": {
+    "placeholders": {
+      "dias": {
+        "type": "int"
+      }
+    }
+  },
+  "pop_noGratisVoceTem": "NO PLANO GRATUITO VOCÊ TEM, POR DIA",
+  "pop_linhaFoto": "{n} foto do prato analisada",
+  "@pop_linhaFoto": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "pop_linhaTexto": "{n} alimentos calculados por texto",
+  "@pop_linhaTexto": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "pop_linhaTreino": "{n} treino gerado por IA",
+  "@pop_linhaTreino": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "pop_linhaDieta": "{n} plano de dieta",
+  "@pop_linhaDieta": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "pop_comPro": "Com o Pro, tudo isso fica ilimitado.",
+  "pop_continuarGratis": "Continuar no plano gratuito",
+  "priv_palavraConfirmacao": "EXCLUIR",
+  "priv_falhaExcluir": "Falha ao excluir",
+  "priv_falhaExportar": "Falha ao exportar",
+  "priv_seusDados": "Seus dados",
+  "perfil_zonaPerigo": "ZONA DE PERIGO",
+  "perfil_excluirMinhaConta": "Excluir minha conta",
+  "perfil_excluindo": "Excluindo..."
 }

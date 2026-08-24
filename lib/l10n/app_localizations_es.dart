@@ -1915,4 +1915,65 @@ class LEs extends L {
 
   @override
   String get cota_zerada => 'Cuota del día reiniciada.';
+
+  @override
+  String get pop_titulo => 'Tu cuenta está lista';
+
+  @override
+  String get pop_tituloRecorrente => 'Desbloquea la IA sin límite';
+
+  @override
+  String pop_subtitulo(int dias) {
+    return '$dias días gratis para usar todo sin límites.';
+  }
+
+  @override
+  String get pop_noGratisVoceTem => 'EN EL PLAN GRATUITO TIENES, POR DÍA';
+
+  @override
+  String pop_linhaFoto(int n) {
+    return '$n foto del plato analizada';
+  }
+
+  @override
+  String pop_linhaTexto(int n) {
+    return '$n alimentos calculados por texto';
+  }
+
+  @override
+  String pop_linhaTreino(int n) {
+    return '$n entrenamiento generado por IA';
+  }
+
+  @override
+  String pop_linhaDieta(int n) {
+    return '$n plan de dieta';
+  }
+
+  @override
+  String get pop_comPro => 'Con Pro, todo esto es ilimitado.';
+
+  @override
+  String get pop_continuarGratis => 'Continuar en el plan gratuito';
+
+  @override
+  String get priv_palavraConfirmacao => 'ELIMINAR';
+
+  @override
+  String get priv_falhaExcluir => 'Error al eliminar';
+
+  @override
+  String get priv_falhaExportar => 'Error al exportar';
+
+  @override
+  String get priv_seusDados => 'Tus datos';
+
+  @override
+  String get perfil_zonaPerigo => 'ZONA DE PELIGRO';
+
+  @override
+  String get perfil_excluirMinhaConta => 'Eliminar mi cuenta';
+
+  @override
+  String get perfil_excluindo => 'Eliminando...';
 }

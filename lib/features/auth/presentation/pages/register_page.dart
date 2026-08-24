@@ -6,6 +6,7 @@ import '../../../../core/legal/legal_documents.dart';
 import '../../../../core/legal/legal_texts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../subscription/presentation/widgets/paywall_popup.dart';
 import '../../../../shared/widgets/language_selector.dart';
 import '../../../../shared/widgets/legal_document_sheet.dart';
 import '../../../../shared/widgets/mk_date_field.dart';
@@ -220,7 +221,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           setState(() => _errorMessage = _friendlyError(err!));
         }
       } else {
-        context.go('/dashboard');
+        // Convite ao Pro no fim do cadastro, antes de entrar no app. E o
+        // momento em que a pessoa esta configurando as coisas e receptiva —
+        // e evita que o convite dispute espaco com o tutorial la dentro.
+        await PaywallPopup.mostrar(context, recemCadastrado: true);
+        // Ja convidou: a abertura seguinte nao repete na mesma sessao.
+        ref.read(conviteProMostradoProvider.notifier).state = true;
+        if (mounted) context.go('/dashboard');
       }
     }
   }

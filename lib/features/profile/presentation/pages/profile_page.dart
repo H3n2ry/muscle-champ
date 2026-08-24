@@ -17,6 +17,7 @@ import '../../../subscription/presentation/providers/cota_ia_provider.dart';
 import '../../../../shared/widgets/mk_snack.dart';
 import '../../data/repositories/profile_repository.dart';
 import '../providers/profile_provider.dart';
+import '../widgets/excluir_conta.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -152,7 +153,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
             const SizedBox(width: 4),
             // Privacidade e dados (LGPD Art. 18 / GDPR Art. 15-22)
             IconButton(
-              tooltip: 'Privacidade e dados',
+              tooltip: L.of(context).perfil_privacidadeDados,
               icon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
@@ -168,7 +169,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
             const SizedBox(width: 4),
             // Sair
             IconButton(
-              tooltip: 'Sair',
+              tooltip: L.of(context).perfil_sair,
               icon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
@@ -419,6 +420,16 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                 ),
                 child: const LanguageListTile(),
               ),
+
+              const SizedBox(height: 28),
+
+              // ── Zona de perigo ────────────────────────────────
+              // No fim da rolagem: precisa ser encontravel (o Google Play
+              // exige exclusao acessivel no app) sem ficar ao alcance de um
+              // toque distraido.
+              _SectionLabel(label: L.of(context).perfil_zonaPerigo),
+              const SizedBox(height: 12),
+              const BlocoExcluirConta(),
 
               const SizedBox(height: 20),
             ]),

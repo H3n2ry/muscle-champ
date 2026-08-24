@@ -668,5 +668,22 @@
   "cota_verPlanos": "SEE PLANS",
   "cota_esperarAmanha": "I’ll wait until tomorrow",
   "cota_zerarDemo": "Reset quota (demo)",
-  "cota_zerada": "Daily quota reset."
+  "cota_zerada": "Daily quota reset.",
+  "pop_titulo": "Your account is ready",
+  "pop_tituloRecorrente": "Unlock unlimited AI",
+  "pop_subtitulo": "{dias} free days to use everything without limits.",
+  "pop_noGratisVoceTem": "ON THE FREE PLAN YOU GET, PER DAY",
+  "pop_linhaFoto": "{n} plate photo analyzed",
+  "pop_linhaTexto": "{n} foods calculated by text",
+  "pop_linhaTreino": "{n} AI-generated workout",
+  "pop_linhaDieta": "{n} diet plan",
+  "pop_comPro": "With Pro, all of it becomes unlimited.",
+  "pop_continuarGratis": "Continue on the free plan",
+  "priv_palavraConfirmacao": "DELETE",
+  "priv_falhaExcluir": "Delete failed",
+  "priv_falhaExportar": "Export failed",
+  "priv_seusDados": "Your data",
+  "perfil_zonaPerigo": "DANGER ZONE",
+  "perfil_excluirMinhaConta": "Delete my account",
+  "perfil_excluindo": "Deleting..."
 }
