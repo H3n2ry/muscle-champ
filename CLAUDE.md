@@ -322,6 +322,55 @@ The nutrition calibration below was tuned on Llama 3.3. After a text-model swap,
 parsing half ("2 ovos cozidos" → food + qty + unit) may drift — the arithmetic half is
 in Dart and is unaffected. Re-validate before trusting the numbers.
 
+### Nutrition validation battery
+
+`test/nutricao_casos.dart` holds 32 real-world Portuguese food descriptions with
+reference kcal bands. Two files consume it:
+
+```bash
+GRAVAR_NUTRICAO=1 flutter test test/nutricao_gravar_test.dart   # grava a fixture (rede + tokens)
+flutter test test/nutricao_test.dart                            # valida offline
+```
+
+The recorder hits the proxy with `GroqService.corpoDaRequisicaoDeMacros` — the
+**same body the app sends**, never a copy of the prompt — and writes
+`test/fixtures/nutricao_modelo.json`. The validator replays that fixture through
+`GroqService.normalizarNutricao` with no network, so it runs in CI. **Re-record
+and re-run after every model change**: that is the re-validation ritual.
+
+⚠️ **The recorder must run through PowerShell, not the Bash tool** — the Bash
+sandbox blocks the Dart VM's DNS (`Failed host lookup`) while `curl` still works,
+which looks like an outage and isn't.
+
+⚠️ **A battery can come out split across two models.** On 429 the proxy advances
+to the next model in the chain and answers normally, and `x-model-fallback` is
+**not** set (that header only means *retired*). So under rate pressure the text
+task silently alternates between `gpt-oss-120b` and `qwen3.6-27b`. The fixture
+records the model **per case** and the recorder warns when they differ. The two
+disagree on units — for "1 pote de açaí" qwen said `pote`, gpt-oss said
+`unidade` — so both have to pass.
+
+**What the first run caught (2026-08-25), all fixed:**
+
+| Sintoma | Causa |
+|---|---|
+| Pote de açaí registrava **1 kcal** | Unidade fora de `_kMedidas` → item descartado → `clamp(1.0, …)` |
+| 3 castanhas do pará = **1701 kcal** | Default `'unidade': 100` aplicado a alimento de 5g |
+| `name_pt` faltando em 3 casos | O exemplo JSON do prompt não mostrava o campo — o modelo segue o exemplo |
+| Couve refogada 25 kcal (real: 90) | Matcher TACO recusa; caiu na categoria "verdura" crua, sem o óleo |
+| Açaí com granola a 58 kcal/100g | Substring casava `'acai'` (polpa pura) |
+| Big Mac 100g / 250 kcal | `unidade` sem entrada para sanduíche |
+
+O default `'unidade': 100` é a maior fonte de erro do conversor. Mitigado com
+entradas por alimento em `_kMedidas` e, para o que não estiver lá,
+`_kUnidadeDaCategoria` (oleaginosa 5g, sanduíche 180g, ovo 50g…). Unidade
+desconhecida agora assume `_kPorcaoPadrao` (100g) em vez de zerar o item.
+
+**Limitação conhecida**: dentro de um prato composto ("uma marmita de frango com
+arroz, feijão e salada") o modelo manda cada componente como `1 unidade`. O peso
+total sai certo (~400g) mas a divisão fica uniforme e o total cai ~15%. Insistir
+no prompt não resolveu, e a incerteza do próprio pedido é maior que isso.
+
 ## Interactive Tutorial (`tutorial_overlay.dart`)
 
 Shown to new users on first login. Stored in SharedPreferences as `'tutorial_seen_${userId}'`.

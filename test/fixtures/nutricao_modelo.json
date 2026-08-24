@@ -1,0 +1,619 @@
+{
+  "modelos": {
+    "200g de frango grelhado": "openai/gpt-oss-120b",
+    "150g de arroz branco cozido": "openai/gpt-oss-120b",
+    "100g de batata doce cozida": "qwen/qwen3.6-27b",
+    "2 ovos cozidos": "openai/gpt-oss-120b",
+    "1 concha de feijão": "openai/gpt-oss-120b",
+    "1 colher de sopa de azeite": "openai/gpt-oss-120b",
+    "1 fatia de pão de forma": "openai/gpt-oss-120b",
+    "1 filé de frango grelhado": "openai/gpt-oss-120b",
+    "1 xícara de arroz cozido": "qwen/qwen3.6-27b",
+    "1 copo de leite integral": "openai/gpt-oss-120b",
+    "meia banana": "qwen/qwen3.6-27b",
+    "uma banana": "openai/gpt-oss-120b",
+    "meio mamão papaia": "openai/gpt-oss-120b",
+    "banana": "qwen/qwen3.6-27b",
+    "pizza de calabresa": "openai/gpt-oss-120b",
+    "arroz, feijão e um bife": "openai/gpt-oss-120b",
+    "pão francês com manteiga e um café com leite": "qwen/qwen3.6-27b",
+    "uma marmita de frango com arroz, feijão e salada": "openai/gpt-oss-120b",
+    "prato feito com arroz, feijão, bife e batata frita": "openai/gpt-oss-120b",
+    "1 lata de coca-cola": "openai/gpt-oss-120b",
+    "1 copo de suco de laranja natural": "qwen/qwen3.6-27b",
+    "uma taça de vinho tinto": "openai/gpt-oss-120b",
+    "1 pão de queijo": "openai/gpt-oss-120b",
+    "2 fatias de pizza de mussarela": "qwen/qwen3.6-27b",
+    "1 coxinha": "openai/gpt-oss-120b",
+    "1 big mac": "openai/gpt-oss-120b",
+    "1 goiaba": "openai/gpt-oss-120b",
+    "100g de couve refogada": "openai/gpt-oss-120b",
+    "3 castanhas do pará": "openai/gpt-oss-120b",
+    "1 brigadeiro": "openai/gpt-oss-120b",
+    "1 pote de açaí com granola": "openai/gpt-oss-120b",
+    "1 scoop de whey protein": "qwen/qwen3.6-27b"
+  },
+  "gravado_em": "2026-08-24T10:15:20.762770",
+  "respostas": {
+    "200g de frango grelhado": {
+      "name": "200g de frango grelhado",
+      "items": [
+        {
+          "name": "frango grelhado",
+          "name_pt": "frango grelhado",
+          "qty": 200,
+          "unit": "g",
+          "categoria": "carne_magra",
+          "protein_per_100g": 31.0,
+          "carbs_per_100g": 0.0,
+          "fat_per_100g": 3.6
+        }
+      ]
+    },
+    "150g de arroz branco cozido": {
+      "name": "150g de arroz branco cozido",
+      "items": [
+        {
+          "name": "arroz branco cozido",
+          "name_pt": "arroz branco cozido",
+          "qty": 150,
+          "unit": "g",
+          "categoria": "cereal",
+          "protein_per_100g": 2.5,
+          "carbs_per_100g": 28,
+          "fat_per_100g": 0.2
+        }
+      ]
+    },
+    "100g de batata doce cozida": {
+      "name": "100g de batata doce cozida",
+      "items": [
+        {
+          "name": "batata doce cozida",
+          "name_pt": "batata doce cozida",
+          "qty": 100,
+          "unit": "g",
+          "categoria": "tuberculo",
+          "protein_per_100g": 1.6,
+          "carbs_per_100g": 20.0,
+          "fat_per_100g": 0.1
+        }
+      ]
+    },
+    "2 ovos cozidos": {
+      "name": "2 ovos cozidos",
+      "items": [
+        {
+          "name": "ovo cozido",
+          "name_pt": "ovo cozido",
+          "qty": 2,
+          "unit": "unidade",
+          "categoria": "ovo",
+          "protein_per_100g": 13.0,
+          "carbs_per_100g": 1.1,
+          "fat_per_100g": 9.5
+        }
+      ]
+    },
+    "1 concha de feijão": {
+      "name": "1 concha de feijão",
+      "items": [
+        {
+          "name": "feijão cozido",
+          "name_pt": "feijão cozido",
+          "qty": 1,
+          "unit": "concha",
+          "categoria": "leguminosa",
+          "protein_per_100g": 4.8,
+          "carbs_per_100g": 13.6,
+          "fat_per_100g": 0.5
+        }
+      ]
+    },
+    "1 colher de sopa de azeite": {
+      "name": "Azeite",
+      "items": [
+        {
+          "name": "azeite",
+          "name_pt": "azeite",
+          "qty": 1,
+          "unit": "colher de sopa",
+          "categoria": "gordura",
+          "protein_per_100g": 0,
+          "carbs_per_100g": 0,
+          "fat_per_100g": 100
+        }
+      ]
+    },
+    "1 fatia de pão de forma": {
+      "name": "1 fatia de pão de forma",
+      "items": [
+        {
+          "name": "pão de forma",
+          "name_pt": "pão de forma",
+          "qty": 1,
+          "unit": "fatia",
+          "categoria": "pao",
+          "protein_per_100g": 9.0,
+          "carbs_per_100g": 48.0,
+          "fat_per_100g": 3.0
+        }
+      ]
+    },
+    "1 filé de frango grelhado": {
+      "name": "filé de frango grelhado",
+      "items": [
+        {
+          "name": "filé de frango grelhado",
+          "name_pt": "filé de frango grelhado",
+          "qty": 1,
+          "unit": "file",
+          "categoria": "carne_magra",
+          "protein_per_100g": 31.0,
+          "carbs_per_100g": 0.0,
+          "fat_per_100g": 3.6
+        }
+      ]
+    },
+    "1 xícara de arroz cozido": {
+      "name": "Arroz branco cozido",
+      "items": [
+        {
+          "name": "arroz branco cozido",
+          "name_pt": "arroz branco cozido",
+          "qty": 1,
+          "unit": "xicara",
+          "categoria": "cereal",
+          "protein_per_100g": 2.5,
+          "carbs_per_100g": 28.0,
+          "fat_per_100g": 0.2
+        }
+      ]
+    },
+    "1 copo de leite integral": {
+      "name": "1 copo de leite integral",
+      "items": [
+        {
+          "name": "leite integral",
+          "name_pt": "leite integral",
+          "qty": 1,
+          "unit": "copo",
+          "categoria": "laticinio",
+          "protein_per_100g": 3.2,
+          "carbs_per_100g": 4.8,
+          "fat_per_100g": 3.3
+        }
+      ]
+    },
+    "meia banana": {
+      "name": "meia banana",
+      "items": [
+        {
+          "name": "banana",
+          "name_pt": "banana",
+          "qty": 0.5,
+          "unit": "unidade",
+          "categoria": "fruta",
+          "protein_per_100g": 1.1,
+          "carbs_per_100g": 23.0,
+          "fat_per_100g": 0.3
+        }
+      ]
+    },
+    "uma banana": {
+      "name": "banana",
+      "items": [
+        {
+          "name": "banana",
+          "name_pt": "banana",
+          "qty": 1,
+          "unit": "unidade",
+          "categoria": "fruta",
+          "protein_per_100g": 1.1,
+          "carbs_per_100g": 23.0,
+          "fat_per_100g": 0.3
+        }
+      ]
+    },
+    "meio mamão papaia": {
+      "name": "meio mamão papaia",
+      "items": [
+        {
+          "name": "mamão papaia",
+          "name_pt": "mamão papaia",
+          "qty": 0.5,
+          "unit": "unidade",
+          "categoria": "fruta",
+          "protein_per_100g": 0.8,
+          "carbs_per_100g": 11.6,
+          "fat_per_100g": 0.1
+        }
+      ]
+    },
+    "banana": {
+      "name": "Banana",
+      "items": [
+        {
+          "name": "banana",
+          "name_pt": "banana",
+          "qty": 1,
+          "unit": "unidade",
+          "categoria": "fruta",
+          "protein_per_100g": 1.1,
+          "carbs_per_100g": 23.0,
+          "fat_per_100g": 0.3
+        }
+      ]
+    },
+    "pizza de calabresa": {
+      "name": "pizza de calabresa",
+      "items": [
+        {
+          "name": "pizza de calabresa",
+          "name_pt": "pizza de calabresa",
+          "qty": 1,
+          "unit": "fatia",
+          "categoria": "prato_pronto",
+          "protein_per_100g": 12.0,
+          "carbs_per_100g": 30.0,
+          "fat_per_100g": 11.0
+        }
+      ]
+    },
+    "arroz, feijão e um bife": {
+      "name": "arroz, feijão e bife",
+      "items": [
+        {
+          "name": "arroz branco cozido",
+          "name_pt": "arroz branco cozido",
+          "qty": 1,
+          "unit": "porcao",
+          "categoria": "cereal",
+          "protein_per_100g": 2.5,
+          "carbs_per_100g": 28.0,
+          "fat_per_100g": 0.2
+        },
+        {
+          "name": "feijão cozido",
+          "name_pt": "feijão cozido",
+          "qty": 1,
+          "unit": "porcao",
+          "categoria": "leguminosa",
+          "protein_per_100g": 4.8,
+          "carbs_per_100g": 13.6,
+          "fat_per_100g": 0.5
+        },
+        {
+          "name": "bife",
+          "name_pt": "bife",
+          "qty": 1,
+          "unit": "porcao",
+          "categoria": "carne_magra",
+          "protein_per_100g": 20.0,
+          "carbs_per_100g": 0.0,
+          "fat_per_100g": 5.0
+        }
+      ]
+    },
+    "pão francês com manteiga e um café com leite": {
+      "name": "Pão francês com manteiga e café com leite",
+      "items": [
+        {
+          "name": "pão francês",
+          "name_pt": "pão francês",
+          "qty": 1,
+          "unit": "unidade",
+          "categoria": "pao",
+          "protein_per_100g": 8.0,
+          "carbs_per_100g": 58.0,
+          "fat_per_100g": 3.0
+        },
+        {
+          "name": "manteiga",
+          "name_pt": "manteiga",
+          "qty": 1,
+          "unit": "colher de sopa",
+          "categoria": "gordura",
+          "protein_per_100g": 0.9,
+          "carbs_per_100g": 0.1,
+          "fat_per_100g": 81.0
+        },
+        {
+          "name": "café com leite",
+          "name_pt": "café com leite",
+          "qty": 1,
+          "unit": "copo",
+          "categoria": "bebida_acucarada",
+          "protein_per_100g": 3.0,
+          "carbs_per_100g": 4.5,
+          "fat_per_100g": 3.0
+        }
+      ]
+    },
+    "uma marmita de frango com arroz, feijão e salada": {
+      "name": "marmita de frango com arroz, feijão e salada",
+      "items": [
+        {
+          "name": "frango grelhado",
+          "name_pt": "frango grelhado",
+          "qty": 1,
+          "unit": "file",
+          "categoria": "carne_magra",
+          "protein_per_100g": 31.0,
+          "carbs_per_100g": 0.0,
+          "fat_per_100g": 3.6
+        },
+        {
+          "name": "arroz branco",
+          "name_pt": "arroz branco",
+          "qty": 1,
+          "unit": "xicara",
+          "categoria": "cereal",
+          "protein_per_100g": 2.5,
+          "carbs_per_100g": 28.0,
+          "fat_per_100g": 0.2
+        },
+        {
+          "name": "feijão cozido",
+          "name_pt": "feijão cozido",
+          "qty": 1,
+          "unit": "concha",
+          "categoria": "leguminosa",
+          "protein_per_100g": 4.8,
+          "carbs_per_100g": 13.6,
+          "fat_per_100g": 0.5
+        },
+        {
+          "name": "salada de folhas",
+          "name_pt": "salada de folhas",
+          "qty": 1,
+          "unit": "porcao",
+          "categoria": "verdura",
+          "protein_per_100g": 1.4,
+          "carbs_per_100g": 2.9,
+          "fat_per_100g": 0.2
+        }
+      ]
+    },
+    "prato feito com arroz, feijão, bife e batata frita": {
+      "name": "prato feito com arroz, feijão, bife e batata frita",
+      "items": [
+        {
+          "name": "arroz branco cozido",
+          "name_pt": "arroz branco cozido",
+          "qty": 1,
+          "unit": "porcao",
+          "categoria": "cereal",
+          "protein_per_100g": 2.5,
+          "carbs_per_100g": 28,
+          "fat_per_100g": 0.2
+        },
+        {
+          "name": "feijão cozido",
+          "name_pt": "feijão cozido",
+          "qty": 1,
+          "unit": "porcao",
+          "categoria": "leguminosa",
+          "protein_per_100g": 4.8,
+          "carbs_per_100g": 13.6,
+          "fat_per_100g": 0.5
+        },
+        {
+          "name": "bife grelhado",
+          "name_pt": "bife grelhado",
+          "qty": 1,
+          "unit": "porcao",
+          "categoria": "carne_magra",
+          "protein_per_100g": 32,
+          "carbs_per_100g": 0,
+          "fat_per_100g": 9
+        },
+        {
+          "name": "batata frita",
+          "name_pt": "batata frita",
+          "qty": 1,
+          "unit": "porcao",
+          "categoria": "frito",
+          "protein_per_100g": 3.4,
+          "carbs_per_100g": 41,
+          "fat_per_100g": 15
+        }
+      ]
+    },
+    "1 lata de coca-cola": {
+      "name": "coca-cola",
+      "items": [
+        {
+          "name": "coca-cola",
+          "name_pt": "coca-cola",
+          "qty": 1,
+          "unit": "lata",
+          "categoria": "bebida_acucarada",
+          "protein_per_100g": 0.0,
+          "carbs_per_100g": 10.6,
+          "fat_per_100g": 0.0
+        }
+      ]
+    },
+    "1 copo de suco de laranja natural": {
+      "name": "Suco de laranja natural",
+      "items": [
+        {
+          "name": "suco de laranja natural",
+          "name_pt": "suco de laranja natural",
+          "qty": 1,
+          "unit": "copo",
+          "categoria": "suco_natural",
+          "protein_per_100g": 0.7,
+          "carbs_per_100g": 10.4,
+          "fat_per_100g": 0.2
+        }
+      ]
+    },
+    "uma taça de vinho tinto": {
+      "name": "taça de vinho tinto",
+      "items": [
+        {
+          "name": "vinho tinto",
+          "name_pt": "vinho tinto",
+          "qty": 1,
+          "unit": "taca",
+          "categoria": "bebida_alcoolica",
+          "protein_per_100g": 0.1,
+          "carbs_per_100g": 2.6,
+          "fat_per_100g": 0.0
+        }
+      ]
+    },
+    "1 pão de queijo": {
+      "name": "pão de queijo",
+      "items": [
+        {
+          "name": "pão de queijo",
+          "name_pt": "pão de queijo",
+          "qty": 1,
+          "unit": "unidade",
+          "categoria": "frito",
+          "protein_per_100g": 6.0,
+          "carbs_per_100g": 36.0,
+          "fat_per_100g": 14.0
+        }
+      ]
+    },
+    "2 fatias de pizza de mussarela": {
+      "name": "2 fatias de pizza de mussarela",
+      "items": [
+        {
+          "name": "pizza de mussarela",
+          "name_pt": "pizza de mussarela",
+          "qty": 2,
+          "unit": "fatia",
+          "categoria": "prato_pronto",
+          "protein_per_100g": 12.0,
+          "carbs_per_100g": 30.0,
+          "fat_per_100g": 11.0
+        }
+      ]
+    },
+    "1 coxinha": {
+      "name": "coxinha",
+      "items": [
+        {
+          "name": "coxinha",
+          "name_pt": "coxinha",
+          "qty": 1,
+          "unit": "unidade",
+          "categoria": "frito",
+          "protein_per_100g": 8,
+          "carbs_per_100g": 30,
+          "fat_per_100g": 14
+        }
+      ]
+    },
+    "1 big mac": {
+      "name": "big mac",
+      "items": [
+        {
+          "name": "big mac",
+          "name_pt": "big mac",
+          "qty": 1,
+          "unit": "unidade",
+          "categoria": "sanduiche",
+          "protein_per_100g": 12.0,
+          "carbs_per_100g": 25.0,
+          "fat_per_100g": 12.0
+        }
+      ]
+    },
+    "1 goiaba": {
+      "name": "goiaba",
+      "items": [
+        {
+          "name": "goiaba",
+          "name_pt": "goiaba",
+          "qty": 1,
+          "unit": "unidade",
+          "categoria": "fruta",
+          "protein_per_100g": 1.1,
+          "carbs_per_100g": 13,
+          "fat_per_100g": 0.4
+        }
+      ]
+    },
+    "100g de couve refogada": {
+      "name": "couve refogada",
+      "items": [
+        {
+          "name": "couve refogada",
+          "name_pt": "couve refogada",
+          "qty": 100,
+          "unit": "g",
+          "categoria": "verdura",
+          "protein_per_100g": 2.0,
+          "carbs_per_100g": 5.0,
+          "fat_per_100g": 5.0
+        }
+      ]
+    },
+    "3 castanhas do pará": {
+      "name": "3 castanhas do pará",
+      "items": [
+        {
+          "name": "castanha do pará",
+          "name_pt": "castanha do pará",
+          "qty": 3,
+          "unit": "unidade",
+          "categoria": "oleaginosa",
+          "protein_per_100g": 26.0,
+          "carbs_per_100g": 16.0,
+          "fat_per_100g": 49.0
+        }
+      ]
+    },
+    "1 brigadeiro": {
+      "name": "brigadeiro",
+      "items": [
+        {
+          "name": "brigadeiro",
+          "name_pt": "brigadeiro",
+          "qty": 1,
+          "unit": "unidade",
+          "categoria": "doce_concentrado",
+          "protein_per_100g": 5.0,
+          "carbs_per_100g": 55.0,
+          "fat_per_100g": 18.0
+        }
+      ]
+    },
+    "1 pote de açaí com granola": {
+      "name": "açaí com granola",
+      "items": [
+        {
+          "name": "açaí com granola",
+          "name_pt": "açaí com granola",
+          "qty": 1,
+          "unit": "unidade",
+          "categoria": "prato_pronto",
+          "protein_per_100g": 2.0,
+          "carbs_per_100g": 35.0,
+          "fat_per_100g": 6.0
+        }
+      ]
+    },
+    "1 scoop de whey protein": {
+      "name": "1 scoop de whey protein",
+      "items": [
+        {
+          "name": "whey protein",
+          "name_pt": "whey protein",
+          "qty": 1,
+          "unit": "scoop",
+          "categoria": "suplemento",
+          "protein_per_100g": 78.0,
+          "carbs_per_100g": 8.0,
+          "fat_per_100g": 5.0
+        }
+      ]
+    }
+  }
+}
