@@ -775,5 +775,163 @@
         "type": "String"
       }
     }
-  }
+  },
+  "pro_titulo": "MUSCLE CHAMP",
+  "pro_pro": "PRO",
+  "pro_subtitulo": "Treino, dieta e evolução com IA — sem limite.",
+  "pro_escolhaPlano": "ESCOLHA SEU PLANO",
+  "pro_oQueLibera": "O QUE O PRO LIBERA",
+  "pro_maisPopular": "MAIS ESCOLHIDO",
+  "pro_porMes": "{valor}/mês",
+  "@pro_porMes": {
+    "placeholders": {
+      "valor": {
+        "type": "String"
+      }
+    }
+  },
+  "pro_economia": "economiza {valor} por ano",
+  "@pro_economia": {
+    "placeholders": {
+      "valor": {
+        "type": "String"
+      }
+    }
+  },
+  "pro_periodoMensal": "Mensal",
+  "pro_periodoTrimestral": "Trimestral",
+  "pro_periodoAnual": "Anual",
+  "pro_comecarTrial": "COMEÇAR {dias} DIAS GRÁTIS",
+  "@pro_comecarTrial": {
+    "placeholders": {
+      "dias": {
+        "type": "int"
+      }
+    }
+  },
+  "pro_agoraNao": "Agora não",
+  "pro_restaurar": "Restaurar compra",
+  "pro_benefFoto": "Foto do prato vira macros",
+  "pro_benefFotoDesc": "A IA identifica o alimento e estima o peso",
+  "pro_benefDieta": "Plano de dieta gerado por IA",
+  "pro_benefDietaDesc": "Cardápio do dia nas suas metas, com troca de alimento",
+  "pro_benefTreino": "Treinos montados por IA",
+  "pro_benefTreinoDesc": "Escolha o grupo muscular e receba o treino pronto",
+  "pro_benefHistorico": "Histórico sem limite",
+  "pro_benefHistoricoDesc": "Toda a sua evolução de peso, pontos e medidas",
+  "pro_avisoTrial": "{dias} dias grátis. Cobramos {valor} só em {data}. Cancele antes e não paga nada.",
+  "@pro_avisoTrial": {
+    "placeholders": {
+      "dias": {
+        "type": "int"
+      },
+      "valor": {
+        "type": "String"
+      },
+      "data": {
+        "type": "String"
+      }
+    }
+  },
+  "pro_avisoRenovacao": "Primeiro ano por {entrada}. Renova automaticamente por {renovacao} por ano.",
+  "@pro_avisoRenovacao": {
+    "placeholders": {
+      "entrada": {
+        "type": "String"
+      },
+      "renovacao": {
+        "type": "String"
+      }
+    }
+  },
+  "pro_avisoRenovacaoSimples": "Renova automaticamente por {valor}. Cancele quando quiser.",
+  "@pro_avisoRenovacaoSimples": {
+    "placeholders": {
+      "valor": {
+        "type": "String"
+      }
+    }
+  },
+  "pro_avisoCancelar": "Você cancela pela loja de aplicativos, sem falar com ninguém.",
+  "pro_aoAssinarAceita": "Ao assinar você aceita os {termos} e a {privacidade}.",
+  "@pro_aoAssinarAceita": {
+    "placeholders": {
+      "termos": {
+        "type": "String"
+      },
+      "privacidade": {
+        "type": "String"
+      }
+    }
+  },
+  "demo_faixa": "MODO DEMONSTRAÇÃO",
+  "demo_explicacao": "Nenhuma cobrança é feita e nenhum dado sai deste aparelho.",
+  "pag_titulo": "PAGAMENTO",
+  "pag_resumo": "RESUMO",
+  "pag_hoje": "Hoje você paga",
+  "pag_gratis": "R$ 0,00",
+  "pag_depoisDoTrial": "Depois de {data}",
+  "@pag_depoisDoTrial": {
+    "placeholders": {
+      "data": {
+        "type": "String"
+      }
+    }
+  },
+  "pag_forma": "FORMA DE PAGAMENTO",
+  "pag_cartao": "Cartão",
+  "pag_pix": "Pix",
+  "pag_numeroCartao": "NÚMERO DO CARTÃO",
+  "pag_nomeNoCartao": "NOME NO CARTÃO",
+  "pag_validade": "VALIDADE",
+  "pag_cvv": "CVV",
+  "pag_pixInstrucao": "Na versão real aparece aqui um QR Code com validade de 30 minutos.",
+  "pag_confirmar": "CONFIRMAR ASSINATURA",
+  "pag_processando": "Processando...",
+  "pag_seguro": "Simulação local — nada é transmitido",
+  "suc_titulo": "ASSINATURA ATIVA",
+  "suc_bemVindo": "Bem-vindo ao Pro.",
+  "suc_trialAte": "Avaliação gratuita até {data}",
+  "@suc_trialAte": {
+    "placeholders": {
+      "data": {
+        "type": "String"
+      }
+    }
+  },
+  "suc_primeiraCobranca": "Primeira cobrança de {valor} em {data}",
+  "@suc_primeiraCobranca": {
+    "placeholders": {
+      "valor": {
+        "type": "String"
+      },
+      "data": {
+        "type": "String"
+      }
+    }
+  },
+  "suc_comecar": "COMEÇAR A TREINAR",
+  "perfil_assinatura": "ASSINATURA",
+  "perfil_planoGratuito": "Plano gratuito",
+  "perfil_verPlanos": "Ver planos",
+  "perfil_proAtivo": "Pro ativo",
+  "perfil_trialRestante": "{dias} dias de avaliação restantes",
+  "@perfil_trialRestante": {
+    "placeholders": {
+      "dias": {
+        "type": "int"
+      }
+    }
+  },
+  "perfil_renovaEm": "Renova em {data}",
+  "@perfil_renovaEm": {
+    "placeholders": {
+      "data": {
+        "type": "String"
+      }
+    }
+  },
+  "perfil_cancelarAssinatura": "Cancelar assinatura",
+  "perfil_cancelarConfirma": "Cancelar a assinatura? Você mantém o Pro até o fim do período já pago.",
+  "perfil_assinaturaCancelada": "Assinatura cancelada."
 }

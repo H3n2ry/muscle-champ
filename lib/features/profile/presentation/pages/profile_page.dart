@@ -10,6 +10,9 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/language_selector.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../subscription/data/repositories/assinatura_repository.dart';
+import '../../../subscription/presentation/providers/assinatura_provider.dart';
+import '../../../../shared/widgets/mk_snack.dart';
 import '../../data/repositories/profile_repository.dart';
 import '../providers/profile_provider.dart';
 
@@ -359,6 +362,13 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                 currentWeight: p.currentWeight as double,
                 targetWeight:  p.targetWeight as double,
               ),
+
+              const SizedBox(height: 24),
+
+              // ── Assinatura ────────────────────────────────────
+              _SectionLabel(label: L.of(context).perfil_assinatura),
+              const SizedBox(height: 12),
+              const _AssinaturaCard(),
 
               const SizedBox(height: 24),
 
@@ -1883,6 +1893,148 @@ class _BadgeTile extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── Assinatura ───────────────────────────────────────────────────────────────
+
+/// Estado da assinatura no perfil.
+///
+/// ⚠️ DEMONSTRAÇÃO: lê de SharedPreferences, não de entitlement no servidor.
+/// Nenhuma função do app está bloqueada por isto — decidir o que é grátis e o
+/// que é Pro ainda está em aberto.
+class _AssinaturaCard extends ConsumerWidget {
+  const _AssinaturaCard();
+
+  String _data(DateTime d) => '${d.day.toString().padLeft(2, '0')}/'
+      '${d.month.toString().padLeft(2, '0')}/${d.year}';
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = L.of(context);
+    final assinatura = ref.watch(assinaturaProvider);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.surfaceContainerHigh),
+      ),
+      child: assinatura.when(
+        loading: () => const SizedBox(
+          height: 44,
+          child: Center(
+            child: SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: AppColors.primary),
+            ),
+          ),
+        ),
+        error: (_, __) => Text(l.comum_algoDeuErrado,
+            style: AppTypography.bodySm
+                .copyWith(color: AppColors.onSurfaceVariant)),
+        data: (a) => a == null || !a.ativa
+            ? _semAssinatura(context, l)
+            : _comAssinatura(context, ref, l, a),
+      ),
+    );
+  }
+
+  Widget _semAssinatura(BuildContext context, L l) => Row(
+        children: [
+          const Icon(Icons.workspace_premium_outlined,
+              size: 22, color: AppColors.onSurfaceVariant),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(l.perfil_planoGratuito,
+                style: AppTypography.bodyMd
+                    .copyWith(fontWeight: FontWeight.w600)),
+          ),
+          TextButton(
+            onPressed: () => context.push('/assinatura'),
+            style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+            child: Text(l.perfil_verPlanos,
+                style: AppTypography.labelSm
+                    .copyWith(color: AppColors.primary, fontSize: 12)),
+          ),
+        ],
+      );
+
+  Widget _comAssinatura(
+      BuildContext context, WidgetRef ref, L l, Assinatura a) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.workspace_premium,
+                size: 22, color: AppColors.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(l.perfil_proAtivo,
+                  style: AppTypography.bodyMd.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  )),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          a.emTrial
+              ? l.perfil_trialRestante(a.diasRestantes)
+              : l.perfil_renovaEm(_data(a.expiraEm)),
+          style: AppTypography.bodySm
+              .copyWith(color: AppColors.onSurfaceVariant),
+        ),
+        const SizedBox(height: 4),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton(
+            onPressed: () async {
+              final ok = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  backgroundColor: AppColors.surfaceContainerLow,
+                  content: Text(l.perfil_cancelarConfirma,
+                      style: AppTypography.bodySm),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: Text(l.comum_cancelar),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: Text(l.perfil_cancelarAssinatura,
+                          style: const TextStyle(color: AppColors.error)),
+                    ),
+                  ],
+                ),
+              );
+              if (ok != true || !context.mounted) return;
+              await ref.read(assinaturaControllerProvider).cancelar();
+              if (context.mounted) {
+                MkSnack.success(context, l.perfil_assinaturaCancelada);
+              }
+            },
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(0, 0),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(l.perfil_cancelarAssinatura,
+                style: AppTypography.bodySm.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                  decoration: TextDecoration.underline,
+                  fontSize: 12,
+                )),
+          ),
+        ),
+      ],
     );
   }
 }

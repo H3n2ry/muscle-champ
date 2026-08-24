@@ -371,6 +371,41 @@ arroz, feijão e salada") o modelo manda cada componente como `1 unidade`. O pes
 total sai certo (~400g) mas a divisão fica uniforme e o total cai ~15%. Insistir
 no prompt não resolveu, e a incerteza do próprio pedido é maior que isso.
 
+## Subscription — DEMO ONLY (`features/subscription/`)
+
+Paywall + fake checkout, landed 2026-08-25. Prices come from `VALORES.md`.
+
+```
+/assinatura            → PaywallPage        (escolha de plano)
+/assinatura/pagamento  → PagamentoPage      (checkout falso, plano via extra)
+/assinatura/sucesso    → AssinaturaSucessoPage
+```
+
+Entry point: the ASSINATURA card in the profile.
+
+⚠️ **Nothing here charges anything.** `AssinaturaRepository` writes to
+SharedPreferences (`assinatura_demo_v1_<uid>`) so the flow can be walked
+end-to-end. **No feature is gated by it** — the free/Pro split is still an open
+decision. A `DemoBanner` sits on all three screens on purpose: a convincing
+payment screen that doesn't charge is exactly what leaks to production unnoticed.
+
+**Money is `int` centavos, never `double`.** Twelve `19.90` doubles sum to
+238.79999999999998. `formatarBRL()` renders it.
+
+**Price copy has a legal constraint.** `R$ 149,90` is never charged on entry, so
+"de R$ 149,90 por R$ 119,90" is an artificial reference price — CDC treats that
+as misleading advertising. The screen never strikes through a price; it says
+*"primeiro ano por X, renova por Y"* (`Plano.precisaAvisarRenovacao` drives it).
+See `VALORES.md` §3.
+
+**The ladder check from `VALORES.md` §1 is a test** — `test/planos_test.dart`.
+Higher commitment must always be cheaper per month. Change a price, run it.
+
+Three things change when this goes real, detailed in `VALORES.md` §5: on Android
+the screen doesn't exist (Play Billing opens its own sheet), the price comes from
+Billing per region rather than from `Planos`, and entitlement moves to Supabase
+confirmed by gateway webhook — the client never decides it paid.
+
 ## Interactive Tutorial (`tutorial_overlay.dart`)
 
 Shown to new users on first login. Stored in SharedPreferences as `'tutorial_seen_${userId}'`.

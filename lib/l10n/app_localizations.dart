@@ -3128,6 +3128,360 @@ abstract class L {
   /// In pt, this message translates to:
   /// **'Semana de {data}'**
   String perfil_semanaDe(String data);
+
+  /// No description provided for @pro_titulo.
+  ///
+  /// In pt, this message translates to:
+  /// **'MUSCLE CHAMP'**
+  String get pro_titulo;
+
+  /// No description provided for @pro_pro.
+  ///
+  /// In pt, this message translates to:
+  /// **'PRO'**
+  String get pro_pro;
+
+  /// No description provided for @pro_subtitulo.
+  ///
+  /// In pt, this message translates to:
+  /// **'Treino, dieta e evolução com IA — sem limite.'**
+  String get pro_subtitulo;
+
+  /// No description provided for @pro_escolhaPlano.
+  ///
+  /// In pt, this message translates to:
+  /// **'ESCOLHA SEU PLANO'**
+  String get pro_escolhaPlano;
+
+  /// No description provided for @pro_oQueLibera.
+  ///
+  /// In pt, this message translates to:
+  /// **'O QUE O PRO LIBERA'**
+  String get pro_oQueLibera;
+
+  /// No description provided for @pro_maisPopular.
+  ///
+  /// In pt, this message translates to:
+  /// **'MAIS ESCOLHIDO'**
+  String get pro_maisPopular;
+
+  /// No description provided for @pro_porMes.
+  ///
+  /// In pt, this message translates to:
+  /// **'{valor}/mês'**
+  String pro_porMes(String valor);
+
+  /// No description provided for @pro_economia.
+  ///
+  /// In pt, this message translates to:
+  /// **'economiza {valor} por ano'**
+  String pro_economia(String valor);
+
+  /// No description provided for @pro_periodoMensal.
+  ///
+  /// In pt, this message translates to:
+  /// **'Mensal'**
+  String get pro_periodoMensal;
+
+  /// No description provided for @pro_periodoTrimestral.
+  ///
+  /// In pt, this message translates to:
+  /// **'Trimestral'**
+  String get pro_periodoTrimestral;
+
+  /// No description provided for @pro_periodoAnual.
+  ///
+  /// In pt, this message translates to:
+  /// **'Anual'**
+  String get pro_periodoAnual;
+
+  /// No description provided for @pro_comecarTrial.
+  ///
+  /// In pt, this message translates to:
+  /// **'COMEÇAR {dias} DIAS GRÁTIS'**
+  String pro_comecarTrial(int dias);
+
+  /// No description provided for @pro_agoraNao.
+  ///
+  /// In pt, this message translates to:
+  /// **'Agora não'**
+  String get pro_agoraNao;
+
+  /// No description provided for @pro_restaurar.
+  ///
+  /// In pt, this message translates to:
+  /// **'Restaurar compra'**
+  String get pro_restaurar;
+
+  /// No description provided for @pro_benefFoto.
+  ///
+  /// In pt, this message translates to:
+  /// **'Foto do prato vira macros'**
+  String get pro_benefFoto;
+
+  /// No description provided for @pro_benefFotoDesc.
+  ///
+  /// In pt, this message translates to:
+  /// **'A IA identifica o alimento e estima o peso'**
+  String get pro_benefFotoDesc;
+
+  /// No description provided for @pro_benefDieta.
+  ///
+  /// In pt, this message translates to:
+  /// **'Plano de dieta gerado por IA'**
+  String get pro_benefDieta;
+
+  /// No description provided for @pro_benefDietaDesc.
+  ///
+  /// In pt, this message translates to:
+  /// **'Cardápio do dia nas suas metas, com troca de alimento'**
+  String get pro_benefDietaDesc;
+
+  /// No description provided for @pro_benefTreino.
+  ///
+  /// In pt, this message translates to:
+  /// **'Treinos montados por IA'**
+  String get pro_benefTreino;
+
+  /// No description provided for @pro_benefTreinoDesc.
+  ///
+  /// In pt, this message translates to:
+  /// **'Escolha o grupo muscular e receba o treino pronto'**
+  String get pro_benefTreinoDesc;
+
+  /// No description provided for @pro_benefHistorico.
+  ///
+  /// In pt, this message translates to:
+  /// **'Histórico sem limite'**
+  String get pro_benefHistorico;
+
+  /// No description provided for @pro_benefHistoricoDesc.
+  ///
+  /// In pt, this message translates to:
+  /// **'Toda a sua evolução de peso, pontos e medidas'**
+  String get pro_benefHistoricoDesc;
+
+  /// No description provided for @pro_avisoTrial.
+  ///
+  /// In pt, this message translates to:
+  /// **'{dias} dias grátis. Cobramos {valor} só em {data}. Cancele antes e não paga nada.'**
+  String pro_avisoTrial(int dias, String valor, String data);
+
+  /// No description provided for @pro_avisoRenovacao.
+  ///
+  /// In pt, this message translates to:
+  /// **'Primeiro ano por {entrada}. Renova automaticamente por {renovacao} por ano.'**
+  String pro_avisoRenovacao(String entrada, String renovacao);
+
+  /// No description provided for @pro_avisoRenovacaoSimples.
+  ///
+  /// In pt, this message translates to:
+  /// **'Renova automaticamente por {valor}. Cancele quando quiser.'**
+  String pro_avisoRenovacaoSimples(String valor);
+
+  /// No description provided for @pro_avisoCancelar.
+  ///
+  /// In pt, this message translates to:
+  /// **'Você cancela pela loja de aplicativos, sem falar com ninguém.'**
+  String get pro_avisoCancelar;
+
+  /// No description provided for @pro_aoAssinarAceita.
+  ///
+  /// In pt, this message translates to:
+  /// **'Ao assinar você aceita os {termos} e a {privacidade}.'**
+  String pro_aoAssinarAceita(String termos, String privacidade);
+
+  /// No description provided for @demo_faixa.
+  ///
+  /// In pt, this message translates to:
+  /// **'MODO DEMONSTRAÇÃO'**
+  String get demo_faixa;
+
+  /// No description provided for @demo_explicacao.
+  ///
+  /// In pt, this message translates to:
+  /// **'Nenhuma cobrança é feita e nenhum dado sai deste aparelho.'**
+  String get demo_explicacao;
+
+  /// No description provided for @pag_titulo.
+  ///
+  /// In pt, this message translates to:
+  /// **'PAGAMENTO'**
+  String get pag_titulo;
+
+  /// No description provided for @pag_resumo.
+  ///
+  /// In pt, this message translates to:
+  /// **'RESUMO'**
+  String get pag_resumo;
+
+  /// No description provided for @pag_hoje.
+  ///
+  /// In pt, this message translates to:
+  /// **'Hoje você paga'**
+  String get pag_hoje;
+
+  /// No description provided for @pag_gratis.
+  ///
+  /// In pt, this message translates to:
+  /// **'R\$ 0,00'**
+  String get pag_gratis;
+
+  /// No description provided for @pag_depoisDoTrial.
+  ///
+  /// In pt, this message translates to:
+  /// **'Depois de {data}'**
+  String pag_depoisDoTrial(String data);
+
+  /// No description provided for @pag_forma.
+  ///
+  /// In pt, this message translates to:
+  /// **'FORMA DE PAGAMENTO'**
+  String get pag_forma;
+
+  /// No description provided for @pag_cartao.
+  ///
+  /// In pt, this message translates to:
+  /// **'Cartão'**
+  String get pag_cartao;
+
+  /// No description provided for @pag_pix.
+  ///
+  /// In pt, this message translates to:
+  /// **'Pix'**
+  String get pag_pix;
+
+  /// No description provided for @pag_numeroCartao.
+  ///
+  /// In pt, this message translates to:
+  /// **'NÚMERO DO CARTÃO'**
+  String get pag_numeroCartao;
+
+  /// No description provided for @pag_nomeNoCartao.
+  ///
+  /// In pt, this message translates to:
+  /// **'NOME NO CARTÃO'**
+  String get pag_nomeNoCartao;
+
+  /// No description provided for @pag_validade.
+  ///
+  /// In pt, this message translates to:
+  /// **'VALIDADE'**
+  String get pag_validade;
+
+  /// No description provided for @pag_cvv.
+  ///
+  /// In pt, this message translates to:
+  /// **'CVV'**
+  String get pag_cvv;
+
+  /// No description provided for @pag_pixInstrucao.
+  ///
+  /// In pt, this message translates to:
+  /// **'Na versão real aparece aqui um QR Code com validade de 30 minutos.'**
+  String get pag_pixInstrucao;
+
+  /// No description provided for @pag_confirmar.
+  ///
+  /// In pt, this message translates to:
+  /// **'CONFIRMAR ASSINATURA'**
+  String get pag_confirmar;
+
+  /// No description provided for @pag_processando.
+  ///
+  /// In pt, this message translates to:
+  /// **'Processando...'**
+  String get pag_processando;
+
+  /// No description provided for @pag_seguro.
+  ///
+  /// In pt, this message translates to:
+  /// **'Simulação local — nada é transmitido'**
+  String get pag_seguro;
+
+  /// No description provided for @suc_titulo.
+  ///
+  /// In pt, this message translates to:
+  /// **'ASSINATURA ATIVA'**
+  String get suc_titulo;
+
+  /// No description provided for @suc_bemVindo.
+  ///
+  /// In pt, this message translates to:
+  /// **'Bem-vindo ao Pro.'**
+  String get suc_bemVindo;
+
+  /// No description provided for @suc_trialAte.
+  ///
+  /// In pt, this message translates to:
+  /// **'Avaliação gratuita até {data}'**
+  String suc_trialAte(String data);
+
+  /// No description provided for @suc_primeiraCobranca.
+  ///
+  /// In pt, this message translates to:
+  /// **'Primeira cobrança de {valor} em {data}'**
+  String suc_primeiraCobranca(String valor, String data);
+
+  /// No description provided for @suc_comecar.
+  ///
+  /// In pt, this message translates to:
+  /// **'COMEÇAR A TREINAR'**
+  String get suc_comecar;
+
+  /// No description provided for @perfil_assinatura.
+  ///
+  /// In pt, this message translates to:
+  /// **'ASSINATURA'**
+  String get perfil_assinatura;
+
+  /// No description provided for @perfil_planoGratuito.
+  ///
+  /// In pt, this message translates to:
+  /// **'Plano gratuito'**
+  String get perfil_planoGratuito;
+
+  /// No description provided for @perfil_verPlanos.
+  ///
+  /// In pt, this message translates to:
+  /// **'Ver planos'**
+  String get perfil_verPlanos;
+
+  /// No description provided for @perfil_proAtivo.
+  ///
+  /// In pt, this message translates to:
+  /// **'Pro ativo'**
+  String get perfil_proAtivo;
+
+  /// No description provided for @perfil_trialRestante.
+  ///
+  /// In pt, this message translates to:
+  /// **'{dias} dias de avaliação restantes'**
+  String perfil_trialRestante(int dias);
+
+  /// No description provided for @perfil_renovaEm.
+  ///
+  /// In pt, this message translates to:
+  /// **'Renova em {data}'**
+  String perfil_renovaEm(String data);
+
+  /// No description provided for @perfil_cancelarAssinatura.
+  ///
+  /// In pt, this message translates to:
+  /// **'Cancelar assinatura'**
+  String get perfil_cancelarAssinatura;
+
+  /// No description provided for @perfil_cancelarConfirma.
+  ///
+  /// In pt, this message translates to:
+  /// **'Cancelar a assinatura? Você mantém o Pro até o fim do período já pago.'**
+  String get perfil_cancelarConfirma;
+
+  /// No description provided for @perfil_assinaturaCancelada.
+  ///
+  /// In pt, this message translates to:
+  /// **'Assinatura cancelada.'**
+  String get perfil_assinaturaCancelada;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

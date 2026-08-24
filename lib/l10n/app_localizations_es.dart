@@ -1659,4 +1659,214 @@ class LEs extends L {
   String perfil_semanaDe(String data) {
     return 'Semana del $data';
   }
+
+  @override
+  String get pro_titulo => 'MUSCLE CHAMP';
+
+  @override
+  String get pro_pro => 'PRO';
+
+  @override
+  String get pro_subtitulo =>
+      'Entrenamiento, dieta y progreso con IA — sin límites.';
+
+  @override
+  String get pro_escolhaPlano => 'ELIGE TU PLAN';
+
+  @override
+  String get pro_oQueLibera => 'LO QUE DESBLOQUEA PRO';
+
+  @override
+  String get pro_maisPopular => 'MÁS ELEGIDO';
+
+  @override
+  String pro_porMes(String valor) {
+    return '$valor/mes';
+  }
+
+  @override
+  String pro_economia(String valor) {
+    return 'ahorras $valor al año';
+  }
+
+  @override
+  String get pro_periodoMensal => 'Mensual';
+
+  @override
+  String get pro_periodoTrimestral => 'Trimestral';
+
+  @override
+  String get pro_periodoAnual => 'Anual';
+
+  @override
+  String pro_comecarTrial(int dias) {
+    return 'EMPEZAR $dias DÍAS GRATIS';
+  }
+
+  @override
+  String get pro_agoraNao => 'Ahora no';
+
+  @override
+  String get pro_restaurar => 'Restaurar compra';
+
+  @override
+  String get pro_benefFoto => 'La foto del plato se vuelve macros';
+
+  @override
+  String get pro_benefFotoDesc =>
+      'La IA identifica el alimento y estima el peso';
+
+  @override
+  String get pro_benefDieta => 'Plan de dieta generado por IA';
+
+  @override
+  String get pro_benefDietaDesc =>
+      'Menú del día según tus metas, con cambio de alimentos';
+
+  @override
+  String get pro_benefTreino => 'Entrenamientos armados por IA';
+
+  @override
+  String get pro_benefTreinoDesc =>
+      'Elige el grupo muscular y recibe el entrenamiento listo';
+
+  @override
+  String get pro_benefHistorico => 'Historial sin límite';
+
+  @override
+  String get pro_benefHistoricoDesc =>
+      'Toda tu evolución de peso, puntos y medidas';
+
+  @override
+  String pro_avisoTrial(int dias, String valor, String data) {
+    return '$dias días gratis. Cobramos $valor solo el $data. Cancela antes y no pagas nada.';
+  }
+
+  @override
+  String pro_avisoRenovacao(String entrada, String renovacao) {
+    return 'Primer año por $entrada. Se renueva automáticamente por $renovacao al año.';
+  }
+
+  @override
+  String pro_avisoRenovacaoSimples(String valor) {
+    return 'Se renueva automáticamente por $valor. Cancela cuando quieras.';
+  }
+
+  @override
+  String get pro_avisoCancelar =>
+      'Cancelas desde la tienda de aplicaciones, sin hablar con nadie.';
+
+  @override
+  String pro_aoAssinarAceita(String termos, String privacidade) {
+    return 'Al suscribirte aceptas los $termos y la $privacidade.';
+  }
+
+  @override
+  String get demo_faixa => 'MODO DEMOSTRACIÓN';
+
+  @override
+  String get demo_explicacao =>
+      'No se realiza ningún cargo y ningún dato sale de este dispositivo.';
+
+  @override
+  String get pag_titulo => 'PAGO';
+
+  @override
+  String get pag_resumo => 'RESUMEN';
+
+  @override
+  String get pag_hoje => 'Hoy pagas';
+
+  @override
+  String get pag_gratis => 'R\$ 0,00';
+
+  @override
+  String pag_depoisDoTrial(String data) {
+    return 'Después del $data';
+  }
+
+  @override
+  String get pag_forma => 'MÉTODO DE PAGO';
+
+  @override
+  String get pag_cartao => 'Tarjeta';
+
+  @override
+  String get pag_pix => 'Pix';
+
+  @override
+  String get pag_numeroCartao => 'NÚMERO DE TARJETA';
+
+  @override
+  String get pag_nomeNoCartao => 'NOMBRE EN LA TARJETA';
+
+  @override
+  String get pag_validade => 'VENCIMIENTO';
+
+  @override
+  String get pag_cvv => 'CVV';
+
+  @override
+  String get pag_pixInstrucao =>
+      'En la versión real aquí aparece un código QR válido por 30 minutos.';
+
+  @override
+  String get pag_confirmar => 'CONFIRMAR SUSCRIPCIÓN';
+
+  @override
+  String get pag_processando => 'Procesando...';
+
+  @override
+  String get pag_seguro => 'Simulación local — no se transmite nada';
+
+  @override
+  String get suc_titulo => 'SUSCRIPCIÓN ACTIVA';
+
+  @override
+  String get suc_bemVindo => 'Bienvenido a Pro.';
+
+  @override
+  String suc_trialAte(String data) {
+    return 'Prueba gratuita hasta el $data';
+  }
+
+  @override
+  String suc_primeiraCobranca(String valor, String data) {
+    return 'Primer cargo de $valor el $data';
+  }
+
+  @override
+  String get suc_comecar => 'EMPEZAR A ENTRENAR';
+
+  @override
+  String get perfil_assinatura => 'SUSCRIPCIÓN';
+
+  @override
+  String get perfil_planoGratuito => 'Plan gratuito';
+
+  @override
+  String get perfil_verPlanos => 'Ver planes';
+
+  @override
+  String get perfil_proAtivo => 'Pro activo';
+
+  @override
+  String perfil_trialRestante(int dias) {
+    return '$dias días de prueba restantes';
+  }
+
+  @override
+  String perfil_renovaEm(String data) {
+    return 'Se renueva el $data';
+  }
+
+  @override
+  String get perfil_cancelarAssinatura => 'Cancelar suscripción';
+
+  @override
+  String get perfil_cancelarConfirma =>
+      '¿Cancelar la suscripción? Mantienes Pro hasta el final del período ya pagado.';
+
+  @override
+  String get perfil_assinaturaCancelada => 'Suscripción cancelada.';
 }

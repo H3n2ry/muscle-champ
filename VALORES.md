@@ -1,7 +1,10 @@
 # VALORES.md — Estratégia de Preços
 
-> **Status:** proposta consolidada em 17/08/2026. Nenhum destes valores está implementado —
-> não existe paywall, billing nem controle de entitlement no código. Ver "Implementação" no final.
+> **Status:** proposta consolidada em 17/08/2026. Desde 25/08/2026 existe um paywall de
+> **demonstração** (`lib/features/subscription/`) com estes valores, para ajustar layout e
+> copy. Não existe billing nem entitlement real. Ver "Implementação" no final.
+>
+> A escada de coerência da §1 virou teste: `test/planos_test.dart`. Mudou preço, roda.
 
 ## 1. Tabela de preços
 
@@ -122,15 +125,39 @@ anual (~R$ 9,2 mil/mês). A escada acima adiciona talvez 25% a isso; dobrar a ba
 
 ## 5. Implementação
 
-Nada disso existe no código. O que falta:
-
+- [x] Paywall e telas de assinatura — **em modo demonstração**
 - [ ] Integração com Google Play Billing
 - [ ] **Introductory offer** para a promo de primeira assinatura (recurso nativo do Play — desconto automático na 1ª compra)
 - [ ] Base price temporário ou promo codes para a janela de lançamento de 6 meses
-- [ ] Controle de entitlement (quem é assinante, quando expira)
-- [ ] Paywall e telas de assinatura
-- [ ] Trial de 14 dias
+- [ ] Controle de entitlement (quem é assinante, quando expira) — **no servidor**
+- [ ] Trial de 14 dias (hoje só a data é simulada)
 - [ ] Notificação de mudança de preço na renovação
+- [ ] **Decidir o que é grátis e o que é Pro** — a tela lista os quatro recursos de IA
+      como pagos, mas isso foi escolha de rascunho, não decisão tomada
+
+### O que o modo demonstração faz e não faz
+
+`/assinatura` → `/assinatura/pagamento` → `/assinatura/sucesso`, com entrada pelo perfil.
+Grava a "assinatura" em `SharedPreferences` com escopo de usuário, só para dar para
+percorrer o fluxo inteiro e ver o estado no perfil. **Nenhuma função do app está
+bloqueada** — não há gate em lugar nenhum.
+
+Os campos de cartão vêm com o número de sandbox `4111 1111 1111 1111`, não saem do
+aparelho e não são gravados. Uma faixa `MODO DEMONSTRAÇÃO` fica visível nas três telas:
+uma tela de pagamento convincente que não cobra nada é exatamente o tipo de coisa que
+vaza para produção sem ninguém notar.
+
+### Três coisas que mudam quando virar real
+
+1. **No Android esta tela não existe.** Assinatura de conteúdo digital tem que passar
+   pelo Google Play Billing, que abre a folha de pagamento do próprio Play. O que sobra
+   do checkout é a versão web.
+2. **O preço não sai do cliente.** No Play ele é definido por região no Console e o app
+   exibe o que o Billing devolver. `Planos` no código é vitrine de demonstração — deixar
+   valor fixo faria o usuário de outro país ver R$ e ser cobrado em outra moeda.
+3. **O entitlement mora no servidor.** `SharedPreferences` é do aparelho e o usuário
+   edita. Quem decide se alguém é assinante é o Supabase, confirmado por webhook do
+   gateway — cliente nunca decide que pagou.
 
 Os dois primeiros itens são mecanismos distintos no Play Billing — a promo permanente de
 primeira assinatura é *introductory offer*; a janela de lançamento não é.
