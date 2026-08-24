@@ -1869,4 +1869,50 @@ class LEs extends L {
 
   @override
   String get perfil_assinaturaCancelada => 'Suscripción cancelada.';
+
+  @override
+  String cota_restantesHoje(int n, int total) {
+    return '$n de $total hoy';
+  }
+
+  @override
+  String get cota_ilimitado => 'Ilimitado';
+
+  @override
+  String get cota_limiteTitulo => 'Ya usaste tu IA de hoy';
+
+  @override
+  String cota_limiteFoto(int n) {
+    return 'El plan gratuito analiza $n foto al día. Vuelve mañana o desbloquea el uso sin límite.';
+  }
+
+  @override
+  String cota_limiteTexto(int n) {
+    return 'El plan gratuito calcula $n alimentos por texto al día. Vuelve mañana o desbloquea el uso sin límite.';
+  }
+
+  @override
+  String cota_limiteTreino(int n) {
+    return 'El plan gratuito genera $n entrenamiento al día. Vuelve mañana o desbloquea el uso sin límite.';
+  }
+
+  @override
+  String cota_limiteDieta(int n) {
+    return 'El plan gratuito genera $n plan de dieta al día. Vuelve mañana o desbloquea el uso sin límite.';
+  }
+
+  @override
+  String get cota_semLimitePro => 'Sin límite en Pro';
+
+  @override
+  String get cota_verPlanos => 'VER PLANES';
+
+  @override
+  String get cota_esperarAmanha => 'Espero hasta mañana';
+
+  @override
+  String get cota_zerarDemo => 'Reiniciar cuota (demo)';
+
+  @override
+  String get cota_zerada => 'Cuota del día reiniciada.';
 }

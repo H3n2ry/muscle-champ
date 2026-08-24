@@ -385,9 +385,39 @@ Entry point: the ASSINATURA card in the profile.
 
 ⚠️ **Nothing here charges anything.** `AssinaturaRepository` writes to
 SharedPreferences (`assinatura_demo_v1_<uid>`) so the flow can be walked
-end-to-end. **No feature is gated by it** — the free/Pro split is still an open
-decision. A `DemoBanner` sits on all three screens on purpose: a convincing
+end-to-end. A `DemoBanner` sits on all three screens on purpose: a convincing
 payment screen that doesn't charge is exactly what leaks to production unnoticed.
+
+### Free-tier AI quota (`cota_ia.dart`)
+
+The free plan gets a **daily quota**, not a block: 1 photo · 3 text macros ·
+1 workout · 1 diet plan. Pro is unlimited. Limits live on the `RecursoIa` enum
+and are pinned by `test/cota_ia_test.dart`.
+
+Quota is about conversion, not cost — a heavy user burns ~R$ 1,06/month in AI
+(`VALORES.md` §2). Someone who never saw a photo turn into macros doesn't know
+what they'd be buying. The photo cap is tightest because it alone is ~88% of AI
+spend.
+
+Call sites check `podeUsar()` **before** the call and `registrarUso()` **after
+success only** — charging the quota on a network failure would burn the day's
+single photo with nothing to show. The photo path also skips the charge when
+the model answers with `error` (didn't recognize the food).
+
+`_gerarPlanoComCota()` gates the diet plan **in the page, not in
+`AiDietPlanNotifier`** — the notifier generates diets and shouldn't know what a
+subscription is; otherwise testing the generator would need billing state.
+
+A `SeloDeCota` badge ("2 de 3 hoje") sits in the IA and FOTO mode headers.
+Showing the balance before it runs out is what separates a limit from a trap.
+The profile carries a **Zerar cota (demo)** shortcut so the limit can be tested
+without waiting for midnight; it goes away with the demo mode.
+
+⚠️ **The counter is on the device and the date is local** — both are the user's
+to edit. Acceptable while Pro is fake too. Before charging, counting moves to
+`groq-proxy`, which already knows the user from the JWT. `CotaIaRepository`'s
+interface (`podeUsar`, `registrarUso`) was shaped so that move doesn't reach the
+screens.
 
 **Money is `int` centavos, never `double`.** Twelve `19.90` doubles sum to
 238.79999999999998. `formatarBRL()` renders it.

@@ -656,5 +656,17 @@
   "perfil_renovaEm": "Se renueva el {data}",
   "perfil_cancelarAssinatura": "Cancelar suscripción",
   "perfil_cancelarConfirma": "¿Cancelar la suscripción? Mantienes Pro hasta el final del período ya pagado.",
-  "perfil_assinaturaCancelada": "Suscripción cancelada."
+  "perfil_assinaturaCancelada": "Suscripción cancelada.",
+  "cota_restantesHoje": "{n} de {total} hoy",
+  "cota_ilimitado": "Ilimitado",
+  "cota_limiteTitulo": "Ya usaste tu IA de hoy",
+  "cota_limiteFoto": "El plan gratuito analiza {n} foto al día. Vuelve mañana o desbloquea el uso sin límite.",
+  "cota_limiteTexto": "El plan gratuito calcula {n} alimentos por texto al día. Vuelve mañana o desbloquea el uso sin límite.",
+  "cota_limiteTreino": "El plan gratuito genera {n} entrenamiento al día. Vuelve mañana o desbloquea el uso sin límite.",
+  "cota_limiteDieta": "El plan gratuito genera {n} plan de dieta al día. Vuelve mañana o desbloquea el uso sin límite.",
+  "cota_semLimitePro": "Sin límite en Pro",
+  "cota_verPlanos": "VER PLANES",
+  "cota_esperarAmanha": "Espero hasta mañana",
+  "cota_zerarDemo": "Reiniciar cuota (demo)",
+  "cota_zerada": "Cuota del día reiniciada."
 }

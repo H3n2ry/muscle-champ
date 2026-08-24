@@ -1,0 +1,184 @@
+/// Cota diária de IA do plano gratuito.
+///
+/// Os números vieram de decisão de produto (1 foto, 3 textos, 1 treino, 1
+/// plano por dia). Ficam no teste porque mexer neles sem querer é fácil e o
+/// efeito — usuário travado ou IA de graça à vontade — só aparece em produção.
+library;
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:muscle_camp/features/subscription/data/models/cota_ia.dart';
+import 'package:muscle_camp/features/subscription/data/repositories/cota_ia_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+SaldoDeCota _saldo(RecursoIa r, int usados, {bool pro = false}) =>
+    SaldoDeCota(recurso: r, usados: usados, ilimitado: pro);
+
+void main() {
+  group('limites do plano gratuito', () {
+    test('são os combinados', () {
+      expect(RecursoIa.fotoRefeicao.limiteGratis, 1);
+      expect(RecursoIa.macrosTexto.limiteGratis, 3);
+      expect(RecursoIa.gerarTreino.limiteGratis, 1);
+      expect(RecursoIa.planoDieta.limiteGratis, 1);
+    });
+
+    test('a foto é o mais apertado — 88% do custo de IA está nela', () {
+      for (final r in RecursoIa.values) {
+        expect(RecursoIa.fotoRefeicao.limiteGratis,
+            lessThanOrEqualTo(r.limiteGratis));
+      }
+    });
+
+    test('nenhum recurso fica com limite zero', () {
+      // Zero seria bloqueio, não cota — e a decisão foi deixar provar.
+      for (final r in RecursoIa.values) {
+        expect(r.limiteGratis, greaterThan(0), reason: r.name);
+      }
+    });
+  });
+
+  group('chave de persistência', () {
+    test('é estável e não é o nome do enum', () {
+      // Se a chave fosse `name`, renomear o enum zeraria a cota de todo mundo
+      // em silêncio.
+      expect(RecursoIa.fotoRefeicao.chave, 'foto');
+      expect(RecursoIa.macrosTexto.chave, 'texto');
+      expect(RecursoIa.gerarTreino.chave, 'treino');
+      expect(RecursoIa.planoDieta.chave, 'dieta');
+    });
+
+    test('não há chave repetida', () {
+      final chaves = RecursoIa.values.map((r) => r.chave).toList();
+      expect(chaves.toSet(), hasLength(chaves.length));
+    });
+  });
+
+  group('saldo no plano gratuito', () {
+    test('sem uso, pode usar e mostra o limite cheio', () {
+      final s = _saldo(RecursoIa.macrosTexto, 0);
+      expect(s.podeUsar, isTrue);
+      expect(s.restantes, 3);
+    });
+
+    test('no último uso ainda pode', () {
+      final s = _saldo(RecursoIa.macrosTexto, 2);
+      expect(s.podeUsar, isTrue);
+      expect(s.restantes, 1);
+    });
+
+    test('atingido o limite, bloqueia e zera o restante', () {
+      final s = _saldo(RecursoIa.macrosTexto, 3);
+      expect(s.podeUsar, isFalse);
+      expect(s.restantes, 0);
+    });
+
+    test('uma foto por dia: o segundo uso já bloqueia', () {
+      expect(_saldo(RecursoIa.fotoRefeicao, 0).podeUsar, isTrue);
+      expect(_saldo(RecursoIa.fotoRefeicao, 1).podeUsar, isFalse);
+    });
+
+    test('contador acima do limite não vira restante negativo', () {
+      // Defensivo: se algo contar duas vezes, a tela mostra 0, não "-1".
+      final s = _saldo(RecursoIa.gerarTreino, 7);
+      expect(s.restantes, 0);
+      expect(s.podeUsar, isFalse);
+    });
+  });
+
+  group('assinante', () {
+    test('nunca é bloqueado, por mais que use', () {
+      for (final r in RecursoIa.values) {
+        expect(_saldo(r, 999, pro: true).podeUsar, isTrue, reason: r.name);
+      }
+    });
+
+    test('o selo some para quem é Pro', () {
+      // `ilimitado` é o que o SeloDeCota usa para não desenhar contador.
+      expect(_saldo(RecursoIa.fotoRefeicao, 5, pro: true).ilimitado, isTrue);
+      expect(_saldo(RecursoIa.fotoRefeicao, 0).ilimitado, isFalse);
+    });
+  });
+
+  _testesDoContador();
+}
+
+/// Exercita o contador de verdade, com SharedPreferences de mentira.
+///
+/// Os testes acima provam a regra; estes provam o encanamento — que consumir
+/// realmente grava, que o saldo cai, e que na terceira vez o texto trava.
+/// Foi o que faltou quando a cota "não bloqueou" no primeiro teste.
+void _testesDoContador() {
+  group('contador em cima de SharedPreferences', () {
+    late CotaIaRepository repo;
+
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+      repo = CotaIaRepository();
+    });
+
+    test('começa zerado', () async {
+      expect(await repo.usosDeHoje(), isEmpty);
+    });
+
+    test('consumir incrementa o recurso certo e só ele', () async {
+      await repo.consumir(RecursoIa.macrosTexto);
+      await repo.consumir(RecursoIa.macrosTexto);
+      final usos = await repo.usosDeHoje();
+      expect(usos[RecursoIa.macrosTexto.chave], 2);
+      expect(usos[RecursoIa.fotoRefeicao.chave], isNull);
+    });
+
+    test('três textos esgotam a cota; o quarto é bloqueado', () async {
+      for (var i = 0; i < 3; i++) {
+        final usos = await repo.usosDeHoje();
+        final saldo = SaldoDeCota(
+          recurso: RecursoIa.macrosTexto,
+          usados: usos[RecursoIa.macrosTexto.chave] ?? 0,
+          ilimitado: false,
+        );
+        expect(saldo.podeUsar, isTrue, reason: 'uso ${i + 1} deveria passar');
+        await repo.consumir(RecursoIa.macrosTexto);
+      }
+      final usos = await repo.usosDeHoje();
+      final saldo = SaldoDeCota(
+        recurso: RecursoIa.macrosTexto,
+        usados: usos[RecursoIa.macrosTexto.chave] ?? 0,
+        ilimitado: false,
+      );
+      expect(saldo.podeUsar, isFalse);
+      expect(saldo.restantes, 0);
+    });
+
+    test('uma foto esgota a cota de foto', () async {
+      await repo.consumir(RecursoIa.fotoRefeicao);
+      final usos = await repo.usosDeHoje();
+      final saldo = SaldoDeCota(
+        recurso: RecursoIa.fotoRefeicao,
+        usados: usos[RecursoIa.fotoRefeicao.chave] ?? 0,
+        ilimitado: false,
+      );
+      expect(saldo.podeUsar, isFalse);
+    });
+
+    test('virou o dia, o contador reseta', () async {
+      SharedPreferences.setMockInitialValues({
+        'cota_ia_v1_anon': '{"dia":"2020-01-01","usos":{"texto":3}}',
+      });
+      expect(await CotaIaRepository().usosDeHoje(), isEmpty);
+    });
+
+    test('registro corrompido não trava o app — trata como zerado', () async {
+      SharedPreferences.setMockInitialValues({
+        'cota_ia_v1_anon': 'isto não é json',
+      });
+      expect(await CotaIaRepository().usosDeHoje(), isEmpty);
+    });
+
+    test('zerar limpa a cota do dia', () async {
+      await repo.consumir(RecursoIa.gerarTreino);
+      expect((await repo.usosDeHoje()), isNotEmpty);
+      await repo.zerar();
+      expect(await repo.usosDeHoje(), isEmpty);
+    });
+  });
+}

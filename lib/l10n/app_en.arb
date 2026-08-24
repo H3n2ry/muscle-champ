@@ -656,5 +656,17 @@
   "perfil_renovaEm": "Renews on {data}",
   "perfil_cancelarAssinatura": "Cancel subscription",
   "perfil_cancelarConfirma": "Cancel the subscription? You keep Pro until the end of the period already paid.",
-  "perfil_assinaturaCancelada": "Subscription cancelled."
+  "perfil_assinaturaCancelada": "Subscription cancelled.",
+  "cota_restantesHoje": "{n} of {total} today",
+  "cota_ilimitado": "Unlimited",
+  "cota_limiteTitulo": "You have used today’s AI",
+  "cota_limiteFoto": "The free plan analyzes {n} photo a day. Come back tomorrow or unlock unlimited use.",
+  "cota_limiteTexto": "The free plan calculates {n} foods by text a day. Come back tomorrow or unlock unlimited use.",
+  "cota_limiteTreino": "The free plan generates {n} workout a day. Come back tomorrow or unlock unlimited use.",
+  "cota_limiteDieta": "The free plan generates {n} diet plan a day. Come back tomorrow or unlock unlimited use.",
+  "cota_semLimitePro": "No limit on Pro",
+  "cota_verPlanos": "SEE PLANS",
+  "cota_esperarAmanha": "I’ll wait until tomorrow",
+  "cota_zerarDemo": "Reset quota (demo)",
+  "cota_zerada": "Daily quota reset."
 }

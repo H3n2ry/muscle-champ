@@ -15,6 +15,9 @@ import '../../data/repositories/workout_template_repository.dart';
 import '../../data/datasources/exercise_library.dart';
 import '../providers/workout_template_provider.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../subscription/data/models/cota_ia.dart';
+import '../../../subscription/presentation/providers/cota_ia_provider.dart';
+import '../../../subscription/presentation/widgets/limite_atingido_sheet.dart';
 
 // O grupo muscular é chave da ExerciseLibrary e vai no prompt da IA, então o
 // valor guardado continua em português; só o rótulo na tela é traduzido.
@@ -395,17 +398,17 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
 
 // ── AI Workout Sheet ──────────────────────────────────────────────────────────
 
-class _AiWorkoutSheet extends StatefulWidget {
+class _AiWorkoutSheet extends ConsumerStatefulWidget {
   final Future<void> Function(String name, List<Map<String, dynamic>> exercises)
       onSave;
 
   const _AiWorkoutSheet({required this.onSave});
 
   @override
-  State<_AiWorkoutSheet> createState() => _AiWorkoutSheetState();
+  ConsumerState<_AiWorkoutSheet> createState() => _AiWorkoutSheetState();
 }
 
-class _AiWorkoutSheetState extends State<_AiWorkoutSheet> {
+class _AiWorkoutSheetState extends ConsumerState<_AiWorkoutSheet> {
   final _customCtrl = TextEditingController();
   String? _selectedGroup;
   List<Map<String, dynamic>> _generated = [];
@@ -434,6 +437,14 @@ class _AiWorkoutSheetState extends State<_AiWorkoutSheet> {
       return;
     }
 
+    if (!await ref
+        .read(cotaIaControllerProvider)
+        .podeUsar(RecursoIa.gerarTreino)) {
+      if (mounted) {
+        await LimiteAtingidoSheet.mostrar(context, RecursoIa.gerarTreino);
+      }
+      return;
+    }
     setState(() {
       _loading = true;
       _error = null;
@@ -442,6 +453,9 @@ class _AiWorkoutSheetState extends State<_AiWorkoutSheet> {
 
     try {
       final result = await GroqService.generateWorkout(group);
+      await ref
+          .read(cotaIaControllerProvider)
+          .registrarUso(RecursoIa.gerarTreino);
       if (mounted) setState(() => _generated = result);
     } catch (e) {
       if (mounted) {
@@ -514,12 +528,17 @@ class _AiWorkoutSheetState extends State<_AiWorkoutSheet> {
                       Text(L.of(context).treino_treinoComIa,
                           style: AppTypography.headlineSm
                               .copyWith(fontWeight: FontWeight.w700)),
-                      Text('Groq · LLaMA 3.3',
+                      // Nao nomear o modelo aqui: quem escolhe e o proxy,
+                      // e o texto anterior ('LLaMA 3.3') ficou mentindo por
+                      // duas trocas de modelo seguidas.
+                      Text(L.of(context).dieta_iaAtivaGroq,
                           style: AppTypography.bodySm.copyWith(
                               color: AppColors.onSurfaceVariant,
                               fontSize: 11)),
                     ],
                   ),
+                  const Spacer(),
+                  const _SeloDeCotaTreino(),
                 ],
               ),
 
@@ -2363,4 +2382,17 @@ class _DoExerciseRowState extends State<_DoExerciseRow> {
               const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         ),
       );
+}
+
+/// Selo de cota do gerador de treino.
+class _SeloDeCotaTreino extends ConsumerWidget {
+  const _SeloDeCotaTreino();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ref.watch(saldoDeCotaProvider(RecursoIa.gerarTreino)).maybeWhen(
+          data: (s) => SeloDeCota(saldo: s),
+          orElse: () => const SizedBox.shrink(),
+        );
+  }
 }

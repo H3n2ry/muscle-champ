@@ -1863,4 +1863,50 @@ class LPt extends L {
 
   @override
   String get perfil_assinaturaCancelada => 'Assinatura cancelada.';
+
+  @override
+  String cota_restantesHoje(int n, int total) {
+    return '$n de $total hoje';
+  }
+
+  @override
+  String get cota_ilimitado => 'Ilimitado';
+
+  @override
+  String get cota_limiteTitulo => 'Você usou sua IA de hoje';
+
+  @override
+  String cota_limiteFoto(int n) {
+    return 'O plano gratuito analisa $n foto por dia. Volta amanhã ou libere o uso sem limite.';
+  }
+
+  @override
+  String cota_limiteTexto(int n) {
+    return 'O plano gratuito calcula $n alimentos por texto por dia. Volta amanhã ou libere o uso sem limite.';
+  }
+
+  @override
+  String cota_limiteTreino(int n) {
+    return 'O plano gratuito gera $n treino por dia. Volta amanhã ou libere o uso sem limite.';
+  }
+
+  @override
+  String cota_limiteDieta(int n) {
+    return 'O plano gratuito gera $n plano de dieta por dia. Volta amanhã ou libere o uso sem limite.';
+  }
+
+  @override
+  String get cota_semLimitePro => 'Sem limite no Pro';
+
+  @override
+  String get cota_verPlanos => 'VER PLANOS';
+
+  @override
+  String get cota_esperarAmanha => 'Espero até amanhã';
+
+  @override
+  String get cota_zerarDemo => 'Zerar cota (demo)';
+
+  @override
+  String get cota_zerada => 'Cota do dia zerada.';
 }

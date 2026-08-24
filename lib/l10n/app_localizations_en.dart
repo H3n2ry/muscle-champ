@@ -1853,4 +1853,50 @@ class LEn extends L {
 
   @override
   String get perfil_assinaturaCancelada => 'Subscription cancelled.';
+
+  @override
+  String cota_restantesHoje(int n, int total) {
+    return '$n of $total today';
+  }
+
+  @override
+  String get cota_ilimitado => 'Unlimited';
+
+  @override
+  String get cota_limiteTitulo => 'You have used today’s AI';
+
+  @override
+  String cota_limiteFoto(int n) {
+    return 'The free plan analyzes $n photo a day. Come back tomorrow or unlock unlimited use.';
+  }
+
+  @override
+  String cota_limiteTexto(int n) {
+    return 'The free plan calculates $n foods by text a day. Come back tomorrow or unlock unlimited use.';
+  }
+
+  @override
+  String cota_limiteTreino(int n) {
+    return 'The free plan generates $n workout a day. Come back tomorrow or unlock unlimited use.';
+  }
+
+  @override
+  String cota_limiteDieta(int n) {
+    return 'The free plan generates $n diet plan a day. Come back tomorrow or unlock unlimited use.';
+  }
+
+  @override
+  String get cota_semLimitePro => 'No limit on Pro';
+
+  @override
+  String get cota_verPlanos => 'SEE PLANS';
+
+  @override
+  String get cota_esperarAmanha => 'I’ll wait until tomorrow';
+
+  @override
+  String get cota_zerarDemo => 'Reset quota (demo)';
+
+  @override
+  String get cota_zerada => 'Daily quota reset.';
 }

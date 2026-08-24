@@ -3482,6 +3482,78 @@ abstract class L {
   /// In pt, this message translates to:
   /// **'Assinatura cancelada.'**
   String get perfil_assinaturaCancelada;
+
+  /// No description provided for @cota_restantesHoje.
+  ///
+  /// In pt, this message translates to:
+  /// **'{n} de {total} hoje'**
+  String cota_restantesHoje(int n, int total);
+
+  /// No description provided for @cota_ilimitado.
+  ///
+  /// In pt, this message translates to:
+  /// **'Ilimitado'**
+  String get cota_ilimitado;
+
+  /// No description provided for @cota_limiteTitulo.
+  ///
+  /// In pt, this message translates to:
+  /// **'Você usou sua IA de hoje'**
+  String get cota_limiteTitulo;
+
+  /// No description provided for @cota_limiteFoto.
+  ///
+  /// In pt, this message translates to:
+  /// **'O plano gratuito analisa {n} foto por dia. Volta amanhã ou libere o uso sem limite.'**
+  String cota_limiteFoto(int n);
+
+  /// No description provided for @cota_limiteTexto.
+  ///
+  /// In pt, this message translates to:
+  /// **'O plano gratuito calcula {n} alimentos por texto por dia. Volta amanhã ou libere o uso sem limite.'**
+  String cota_limiteTexto(int n);
+
+  /// No description provided for @cota_limiteTreino.
+  ///
+  /// In pt, this message translates to:
+  /// **'O plano gratuito gera {n} treino por dia. Volta amanhã ou libere o uso sem limite.'**
+  String cota_limiteTreino(int n);
+
+  /// No description provided for @cota_limiteDieta.
+  ///
+  /// In pt, this message translates to:
+  /// **'O plano gratuito gera {n} plano de dieta por dia. Volta amanhã ou libere o uso sem limite.'**
+  String cota_limiteDieta(int n);
+
+  /// No description provided for @cota_semLimitePro.
+  ///
+  /// In pt, this message translates to:
+  /// **'Sem limite no Pro'**
+  String get cota_semLimitePro;
+
+  /// No description provided for @cota_verPlanos.
+  ///
+  /// In pt, this message translates to:
+  /// **'VER PLANOS'**
+  String get cota_verPlanos;
+
+  /// No description provided for @cota_esperarAmanha.
+  ///
+  /// In pt, this message translates to:
+  /// **'Espero até amanhã'**
+  String get cota_esperarAmanha;
+
+  /// No description provided for @cota_zerarDemo.
+  ///
+  /// In pt, this message translates to:
+  /// **'Zerar cota (demo)'**
+  String get cota_zerarDemo;
+
+  /// No description provided for @cota_zerada.
+  ///
+  /// In pt, this message translates to:
+  /// **'Cota do dia zerada.'**
+  String get cota_zerada;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

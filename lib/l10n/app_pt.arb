@@ -933,5 +933,55 @@
   },
   "perfil_cancelarAssinatura": "Cancelar assinatura",
   "perfil_cancelarConfirma": "Cancelar a assinatura? Você mantém o Pro até o fim do período já pago.",
-  "perfil_assinaturaCancelada": "Assinatura cancelada."
+  "perfil_assinaturaCancelada": "Assinatura cancelada.",
+  "cota_restantesHoje": "{n} de {total} hoje",
+  "@cota_restantesHoje": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "cota_ilimitado": "Ilimitado",
+  "cota_limiteTitulo": "Você usou sua IA de hoje",
+  "cota_limiteFoto": "O plano gratuito analisa {n} foto por dia. Volta amanhã ou libere o uso sem limite.",
+  "@cota_limiteFoto": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "cota_limiteTexto": "O plano gratuito calcula {n} alimentos por texto por dia. Volta amanhã ou libere o uso sem limite.",
+  "@cota_limiteTexto": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "cota_limiteTreino": "O plano gratuito gera {n} treino por dia. Volta amanhã ou libere o uso sem limite.",
+  "@cota_limiteTreino": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "cota_limiteDieta": "O plano gratuito gera {n} plano de dieta por dia. Volta amanhã ou libere o uso sem limite.",
+  "@cota_limiteDieta": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "cota_semLimitePro": "Sem limite no Pro",
+  "cota_verPlanos": "VER PLANOS",
+  "cota_esperarAmanha": "Espero até amanhã",
+  "cota_zerarDemo": "Zerar cota (demo)",
+  "cota_zerada": "Cota do dia zerada."
 }

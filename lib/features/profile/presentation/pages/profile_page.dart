@@ -11,7 +11,9 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/language_selector.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../subscription/data/repositories/assinatura_repository.dart';
+import '../../../subscription/data/repositories/cota_ia_repository.dart';
 import '../../../subscription/presentation/providers/assinatura_provider.dart';
+import '../../../subscription/presentation/providers/cota_ia_provider.dart';
 import '../../../../shared/widgets/mk_snack.dart';
 import '../../data/repositories/profile_repository.dart';
 import '../providers/profile_provider.dart';
@@ -1938,11 +1940,40 @@ class _AssinaturaCard extends ConsumerWidget {
             style: AppTypography.bodySm
                 .copyWith(color: AppColors.onSurfaceVariant)),
         data: (a) => a == null || !a.ativa
-            ? _semAssinatura(context, l)
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _semAssinatura(context, l),
+                  _zerarCota(context, ref, l),
+                ],
+              )
             : _comAssinatura(context, ref, l, a),
       ),
     );
   }
+
+  /// Atalho de desenvolvimento: zera o contador do dia para dar para testar
+  /// o limite sem esperar a meia-noite. Sai junto com o modo demonstração.
+  Widget _zerarCota(BuildContext context, WidgetRef ref, L l) => Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton(
+          onPressed: () async {
+            await ref.read(cotaIaRepositoryProvider).zerar();
+            ref.invalidate(saldosDeCotaProvider);
+            if (context.mounted) MkSnack.success(context, l.cota_zerada);
+          },
+          style: TextButton.styleFrom(
+            padding: EdgeInsets.zero,
+            minimumSize: const Size(0, 0),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: Text(l.cota_zerarDemo,
+              style: AppTypography.bodySm.copyWith(
+                color: AppColors.warning,
+                fontSize: 11,
+              )),
+        ),
+      );
 
   Widget _semAssinatura(BuildContext context, L l) => Row(
         children: [

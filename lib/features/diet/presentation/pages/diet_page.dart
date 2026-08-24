@@ -17,6 +17,9 @@ import '../../data/models/diet_model.dart';
 import '../../data/repositories/calibration_repository.dart';
 import '../providers/diet_provider.dart';
 import '../providers/water_provider.dart';
+import '../../../subscription/data/models/cota_ia.dart';
+import '../../../subscription/presentation/providers/cota_ia_provider.dart';
+import '../../../subscription/presentation/widgets/limite_atingido_sheet.dart';
 
 // ── Modo de entrada de refeição ───────────────────────────────────────────────
 
@@ -1514,12 +1517,17 @@ class _AiDietBody extends ConsumerWidget {
             Align(
               alignment: Alignment.centerRight,
               child: GestureDetector(
-                onTap: () => ref
-                    .read(aiDietPlanProvider.notifier)
-                    .generate(goalCalories, goalType,
+                onTap: () => _gerarPlanoComCota(
+                  context,
+                  ref,
+                  () => ref.read(aiDietPlanProvider.notifier).generate(
+                        goalCalories,
+                        goalType,
                         goalProtein: goalProtein,
                         goalCarbs: goalCarbs,
-                        goalFat: goalFat),
+                        goalFat: goalFat,
+                      ),
+                ),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 4),
@@ -1582,9 +1590,13 @@ class _AiDietBody extends ConsumerWidget {
           // Sem plano → botão de gerar
           else if (planState.plan == null)
             GestureDetector(
-              onTap: () => ref
-                  .read(aiDietPlanProvider.notifier)
-                  .generate(goalCalories, goalType),
+              onTap: () => _gerarPlanoComCota(
+                context,
+                ref,
+                () => ref
+                    .read(aiDietPlanProvider.notifier)
+                    .generate(goalCalories, goalType),
+              ),
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 18),
@@ -2673,6 +2685,14 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
       setState(() => _aiError = L.of(context).dieta_sessaoExpirada);
       return;
     }
+    if (!await ref
+        .read(cotaIaControllerProvider)
+        .podeUsar(RecursoIa.macrosTexto)) {
+      if (mounted) {
+        await LimiteAtingidoSheet.mostrar(context, RecursoIa.macrosTexto);
+      }
+      return;
+    }
     setState(() {
       _aiLoading = true;
       _aiError = null;
@@ -2681,6 +2701,11 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
     });
     try {
       final result = await GroqService.calculateFoodMacros(desc);
+      // Só conta depois que deu certo: cobrar a cota numa queda de rede
+      // gastaria o uso do dia sem entregar nada.
+      await ref
+          .read(cotaIaControllerProvider)
+          .registrarUso(RecursoIa.macrosTexto);
       if (mounted) setState(() => _aiResult = result);
     } catch (e) {
       if (mounted) {
@@ -2704,6 +2729,14 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
           () => _photoError = L.of(context).dieta_sessaoExpirada);
       return;
     }
+    if (!await ref
+        .read(cotaIaControllerProvider)
+        .podeUsar(RecursoIa.fotoRefeicao)) {
+      if (mounted) {
+        await LimiteAtingidoSheet.mostrar(context, RecursoIa.fotoRefeicao);
+      }
+      return;
+    }
     setState(() {
       _photoBytes = bytes;
       _photoLoading = true;
@@ -2721,6 +2754,13 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
         handLengthCm: cal?.lengthCm,
         handWidthCm: cal?.widthCm,
       );
+      // Resposta com 'error' é a IA dizendo que não reconheceu a foto —
+      // não entregou valor, então não consome a foto do dia.
+      if (!result.containsKey('error')) {
+        await ref
+            .read(cotaIaControllerProvider)
+            .registrarUso(RecursoIa.fotoRefeicao);
+      }
       if (mounted) {
         if (result.containsKey('error')) {
           setState(() => _photoError = result['error'] as String);
@@ -3222,6 +3262,10 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
             Text(L.of(context).dieta_descrevaAlimento,
                 style:
                     AppTypography.labelSm.copyWith(letterSpacing: 2)),
+            const Spacer(),
+            // Saldo à vista ANTES de gastar: a pessoa decide se usa agora ou
+            // guarda. Limite sem contador visível é armadilha.
+            const _SeloDeCotaAsync(recurso: RecursoIa.macrosTexto),
           ],
         ),
         const SizedBox(height: 10),
@@ -3415,6 +3459,8 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
             Text(L.of(context).dieta_fotoDoAlimento,
                 style:
                     AppTypography.labelSm.copyWith(letterSpacing: 2)),
+            const Spacer(),
+            const _SeloDeCotaAsync(recurso: RecursoIa.fotoRefeicao),
           ],
         ),
         const SizedBox(height: 12),
@@ -4063,5 +4109,50 @@ class _PreviewMacro extends StatelessWidget {
                 .copyWith(fontSize: 9, letterSpacing: 0.5)),
       ],
     );
+  }
+}
+
+// ── Cota de IA ───────────────────────────────────────────────────────────────
+
+/// Verifica a cota antes de gerar o plano e registra o uso depois.
+///
+/// Fica aqui, na tela, e não dentro do `AiDietPlanNotifier`: o notifier gera
+/// dieta, não sabe o que é assinatura. Misturar as duas coisas faria o teste
+/// do gerador precisar de estado de cobrança.
+Future<void> _gerarPlanoComCota(
+  BuildContext context,
+  WidgetRef ref,
+  Future<void> Function() gerar,
+) async {
+  final controller = ref.read(cotaIaControllerProvider);
+  if (!await controller.podeUsar(RecursoIa.planoDieta)) {
+    if (context.mounted) {
+      await LimiteAtingidoSheet.mostrar(context, RecursoIa.planoDieta);
+    }
+    return;
+  }
+  await gerar();
+  // O notifier engole a exceção e guarda o erro no estado, então o sucesso é
+  // "sobrou um plano no fim". Sem isso, uma geração que falhou consumiria a
+  // única do dia.
+  if (ref.read(aiDietPlanProvider).plan != null) {
+    await controller.registrarUso(RecursoIa.planoDieta);
+  }
+}
+
+/// [SeloDeCota] resolvendo o provider sozinho.
+///
+/// Enquanto carrega não mostra nada: um "0 de 3" piscando antes do valor real
+/// assusta à toa.
+class _SeloDeCotaAsync extends ConsumerWidget {
+  final RecursoIa recurso;
+  const _SeloDeCotaAsync({required this.recurso});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ref.watch(saldoDeCotaProvider(recurso)).maybeWhen(
+          data: (s) => SeloDeCota(saldo: s),
+          orElse: () => const SizedBox.shrink(),
+        );
   }
 }

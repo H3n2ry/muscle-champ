@@ -132,8 +132,31 @@ anual (~R$ 9,2 mil/mês). A escada acima adiciona talvez 25% a isso; dobrar a ba
 - [ ] Controle de entitlement (quem é assinante, quando expira) — **no servidor**
 - [ ] Trial de 14 dias (hoje só a data é simulada)
 - [ ] Notificação de mudança de preço na renovação
-- [ ] **Decidir o que é grátis e o que é Pro** — a tela lista os quatro recursos de IA
-      como pagos, mas isso foi escolha de rascunho, não decisão tomada
+- [x] **Decidir o que é grátis e o que é Pro** — decidido em 25/08/2026: cota diária
+      em vez de bloqueio (ver abaixo)
+- [ ] Mover a contagem de cota do aparelho para o `groq-proxy`
+
+### O gate: cota diária, não bloqueio
+
+| Recurso | Grátis | Pro |
+|---|---|---|
+| Foto do prato | 1/dia | ilimitado |
+| Macros por texto | 3/dia | ilimitado |
+| Gerar treino | 1/dia | ilimitado |
+| Plano de dieta | 1/dia | ilimitado |
+
+O raciocínio inverte a intuição: **custo não é argumento para bloquear**. Pelos números
+da §2, o usuário pesado gasta ~R$ 1,06/mês em IA e o médio ~R$ 0,35 — mesmo dando tudo
+de graça a conta não dói. O gate existe por conversão: quem nunca viu a foto virar macros
+não sabe o que estaria comprando. A cota deixa provar e esbarra no limite quando a pessoa
+já se importa.
+
+A foto tem o teto mais apertado porque sozinha responde por ~88% do custo de IA — é o
+único ponto onde volume ilimitado no grátis teria peso real.
+
+⚠️ A contagem hoje é do aparelho (`SharedPreferences`) e a data é a local. As duas coisas
+o usuário controla. Aceitável enquanto o Pro também é falso; antes de cobrar, sobe para
+o proxy.
 
 ### O que o modo demonstração faz e não faz
 
