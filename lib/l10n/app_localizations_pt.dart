@@ -1970,4 +1970,12 @@ class LPt extends L {
 
   @override
   String get perfil_excluindo => 'Excluindo...';
+
+  @override
+  String get cad_limiteEmails =>
+      'O servidor de e-mail atingiu o limite de envios. Sua conta NÃO foi criada — tente de novo daqui a uma hora.';
+
+  @override
+  String get conf_limiteEmails =>
+      'O servidor de e-mail atingiu o limite de envios. Tente reenviar daqui a uma hora.';
 }

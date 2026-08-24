@@ -1035,5 +1035,7 @@
   "priv_seusDados": "Seus dados",
   "perfil_zonaPerigo": "ZONA DE PERIGO",
   "perfil_excluirMinhaConta": "Excluir minha conta",
-  "perfil_excluindo": "Excluindo..."
+  "perfil_excluindo": "Excluindo...",
+  "cad_limiteEmails": "O servidor de e-mail atingiu o limite de envios. Sua conta NÃO foi criada — tente de novo daqui a uma hora.",
+  "conf_limiteEmails": "O servidor de e-mail atingiu o limite de envios. Tente reenviar daqui a uma hora."
 }

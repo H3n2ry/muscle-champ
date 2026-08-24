@@ -1976,4 +1976,12 @@ class LEs extends L {
 
   @override
   String get perfil_excluindo => 'Eliminando...';
+
+  @override
+  String get cad_limiteEmails =>
+      'El servidor de correo alcanzó su límite de envíos. Tu cuenta NO fue creada — inténtalo de nuevo en una hora.';
+
+  @override
+  String get conf_limiteEmails =>
+      'El servidor de correo alcanzó su límite de envíos. Intenta reenviar en una hora.';
 }

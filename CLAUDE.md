@@ -492,6 +492,35 @@ status-code-only monitoring would report everything healthy while the app is bro
 present `x-model-fallback` means the chain already fell to the reserve — working, but
 `MODEL_CHAINS` needs updating.
 
+## ⚠️ Signup is capped at ~2 accounts/hour (blocker)
+
+Auth still uses Supabase's **built-in email service** (`noreply@mail.app.supabase.io`),
+which Supabase documents as test-only and rate-limits hard. Confirmed in the auth
+logs on 2026-08-24:
+
+```
+error_code: "over_email_send_rate_limit"   path: /signup   status: 429
+```
+
+Two signups went through (17:51, 18:09), then 18:36 / 18:39 / 18:39 / 18:41 all
+429'd. **No amount of app-side work raises this** — it is a server-side sending
+cap, and it means the app currently cannot onboard more than a couple of users
+per hour.
+
+**Fix**: configure custom SMTP in Authentication → Emails → SMTP Settings
+(Resend, Brevo, SES…), then raise the limit in Auth → Rate Limits. Needs
+dashboard access and provider credentials.
+
+Good news, verified by querying `auth.users`: the 429 rolls the signup back
+cleanly — **no orphaned unconfirmed rows**. Without that, a retry would hit
+"email já cadastrado" and lock the person out permanently.
+
+The client distinguishes this from a user-caused rate limit
+(`cad_limiteEmails` / `conf_limiteEmails`). The old copy said "Muitas
+tentativas… espere alguns minutos", which blamed a user who did nothing — the
+quota was spent by someone else's signup — and named the wrong window (it is
+hourly). Copy is a bandage; custom SMTP is the fix.
+
 ## Security (hardened 2026-06)
 
 **Never put secrets in the client.** The Groq key is in the Vault (see Groq API section). `lib/core/secrets.dart` is gitignored and holds only `supabaseUrl` + `supabaseAnonKey` (the anon key is public by design).

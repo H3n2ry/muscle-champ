@@ -1960,4 +1960,12 @@ class LEn extends L {
 
   @override
   String get perfil_excluindo => 'Deleting...';
+
+  @override
+  String get cad_limiteEmails =>
+      'The email server hit its sending limit. Your account was NOT created — try again in an hour.';
+
+  @override
+  String get conf_limiteEmails =>
+      'The email server hit its sending limit. Try resending in an hour.';
 }

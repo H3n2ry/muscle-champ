@@ -685,5 +685,7 @@
   "priv_seusDados": "Tus datos",
   "perfil_zonaPerigo": "ZONA DE PELIGRO",
   "perfil_excluirMinhaConta": "Eliminar mi cuenta",
-  "perfil_excluindo": "Eliminando..."
+  "perfil_excluindo": "Eliminando...",
+  "cad_limiteEmails": "El servidor de correo alcanzó su límite de envíos. Tu cuenta NO fue creada — inténtalo de nuevo en una hora.",
+  "conf_limiteEmails": "El servidor de correo alcanzó su límite de envíos. Intenta reenviar en una hora."
 }

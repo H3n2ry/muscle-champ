@@ -92,11 +92,17 @@ class _ConfirmEmailPageState extends ConsumerState<ConfirmEmailPage> {
         ),
       );
       _startCountdown(60);
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
+      // Mesmo limite de envio do cadastro: separar a mensagem evita mandar a
+      // pessoa tentar de novo em segundos quando a janela e de uma hora.
+      final limiteDeEmail = e.toString().toLowerCase().contains('email rate limit') ||
+          e.toString().toLowerCase().contains('over_email_send_rate_limit');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(L.of(context).conf_erroReenviar),
+          content: Text(limiteDeEmail
+              ? L.of(context).conf_limiteEmails
+              : L.of(context).conf_erroReenviar),
           backgroundColor: AppColors.errorContainer,
           behavior: SnackBarBehavior.floating,
         ),

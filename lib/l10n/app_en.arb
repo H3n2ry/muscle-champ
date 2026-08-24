@@ -685,5 +685,7 @@
   "priv_seusDados": "Your data",
   "perfil_zonaPerigo": "DANGER ZONE",
   "perfil_excluirMinhaConta": "Delete my account",
-  "perfil_excluindo": "Deleting..."
+  "perfil_excluindo": "Deleting...",
+  "cad_limiteEmails": "The email server hit its sending limit. Your account was NOT created — try again in an hour.",
+  "conf_limiteEmails": "The email server hit its sending limit. Try resending in an hour."
 }

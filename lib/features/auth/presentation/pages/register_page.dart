@@ -256,6 +256,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         msg.contains('failed host lookup')) {
       return L.of(context).comum_semConexao;
     }
+    // O limite de ENVIO DE E-MAIL do Supabase e diferente de 'muitas
+    // tentativas suas': quem estourou a cota foi o cadastro de outra pessoa,
+    // e a janela e de uma hora, nao de minutos. Culpar o usuario por algo que
+    // ele nao fez, e mandar esperar o tempo errado, e pior que nao explicar.
+    if (msg.contains('over_email_send_rate_limit') ||
+        msg.contains('email rate limit')) {
+      return L.of(context).cad_limiteEmails;
+    }
     if (msg.contains('rate') || msg.contains('too many')) {
       return L.of(context).cad_muitasTentativasEspere;
     }

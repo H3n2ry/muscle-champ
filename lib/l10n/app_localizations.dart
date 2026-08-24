@@ -3656,6 +3656,18 @@ abstract class L {
   /// In pt, this message translates to:
   /// **'Excluindo...'**
   String get perfil_excluindo;
+
+  /// No description provided for @cad_limiteEmails.
+  ///
+  /// In pt, this message translates to:
+  /// **'O servidor de e-mail atingiu o limite de envios. Sua conta NÃO foi criada — tente de novo daqui a uma hora.'**
+  String get cad_limiteEmails;
+
+  /// No description provided for @conf_limiteEmails.
+  ///
+  /// In pt, this message translates to:
+  /// **'O servidor de e-mail atingiu o limite de envios. Tente reenviar daqui a uma hora.'**
+  String get conf_limiteEmails;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {
