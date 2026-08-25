@@ -7,7 +7,6 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:muscle_camp/features/subscription/data/models/cota_ia.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 SaldoDeCota _saldo(RecursoIa r, int usados, {bool pro = false}) =>
     SaldoDeCota(recurso: r, usados: usados, ilimitado: pro);
