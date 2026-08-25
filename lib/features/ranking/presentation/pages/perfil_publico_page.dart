@@ -14,6 +14,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/badge_gallery.dart';
+import '../../../../shared/widgets/mk_snack.dart';
+import '../../../workout/presentation/providers/workout_template_provider.dart';
 import '../../data/models/perfil_publico.dart';
 import '../providers/perfil_publico_provider.dart';
 
@@ -268,7 +270,7 @@ class _Conteudo extends StatelessWidget {
                 )
               else
                 for (final t in perfil.treinos) ...[
-                  _CardDeTreino(treino: t),
+                  _CardDeTreino(treino: t, dono: perfil.nome),
                   const SizedBox(height: 10),
                 ],
             ]),
@@ -368,13 +370,41 @@ class _Rotulo extends StatelessWidget {
       );
 }
 
-class _CardDeTreino extends StatelessWidget {
+class _CardDeTreino extends ConsumerStatefulWidget {
   final TreinoPublico treino;
-  const _CardDeTreino({required this.treino});
+  final String dono;
+  const _CardDeTreino({required this.treino, required this.dono});
+
+  @override
+  ConsumerState<_CardDeTreino> createState() => _CardDeTreinoState();
+}
+
+class _CardDeTreinoState extends ConsumerState<_CardDeTreino> {
+  bool _copiando = false;
+
+  Future<void> _copiar() async {
+    final l = L.of(context);
+    setState(() => _copiando = true);
+    try {
+      await ref.read(copiarTreinoProvider)(
+        widget.treino.id,
+        l.atleta_nomeDaCopia(widget.treino.nome, widget.dono),
+      );
+      // A aba Treino precisa reler, senao o treino copiado so aparece na
+      // proxima abertura do app.
+      ref.invalidate(workoutTemplatesProvider);
+      if (mounted) MkSnack.success(context, l.atleta_treinoCopiado);
+    } catch (e) {
+      if (mounted) MkSnack.error(context, l.atleta_falhaCopiar);
+    } finally {
+      if (mounted) setState(() => _copiando = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final l = L.of(context);
+    final treino = widget.treino;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -404,6 +434,8 @@ class _CardDeTreino extends StatelessWidget {
                   fontSize: 11,
                 ),
               ),
+              const SizedBox(width: 8),
+              _BotaoCopiar(copiando: _copiando, aoTocar: _copiar),
             ],
           ),
           if (treino.exercicios.isNotEmpty) ...[
@@ -430,6 +462,52 @@ class _CardDeTreino extends StatelessWidget {
               ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// Botão de copiar treino.
+///
+/// Fica no cabeçalho de cada treino, não num botão único do perfil: copiar é
+/// por treino, e quem visita normalmente quer um dos cinco, não todos.
+class _BotaoCopiar extends StatelessWidget {
+  final bool copiando;
+  final VoidCallback aoTocar;
+  const _BotaoCopiar({required this.copiando, required this.aoTocar});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    return GestureDetector(
+      onTap: copiando ? null : aoTocar,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withOpacity(0.14),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (copiando)
+              const SizedBox(
+                width: 11,
+                height: 11,
+                child: CircularProgressIndicator(
+                    strokeWidth: 1.8, color: AppColors.primary),
+              )
+            else
+              const Icon(Icons.copy_all_outlined,
+                  size: 12, color: AppColors.primary),
+            const SizedBox(width: 5),
+            Text(copiando ? l.atleta_copiando : l.atleta_copiar,
+                style: AppTypography.labelSm.copyWith(
+                  color: AppColors.primary,
+                  fontSize: 9,
+                )),
+          ],
+        ),
       ),
     );
   }

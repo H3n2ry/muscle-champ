@@ -31,12 +31,19 @@ class ExercicioPublico {
 }
 
 class TreinoPublico {
+  /// Necessário para copiar: a RPC recebe o id do treino de origem.
+  final String id;
   final String nome;
   final List<ExercicioPublico> exercicios;
 
-  const TreinoPublico({required this.nome, required this.exercicios});
+  const TreinoPublico({
+    required this.id,
+    required this.nome,
+    required this.exercicios,
+  });
 
   factory TreinoPublico.doJson(Map<String, dynamic> j) => TreinoPublico(
+        id: j['id'] as String? ?? '',
         nome: j['nome'] as String? ?? '',
         exercicios: ((j['exercicios'] as List?) ?? const [])
             .map((e) => ExercicioPublico.doJson(Map<String, dynamic>.from(e)))

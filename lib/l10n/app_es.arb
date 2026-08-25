@@ -697,5 +697,10 @@
   "atleta_semTreinos": "Aún no ha armado ningún entrenamiento",
   "atleta_naoCarregou": "No se pudo cargar este perfil",
   "atleta_metaSemanal": "Meta de {n} entrenamientos por semana",
-  "atleta_competidor": "COMPETIDOR"
+  "atleta_competidor": "COMPETIDOR",
+  "atleta_copiar": "COPIAR",
+  "atleta_copiando": "Copiando...",
+  "atleta_nomeDaCopia": "{treino} · de {nome}",
+  "atleta_treinoCopiado": "Entrenamiento copiado a los tuyos. Las cargas empiezan en cero.",
+  "atleta_falhaCopiar": "No se pudo copiar el entrenamiento"
 }

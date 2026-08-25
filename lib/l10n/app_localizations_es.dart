@@ -2016,4 +2016,22 @@ class LEs extends L {
 
   @override
   String get atleta_competidor => 'COMPETIDOR';
+
+  @override
+  String get atleta_copiar => 'COPIAR';
+
+  @override
+  String get atleta_copiando => 'Copiando...';
+
+  @override
+  String atleta_nomeDaCopia(String treino, String nome) {
+    return '$treino · de $nome';
+  }
+
+  @override
+  String get atleta_treinoCopiado =>
+      'Entrenamiento copiado a los tuyos. Las cargas empiezan en cero.';
+
+  @override
+  String get atleta_falhaCopiar => 'No se pudo copiar el entrenamiento';
 }

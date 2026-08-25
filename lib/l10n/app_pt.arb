@@ -1054,5 +1054,20 @@
       }
     }
   },
-  "atleta_competidor": "COMPETIDOR"
+  "atleta_competidor": "COMPETIDOR",
+  "atleta_copiar": "COPIAR",
+  "atleta_copiando": "Copiando...",
+  "atleta_nomeDaCopia": "{treino} · de {nome}",
+  "@atleta_nomeDaCopia": {
+    "placeholders": {
+      "treino": {
+        "type": "String"
+      },
+      "nome": {
+        "type": "String"
+      }
+    }
+  },
+  "atleta_treinoCopiado": "Treino copiado para os seus. As cargas começam zeradas.",
+  "atleta_falhaCopiar": "Não foi possível copiar o treino"
 }

@@ -697,5 +697,10 @@
   "atleta_semTreinos": "No workouts built yet",
   "atleta_naoCarregou": "Could not load this profile",
   "atleta_metaSemanal": "Goal of {n} workouts a week",
-  "atleta_competidor": "COMPETITOR"
+  "atleta_competidor": "COMPETITOR",
+  "atleta_copiar": "COPY",
+  "atleta_copiando": "Copying...",
+  "atleta_nomeDaCopia": "{treino} · from {nome}",
+  "atleta_treinoCopiado": "Workout copied to yours. Loads start at zero.",
+  "atleta_falhaCopiar": "Could not copy the workout"
 }

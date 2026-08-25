@@ -2010,4 +2010,22 @@ class LPt extends L {
 
   @override
   String get atleta_competidor => 'COMPETIDOR';
+
+  @override
+  String get atleta_copiar => 'COPIAR';
+
+  @override
+  String get atleta_copiando => 'Copiando...';
+
+  @override
+  String atleta_nomeDaCopia(String treino, String nome) {
+    return '$treino · de $nome';
+  }
+
+  @override
+  String get atleta_treinoCopiado =>
+      'Treino copiado para os seus. As cargas começam zeradas.';
+
+  @override
+  String get atleta_falhaCopiar => 'Não foi possível copiar o treino';
 }

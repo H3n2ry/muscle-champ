@@ -2000,4 +2000,22 @@ class LEn extends L {
 
   @override
   String get atleta_competidor => 'COMPETITOR';
+
+  @override
+  String get atleta_copiar => 'COPY';
+
+  @override
+  String get atleta_copiando => 'Copying...';
+
+  @override
+  String atleta_nomeDaCopia(String treino, String nome) {
+    return '$treino · from $nome';
+  }
+
+  @override
+  String get atleta_treinoCopiado =>
+      'Workout copied to yours. Loads start at zero.';
+
+  @override
+  String get atleta_falhaCopiar => 'Could not copy the workout';
 }

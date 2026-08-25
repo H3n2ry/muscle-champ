@@ -3728,6 +3728,36 @@ abstract class L {
   /// In pt, this message translates to:
   /// **'COMPETIDOR'**
   String get atleta_competidor;
+
+  /// No description provided for @atleta_copiar.
+  ///
+  /// In pt, this message translates to:
+  /// **'COPIAR'**
+  String get atleta_copiar;
+
+  /// No description provided for @atleta_copiando.
+  ///
+  /// In pt, this message translates to:
+  /// **'Copiando...'**
+  String get atleta_copiando;
+
+  /// No description provided for @atleta_nomeDaCopia.
+  ///
+  /// In pt, this message translates to:
+  /// **'{treino} · de {nome}'**
+  String atleta_nomeDaCopia(String treino, String nome);
+
+  /// No description provided for @atleta_treinoCopiado.
+  ///
+  /// In pt, this message translates to:
+  /// **'Treino copiado para os seus. As cargas começam zeradas.'**
+  String get atleta_treinoCopiado;
+
+  /// No description provided for @atleta_falhaCopiar.
+  ///
+  /// In pt, this message translates to:
+  /// **'Não foi possível copiar o treino'**
+  String get atleta_falhaCopiar;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {
