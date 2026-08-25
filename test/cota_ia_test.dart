@@ -7,7 +7,6 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:muscle_camp/features/subscription/data/models/cota_ia.dart';
-import 'package:muscle_camp/features/subscription/data/repositories/cota_ia_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 SaldoDeCota _saldo(RecursoIa r, int usados, {bool pro = false}) =>
@@ -38,6 +37,15 @@ void main() {
   });
 
   group('chave de persistência', () {
+    // Estas quatro strings sao um CONTRATO com o banco: a funcao
+    // consumir_cota_ia() so aceita (foto, texto, treino, dieta) e levanta
+    // 'recurso invalido' em qualquer outra. Renomear aqui sem mexer na
+    // migracao derruba TODA chamada de IA do app.
+    test('casam com a lista aceita por consumir_cota_ia() no banco', () {
+      expect(RecursoIa.values.map((r) => r.chave).toSet(),
+          {'foto', 'texto', 'treino', 'dieta'});
+    });
+
     test('é estável e não é o nome do enum', () {
       // Se a chave fosse `name`, renomear o enum zeraria a cota de todo mundo
       // em silêncio.
@@ -99,86 +107,5 @@ void main() {
     });
   });
 
-  _testesDoContador();
 }
 
-/// Exercita o contador de verdade, com SharedPreferences de mentira.
-///
-/// Os testes acima provam a regra; estes provam o encanamento — que consumir
-/// realmente grava, que o saldo cai, e que na terceira vez o texto trava.
-/// Foi o que faltou quando a cota "não bloqueou" no primeiro teste.
-void _testesDoContador() {
-  group('contador em cima de SharedPreferences', () {
-    late CotaIaRepository repo;
-
-    setUp(() {
-      SharedPreferences.setMockInitialValues({});
-      repo = CotaIaRepository();
-    });
-
-    test('começa zerado', () async {
-      expect(await repo.usosDeHoje(), isEmpty);
-    });
-
-    test('consumir incrementa o recurso certo e só ele', () async {
-      await repo.consumir(RecursoIa.macrosTexto);
-      await repo.consumir(RecursoIa.macrosTexto);
-      final usos = await repo.usosDeHoje();
-      expect(usos[RecursoIa.macrosTexto.chave], 2);
-      expect(usos[RecursoIa.fotoRefeicao.chave], isNull);
-    });
-
-    test('três textos esgotam a cota; o quarto é bloqueado', () async {
-      for (var i = 0; i < 3; i++) {
-        final usos = await repo.usosDeHoje();
-        final saldo = SaldoDeCota(
-          recurso: RecursoIa.macrosTexto,
-          usados: usos[RecursoIa.macrosTexto.chave] ?? 0,
-          ilimitado: false,
-        );
-        expect(saldo.podeUsar, isTrue, reason: 'uso ${i + 1} deveria passar');
-        await repo.consumir(RecursoIa.macrosTexto);
-      }
-      final usos = await repo.usosDeHoje();
-      final saldo = SaldoDeCota(
-        recurso: RecursoIa.macrosTexto,
-        usados: usos[RecursoIa.macrosTexto.chave] ?? 0,
-        ilimitado: false,
-      );
-      expect(saldo.podeUsar, isFalse);
-      expect(saldo.restantes, 0);
-    });
-
-    test('uma foto esgota a cota de foto', () async {
-      await repo.consumir(RecursoIa.fotoRefeicao);
-      final usos = await repo.usosDeHoje();
-      final saldo = SaldoDeCota(
-        recurso: RecursoIa.fotoRefeicao,
-        usados: usos[RecursoIa.fotoRefeicao.chave] ?? 0,
-        ilimitado: false,
-      );
-      expect(saldo.podeUsar, isFalse);
-    });
-
-    test('virou o dia, o contador reseta', () async {
-      SharedPreferences.setMockInitialValues({
-        'cota_ia_v1_anon': '{"dia":"2020-01-01","usos":{"texto":3}}',
-      });
-      expect(await CotaIaRepository().usosDeHoje(), isEmpty);
-    });
-
-    test('registro corrompido não trava o app — trata como zerado', () async {
-      SharedPreferences.setMockInitialValues({
-        'cota_ia_v1_anon': 'isto não é json',
-      });
-      expect(await CotaIaRepository().usosDeHoje(), isEmpty);
-    });
-
-    test('zerar limpa a cota do dia', () async {
-      await repo.consumir(RecursoIa.gerarTreino);
-      expect((await repo.usosDeHoje()), isNotEmpty);
-      await repo.zerar();
-      expect(await repo.usosDeHoje(), isEmpty);
-    });
-  });
-}

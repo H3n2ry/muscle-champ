@@ -5,8 +5,12 @@ import '../../data/repositories/cota_ia_repository.dart';
 import 'assinatura_provider.dart';
 
 /// Saldo de todos os recursos hoje.
+///
+/// `autoDispose` pelo mesmo motivo da assinatura: a cota agora e da conta. De
+/// quebra, cada verificacao antes de chamar a IA passa a reler do servidor em
+/// vez de confiar num numero que pode ter mudado no outro aparelho.
 final saldosDeCotaProvider =
-    FutureProvider<Map<RecursoIa, SaldoDeCota>>((ref) async {
+    FutureProvider.autoDispose<Map<RecursoIa, SaldoDeCota>>((ref) async {
   final assinatura = await ref.watch(assinaturaProvider.future);
   final ilimitado = assinatura?.ativa ?? false;
   final usos = await ref.watch(cotaIaRepositoryProvider).usosDeHoje();
@@ -22,8 +26,8 @@ final saldosDeCotaProvider =
 });
 
 /// Saldo de UM recurso — o que as telas normalmente querem.
-final saldoDeCotaProvider =
-    FutureProvider.family<SaldoDeCota, RecursoIa>((ref, recurso) async {
+final saldoDeCotaProvider = FutureProvider.autoDispose
+    .family<SaldoDeCota, RecursoIa>((ref, recurso) async {
   final todos = await ref.watch(saldosDeCotaProvider.future);
   return todos[recurso]!;
 });

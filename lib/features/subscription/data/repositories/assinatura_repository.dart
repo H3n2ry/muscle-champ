@@ -1,19 +1,18 @@
-/// Estado de assinatura — POR ENQUANTO FALSO.
+/// Estado de assinatura — POR ENQUANTO FALSO, mas agora no servidor.
 ///
-/// Guarda em SharedPreferences para a tela poder ser avaliada de ponta a
-/// ponta (assinar → ver "assinante" no perfil → cancelar). Nada aqui cobra,
-/// valida ou conversa com gateway nenhum.
+/// Já morou em SharedPreferences e isso estava errado por um motivo simples:
+/// assinatura é estado da CONTA, não do aparelho. Quem assinava no celular e
+/// abria no PC voltava a ser plano gratuito.
 ///
-/// ⚠️ Substituir por Play Billing (Android) e por um gateway com webhook no
-/// servidor (web) antes de qualquer cobrança real. O entitlement precisa
-/// morar no Supabase e ser validado no servidor: `SharedPreferences` é do
-/// aparelho e o usuário pode editar.
+/// ⚠️ Continua sem cobrar nada. E hoje o próprio cliente escreve a linha
+/// (política "DEMO" na migração `20260825_assinatura_e_cota_no_servidor`), o
+/// que significa que alguém com o token pode se declarar Pro. Aceitável
+/// enquanto nada é cobrado. Quando o billing for real: apagar as políticas de
+/// insert/update/delete e deixar só a de select — quem escreve passa a ser o
+/// webhook do gateway, com a service role.
 library;
 
-import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/plano.dart';
@@ -30,7 +29,7 @@ class Assinatura {
   /// Ainda dentro dos [Planos.diasDeTrial] dias de avaliação.
   final bool emTrial;
 
-  /// Quanto será cobrado na próxima renovação.
+  /// Quanto será cobrado na próxima renovação, em centavos.
   final Centavos proximaCobranca;
 
   const Assinatura({
@@ -44,66 +43,59 @@ class Assinatura {
 
   int get diasRestantes => expiraEm.difference(DateTime.now()).inDays;
 
-  Map<String, dynamic> toJson() => {
-        'plano_id': planoId,
-        'expira_em': expiraEm.toIso8601String(),
-        'em_trial': emTrial,
-        'proxima_cobranca': proximaCobranca,
-      };
-
-  factory Assinatura.fromJson(Map<String, dynamic> j) => Assinatura(
-        planoId: j['plano_id'] as String,
-        expiraEm: DateTime.parse(j['expira_em'] as String),
-        emTrial: j['em_trial'] as bool? ?? false,
-        proximaCobranca: (j['proxima_cobranca'] as num?)?.toInt() ?? 0,
+  factory Assinatura.doBanco(Map<String, dynamic> r) => Assinatura(
+        planoId: r['plano_id'] as String,
+        expiraEm: DateTime.parse(r['expira_em'] as String).toLocal(),
+        emTrial: r['em_trial'] as bool? ?? false,
+        proximaCobranca: (r['proxima_cobranca'] as num?)?.toInt() ?? 0,
       );
 }
 
 class AssinaturaRepository {
-  /// Escopo por usuário, como todas as chaves do app — sem isso duas contas
-  /// no mesmo navegador compartilhariam a assinatura.
-  String get _chave {
-    final uid = Supabase.instance.client.auth.currentUser?.id ?? 'anon';
-    return 'assinatura_demo_v1_$uid';
-  }
+  final _client = Supabase.instance.client;
 
   Future<Assinatura?> carregar() async {
-    final prefs = await SharedPreferences.getInstance();
-    final bruto = prefs.getString(_chave);
-    if (bruto == null) return null;
-    try {
-      return Assinatura.fromJson(
-          Map<String, dynamic>.from(_decode(bruto)));
-    } catch (_) {
-      // Formato antigo ou corrompido: some com ele em vez de derrubar a tela.
-      await prefs.remove(_chave);
-      return null;
-    }
+    final uid = _client.auth.currentUser?.id;
+    if (uid == null) return null;
+    final row = await _client
+        .from('assinaturas')
+        .select()
+        .eq('user_id', uid)
+        .maybeSingle();
+    if (row == null) return null;
+    return Assinatura.doBanco(row);
   }
 
   /// Simula a compra. O trial adia a primeira cobrança em
-  /// [Planos.diasDeTrial] dias — é a data que a tela precisa mostrar.
+  /// [Planos.diasDeTrial] dias — é a data que a tela mostra.
   Future<Assinatura> assinar(Plano plano, {bool comTrial = true}) async {
+    final uid = _client.auth.currentUser!.id;
     final agora = DateTime.now();
-    final assinatura = Assinatura(
-      planoId: plano.id,
-      expiraEm: comTrial
-          ? agora.add(const Duration(days: Planos.diasDeTrial))
-          : DateTime(agora.year, agora.month + plano.periodo.meses, agora.day),
-      emTrial: comTrial,
-      proximaCobranca: comTrial ? plano.entrada : plano.renovacao,
-    );
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_chave, _encode(assinatura.toJson()));
-    return assinatura;
+    final expira = comTrial
+        ? agora.add(const Duration(days: Planos.diasDeTrial))
+        : DateTime(agora.year, agora.month + plano.periodo.meses, agora.day);
+
+    // upsert: assinar de novo por cima de uma assinatura existente é troca de
+    // plano, não erro de chave duplicada.
+    final row = await _client
+        .from('assinaturas')
+        .upsert({
+          'user_id': uid,
+          'plano_id': plano.id,
+          'expira_em': expira.toUtc().toIso8601String(),
+          'em_trial': comTrial,
+          'proxima_cobranca': comTrial ? plano.entrada : plano.renovacao,
+          'atualizado_em': agora.toUtc().toIso8601String(),
+        })
+        .select()
+        .single();
+
+    return Assinatura.doBanco(row);
   }
 
   Future<void> cancelar() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_chave);
+    final uid = _client.auth.currentUser?.id;
+    if (uid == null) return;
+    await _client.from('assinaturas').delete().eq('user_id', uid);
   }
-
-  String _encode(Map<String, dynamic> m) => jsonEncode(m);
-  Map<String, dynamic> _decode(String s) =>
-      Map<String, dynamic>.from(jsonDecode(s) as Map);
 }

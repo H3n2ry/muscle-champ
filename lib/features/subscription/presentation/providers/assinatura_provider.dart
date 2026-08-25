@@ -5,9 +5,10 @@ import '../../data/repositories/assinatura_repository.dart';
 
 /// Assinatura atual, ou null se não houver.
 ///
-/// Não é `autoDispose`: o perfil e o paywall leem a mesma coisa e trocar de
-/// aba não deveria refazer a leitura.
-final assinaturaProvider = FutureProvider<Assinatura?>((ref) async {
+/// `autoDispose` desde que o estado saiu do aparelho e passou a ser da CONTA:
+/// sem isso, sair e entrar com outro usuário mostraria a assinatura do
+/// anterior, porque o valor ficava cacheado na raiz para sempre.
+final assinaturaProvider = FutureProvider.autoDispose<Assinatura?>((ref) async {
   return ref.watch(assinaturaRepositoryProvider).carregar();
 });
 

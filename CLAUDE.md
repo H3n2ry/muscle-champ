@@ -413,11 +413,37 @@ Showing the balance before it runs out is what separates a limit from a trap.
 The profile carries a **Zerar cota (demo)** shortcut so the limit can be tested
 without waiting for midnight; it goes away with the demo mode.
 
-⚠️ **The counter is on the device and the date is local** — both are the user's
-to edit. Acceptable while Pro is fake too. Before charging, counting moves to
-`groq-proxy`, which already knows the user from the JWT. `CotaIaRepository`'s
-interface (`podeUsar`, `registrarUso`) was shaped so that move doesn't reach the
-screens.
+### Subscription and quota live in Postgres, not on the device
+
+Migration `20260825_assinatura_e_cota_no_servidor.sql`. Both started in
+SharedPreferences and that was wrong for the same reason: they are **account**
+state, not device state. Subscribing on the phone and opening on the PC showed
+the free plan again, and the daily photo could be spent once per device.
+
+| Tabela | RLS | Quem escreve |
+|---|---|---|
+| `assinaturas` | dono lê/escreve — **políticas DEMO** | o cliente, por enquanto |
+| `cota_ia_diaria` | dono **só lê** | apenas as RPC `SECURITY DEFINER` |
+
+`cota_ia_diaria` has **no write policy on purpose**: without one, not even the
+owner can zero their own counter from outside. Writes go through
+`consumir_cota_ia(recurso)`, which is atomic (`on conflict do update`) and takes
+the day from `app_today()` — the server's date, closing the "adiantar o relógio"
+hole the local counter had. `get_cota_ia()` reads today's map;
+`zerar_cota_ia()` exists only for the demo reset button.
+
+⚠️ The resource keys `('foto','texto','treino','dieta')` are a **contract with
+the database** — `consumir_cota_ia` rejects anything else. `RecursoIa.chave`
+renaming without touching the migration breaks every AI call in the app;
+`test/cota_ia_test.dart` pins the exact set.
+
+The subscription providers are `autoDispose` for a reason: cached at the root
+they would survive a logout and show the previous account's plan.
+
+⚠️ **The client still writes its own `assinaturas` row** (the DEMO policies).
+Anyone with a token can declare themselves Pro. Fine while nothing is charged.
+When billing is real: drop the insert/update/delete policies, keep only select,
+and let the gateway webhook write with the service role.
 
 **Money is `int` centavos, never `double`.** Twelve `19.90` doubles sum to
 238.79999999999998. `formatarBRL()` renders it.
