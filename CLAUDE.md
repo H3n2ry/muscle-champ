@@ -440,10 +440,32 @@ renaming without touching the migration breaks every AI call in the app;
 The subscription providers are `autoDispose` for a reason: cached at the root
 they would survive a logout and show the previous account's plan.
 
-⚠️ **The client still writes its own `assinaturas` row** (the DEMO policies).
-Anyone with a token can declare themselves Pro. Fine while nothing is charged.
-When billing is real: drop the insert/update/delete policies, keep only select,
-and let the gateway webhook write with the service role.
+**The client cannot write entitlement at all.** Migration
+`20260825b_fecha_bypass_de_cota_e_assinatura.sql` dropped every write policy on
+`assinaturas`; both tables are now read-only over PostgREST. Writes go through:
+
+| RPC | Quem pode | Teto |
+|---|---|---|
+| `assinar_demo(plano, valor)` | qualquer autenticado | servidor força trial de 14 dias |
+| `cancelar_assinatura()` | qualquer autenticado | só a própria linha |
+| `consumir_cota_ia(recurso)` | qualquer autenticado | +1, dia de `app_today()` |
+| `zerar_cota_ia()` | **só `contas_de_teste`** | — |
+
+`assinar_demo` stays open because the paywall has to be walkable by whoever is
+testing, but the server picks the dates and forces `em_trial` — the abuse
+ceiling dropped from "Pro até 2099" to the same 14-day trial the screen already
+offers. Plan id is validated against a closed list and the price is clamped.
+
+`contas_de_teste` has **no RLS policy at all**, so PostgREST returns nothing to
+anyone — who is on the list can't be discovered from outside. `zerar_cota_ia`
+was a full quota bypass before this (any authenticated user could call
+`/rest/v1/rpc/zerar_cota_ia`); the profile button now only renders when
+`sou_conta_de_teste()` says yes, because a button that always errors is worse
+than no button.
+
+⚠️ **`assinar_demo` must be dropped when billing is real** — the name carries
+the reminder. Entitlement then comes from the gateway webhook with the service
+role, and no client-facing grant function should exist.
 
 **Money is `int` centavos, never `double`.** Twelve `19.90` doubles sum to
 238.79999999999998. `formatarBRL()` renders it.

@@ -12,6 +12,11 @@ final assinaturaProvider = FutureProvider.autoDispose<Assinatura?>((ref) async {
   return ref.watch(assinaturaRepositoryProvider).carregar();
 });
 
+/// É conta de desenvolvimento? Só elas veem o atalho de zerar cota.
+final contaDeTesteProvider = FutureProvider.autoDispose<bool>((ref) {
+  return ref.watch(assinaturaRepositoryProvider).souContaDeTeste();
+});
+
 /// Ações de assinatura. Invalida [assinaturaProvider] ao final para a tela
 /// inteira reagir sem cada widget ter que se lembrar de recarregar.
 class AssinaturaController {

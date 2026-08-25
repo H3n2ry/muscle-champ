@@ -66,36 +66,34 @@ class AssinaturaRepository {
     return Assinatura.doBanco(row);
   }
 
-  /// Simula a compra. O trial adia a primeira cobrança em
-  /// [Planos.diasDeTrial] dias — é a data que a tela mostra.
+  /// Simula a compra.
+  ///
+  /// Passa por RPC porque a tabela nao aceita mais escrita do cliente. O
+  /// servidor e quem decide a data e o modo: sempre trial de 14 dias. Antes,
+  /// com politica de INSERT aberta, dava para gravar "Pro ate 2099".
   Future<Assinatura> assinar(Plano plano, {bool comTrial = true}) async {
-    final uid = _client.auth.currentUser!.id;
-    final agora = DateTime.now();
-    final expira = comTrial
-        ? agora.add(const Duration(days: Planos.diasDeTrial))
-        : DateTime(agora.year, agora.month + plano.periodo.meses, agora.day);
-
-    // upsert: assinar de novo por cima de uma assinatura existente é troca de
-    // plano, não erro de chave duplicada.
-    final row = await _client
-        .from('assinaturas')
-        .upsert({
-          'user_id': uid,
-          'plano_id': plano.id,
-          'expira_em': expira.toUtc().toIso8601String(),
-          'em_trial': comTrial,
-          'proxima_cobranca': comTrial ? plano.entrada : plano.renovacao,
-          'atualizado_em': agora.toUtc().toIso8601String(),
-        })
-        .select()
-        .single();
-
-    return Assinatura.doBanco(row);
+    final row = await _client.rpc('assinar_demo', params: {
+      'p_plano_id': plano.id,
+      'p_proxima_cobranca': comTrial ? plano.entrada : plano.renovacao,
+    });
+    return Assinatura.doBanco(Map<String, dynamic>.from(row as Map));
   }
 
+  /// Cancelar continua sendo direito do assinante, entao a RPC e aberta a
+  /// qualquer usuario — e assim continua depois do billing.
   Future<void> cancelar() async {
-    final uid = _client.auth.currentUser?.id;
-    if (uid == null) return;
-    await _client.from('assinaturas').delete().eq('user_id', uid);
+    await _client.rpc('cancelar_assinatura');
+  }
+
+  /// Conta de desenvolvimento? Decide se o atalho de zerar cota aparece.
+  ///
+  /// Sem isto o botao apareceria para todo mundo e daria erro — a RPC agora
+  /// recusa quem nao esta na lista.
+  Future<bool> souContaDeTeste() async {
+    try {
+      return (await _client.rpc('sou_conta_de_teste')) as bool? ?? false;
+    } catch (_) {
+      return false;
+    }
   }
 }

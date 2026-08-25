@@ -1955,7 +1955,10 @@ class _AssinaturaCard extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _semAssinatura(context, l),
-                  _zerarCota(context, ref, l),
+                  // Só para conta de desenvolvimento: a RPC recusa o resto,
+                  // e botão que sempre falha é pior que botão nenhum.
+                  if (ref.watch(contaDeTesteProvider).valueOrNull ?? false)
+                    _zerarCota(context, ref, l),
                 ],
               )
             : _comAssinatura(context, ref, l, a),
