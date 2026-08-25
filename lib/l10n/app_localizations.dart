@@ -3668,6 +3668,66 @@ abstract class L {
   /// In pt, this message translates to:
   /// **'O servidor de e-mail atingiu o limite de envios. Tente reenviar daqui a uma hora.'**
   String get conf_limiteEmails;
+
+  /// No description provided for @conq_primeiroTreino.
+  ///
+  /// In pt, this message translates to:
+  /// **'PRIMEIRO\nTREINO'**
+  String get conq_primeiroTreino;
+
+  /// No description provided for @conq_100pontos.
+  ///
+  /// In pt, this message translates to:
+  /// **'100\nPONTOS'**
+  String get conq_100pontos;
+
+  /// No description provided for @conq_10treinos.
+  ///
+  /// In pt, this message translates to:
+  /// **'10\nTREINOS'**
+  String get conq_10treinos;
+
+  /// No description provided for @conq_500pontos.
+  ///
+  /// In pt, this message translates to:
+  /// **'500\nPONTOS'**
+  String get conq_500pontos;
+
+  /// No description provided for @conq_muscleChamp.
+  ///
+  /// In pt, this message translates to:
+  /// **'MUSCLE\nCHAMP'**
+  String get conq_muscleChamp;
+
+  /// No description provided for @atleta_planoDeTreino.
+  ///
+  /// In pt, this message translates to:
+  /// **'PLANO DE TREINO'**
+  String get atleta_planoDeTreino;
+
+  /// No description provided for @atleta_semTreinos.
+  ///
+  /// In pt, this message translates to:
+  /// **'Ainda não montou nenhum treino'**
+  String get atleta_semTreinos;
+
+  /// No description provided for @atleta_naoCarregou.
+  ///
+  /// In pt, this message translates to:
+  /// **'Não foi possível carregar este perfil'**
+  String get atleta_naoCarregou;
+
+  /// No description provided for @atleta_metaSemanal.
+  ///
+  /// In pt, this message translates to:
+  /// **'Meta de {n} treinos por semana'**
+  String atleta_metaSemanal(int n);
+
+  /// No description provided for @atleta_competidor.
+  ///
+  /// In pt, this message translates to:
+  /// **'COMPETIDOR'**
+  String get atleta_competidor;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

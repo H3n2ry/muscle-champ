@@ -1978,4 +1978,36 @@ class LPt extends L {
   @override
   String get conf_limiteEmails =>
       'O servidor de e-mail atingiu o limite de envios. Tente reenviar daqui a uma hora.';
+
+  @override
+  String get conq_primeiroTreino => 'PRIMEIRO\nTREINO';
+
+  @override
+  String get conq_100pontos => '100\nPONTOS';
+
+  @override
+  String get conq_10treinos => '10\nTREINOS';
+
+  @override
+  String get conq_500pontos => '500\nPONTOS';
+
+  @override
+  String get conq_muscleChamp => 'MUSCLE\nCHAMP';
+
+  @override
+  String get atleta_planoDeTreino => 'PLANO DE TREINO';
+
+  @override
+  String get atleta_semTreinos => 'Ainda não montou nenhum treino';
+
+  @override
+  String get atleta_naoCarregou => 'Não foi possível carregar este perfil';
+
+  @override
+  String atleta_metaSemanal(int n) {
+    return 'Meta de $n treinos por semana';
+  }
+
+  @override
+  String get atleta_competidor => 'COMPETIDOR';
 }

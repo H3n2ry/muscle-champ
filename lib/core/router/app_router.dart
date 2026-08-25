@@ -13,6 +13,7 @@ import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/edit_profile_page.dart';
 import '../../features/profile/presentation/pages/privacy_page.dart';
 import '../../features/profile/data/models/profile_model.dart';
+import '../../features/ranking/presentation/pages/perfil_publico_page.dart';
 import '../../features/ranking/presentation/pages/ranking_page.dart';
 import '../../features/subscription/data/models/plano.dart';
 import '../../features/subscription/presentation/pages/pagamento_page.dart';
@@ -62,6 +63,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/privacy',
         builder: (_, __) => const PrivacyPage(),
+      ),
+      // Perfil publico de outro competidor, aberto pelo ranking.
+      GoRoute(
+        path: '/atleta/:id',
+        builder: (_, state) =>
+            PerfilPublicoPage(userId: state.pathParameters['id']!),
       ),
       // Assinatura (DEMONSTRAÇÃO — ver features/subscription)
       GoRoute(

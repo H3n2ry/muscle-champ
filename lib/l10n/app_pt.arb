@@ -1037,5 +1037,22 @@
   "perfil_excluirMinhaConta": "Excluir minha conta",
   "perfil_excluindo": "Excluindo...",
   "cad_limiteEmails": "O servidor de e-mail atingiu o limite de envios. Sua conta NÃO foi criada — tente de novo daqui a uma hora.",
-  "conf_limiteEmails": "O servidor de e-mail atingiu o limite de envios. Tente reenviar daqui a uma hora."
+  "conf_limiteEmails": "O servidor de e-mail atingiu o limite de envios. Tente reenviar daqui a uma hora.",
+  "conq_primeiroTreino": "PRIMEIRO\nTREINO",
+  "conq_100pontos": "100\nPONTOS",
+  "conq_10treinos": "10\nTREINOS",
+  "conq_500pontos": "500\nPONTOS",
+  "conq_muscleChamp": "MUSCLE\nCHAMP",
+  "atleta_planoDeTreino": "PLANO DE TREINO",
+  "atleta_semTreinos": "Ainda não montou nenhum treino",
+  "atleta_naoCarregou": "Não foi possível carregar este perfil",
+  "atleta_metaSemanal": "Meta de {n} treinos por semana",
+  "@atleta_metaSemanal": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "atleta_competidor": "COMPETIDOR"
 }

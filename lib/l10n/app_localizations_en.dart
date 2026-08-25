@@ -1968,4 +1968,36 @@ class LEn extends L {
   @override
   String get conf_limiteEmails =>
       'The email server hit its sending limit. Try resending in an hour.';
+
+  @override
+  String get conq_primeiroTreino => 'FIRST\nWORKOUT';
+
+  @override
+  String get conq_100pontos => '100\nPOINTS';
+
+  @override
+  String get conq_10treinos => '10\nWORKOUTS';
+
+  @override
+  String get conq_500pontos => '500\nPOINTS';
+
+  @override
+  String get conq_muscleChamp => 'MUSCLE\nCHAMP';
+
+  @override
+  String get atleta_planoDeTreino => 'WORKOUT PLAN';
+
+  @override
+  String get atleta_semTreinos => 'No workouts built yet';
+
+  @override
+  String get atleta_naoCarregou => 'Could not load this profile';
+
+  @override
+  String atleta_metaSemanal(int n) {
+    return 'Goal of $n workouts a week';
+  }
+
+  @override
+  String get atleta_competidor => 'COMPETITOR';
 }

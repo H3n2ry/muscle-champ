@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -737,7 +738,14 @@ class _PodiumColumn extends StatelessWidget {
         Stack(
           clipBehavior: Clip.none,
           children: [
-            Container(
+            // Toque no avatar abre o perfil do competidor. O proprio
+            // usuario tem a aba Perfil; mandar ele para a versao publica de
+            // si mesmo so confundiria.
+            GestureDetector(
+              onTap: entry.isCurrentUser
+                  ? null
+                  : () => context.push('/atleta/' + entry.userId),
+              child: Container(
               width: place == 1 ? 64 : 52,
               height: place == 1 ? 64 : 52,
               decoration: BoxDecoration(
@@ -752,6 +760,7 @@ class _PodiumColumn extends StatelessWidget {
                   : Icon(Icons.person,
                       color: _placeColor,
                       size: place == 1 ? 32 : 24),
+            ),
             ),
             if (entry.isCurrentUser)
               Positioned(
@@ -859,24 +868,29 @@ class _AthleteRow extends StatelessWidget {
                 )),
           ),
           // Avatar
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: entry.isCurrentUser
-                    ? AppColors.primary
-                    : AppColors.outlineVariant,
+          GestureDetector(
+            onTap: entry.isCurrentUser
+                ? null
+                : () => context.push('/atleta/' + entry.userId),
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: entry.isCurrentUser
+                      ? AppColors.primary
+                      : AppColors.outlineVariant,
+                ),
+                color: AppColors.surfaceContainerHigh,
               ),
-              color: AppColors.surfaceContainerHigh,
+              child: entry.avatarUrl != null
+                  ? ClipOval(
+                      child: Image.network(entry.avatarUrl!,
+                          fit: BoxFit.cover))
+                  : const Icon(Icons.person,
+                      color: AppColors.secondary, size: 18),
             ),
-            child: entry.avatarUrl != null
-                ? ClipOval(
-                    child: Image.network(entry.avatarUrl!,
-                        fit: BoxFit.cover))
-                : const Icon(Icons.person,
-                    color: AppColors.secondary, size: 18),
           ),
           const SizedBox(width: 12),
           // Name

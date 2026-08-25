@@ -8,6 +8,7 @@ import '../../../../core/gamification/level_system.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../shared/widgets/badge_gallery.dart';
 import '../../../../shared/widgets/language_selector.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../subscription/data/repositories/assinatura_repository.dart';
@@ -399,7 +400,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               // ── Conquistas ────────────────────────────────────
               _SectionLabel(label: L.of(context).perfil_conquistas),
               const SizedBox(height: 12),
-              _BadgeGallery(
+              BadgeGallery(
                 totalPoints:   p.totalPoints as int,
                 totalWorkouts: p.totalWorkouts as int,
                 streak:        p.streak as int,
@@ -1807,108 +1808,6 @@ class _EvolutionChart extends ConsumerWidget {
 }
 
 // ── Badge gallery ─────────────────────────────────────────────────────────────
-
-class _BadgeGallery extends StatelessWidget {
-  final int totalPoints;
-  final int totalWorkouts;
-  final int streak;
-  const _BadgeGallery({
-    required this.totalPoints,
-    required this.totalWorkouts,
-    required this.streak,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final badges = [
-      _Badge(
-          icon: Icons.fitness_center,
-          label: 'PRIMEIRO\nTREINO',
-          unlocked: totalWorkouts >= 1),
-      _Badge(
-          icon: Icons.local_fire_department,
-          label: L.of(context).perfil_sequencia7Dias,
-          unlocked: streak >= 7),
-      _Badge(
-          icon: Icons.bolt,
-          label: '100\nPONTOS',
-          unlocked: totalPoints >= 100),
-      _Badge(
-          icon: Icons.emoji_events,
-          label: '10\nTREINOS',
-          unlocked: totalWorkouts >= 10),
-      _Badge(
-          icon: Icons.star,
-          label: '500\nPONTOS',
-          unlocked: totalPoints >= 500),
-      _Badge(
-          icon: Icons.military_tech,
-          label: 'MUSCLE\nCHAMP',
-          unlocked: totalPoints >= 1000),
-    ];
-
-    return GridView.count(
-      crossAxisCount: 3,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 10,
-      mainAxisSpacing: 10,
-      childAspectRatio: 1.1,
-      children: badges.map((b) => _BadgeTile(badge: b)).toList(),
-    );
-  }
-}
-
-class _Badge {
-  final IconData icon;
-  final String label;
-  final bool unlocked;
-  const _Badge(
-      {required this.icon, required this.label, required this.unlocked});
-}
-
-class _BadgeTile extends StatelessWidget {
-  final _Badge badge;
-  const _BadgeTile({required this.badge});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: badge.unlocked
-            ? AppColors.primary.withOpacity(0.08)
-            : AppColors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: badge.unlocked
-              ? AppColors.primary.withOpacity(0.5)
-              : AppColors.surfaceContainerHigh,
-        ),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(badge.icon,
-              size: 26,
-              color: badge.unlocked
-                  ? AppColors.primary
-                  : AppColors.onSurfaceVariant.withOpacity(0.3)),
-          const SizedBox(height: 6),
-          Text(
-            badge.label,
-            textAlign: TextAlign.center,
-            style: AppTypography.labelSm.copyWith(
-              fontSize: 9,
-              color: badge.unlocked
-                  ? AppColors.onSurface
-                  : AppColors.onSurfaceVariant.withOpacity(0.4),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // ── Assinatura ───────────────────────────────────────────────────────────────
 

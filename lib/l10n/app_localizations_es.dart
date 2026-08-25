@@ -1984,4 +1984,36 @@ class LEs extends L {
   @override
   String get conf_limiteEmails =>
       'El servidor de correo alcanzó su límite de envíos. Intenta reenviar en una hora.';
+
+  @override
+  String get conq_primeiroTreino => 'PRIMER\nENTRENO';
+
+  @override
+  String get conq_100pontos => '100\nPUNTOS';
+
+  @override
+  String get conq_10treinos => '10\nENTRENOS';
+
+  @override
+  String get conq_500pontos => '500\nPUNTOS';
+
+  @override
+  String get conq_muscleChamp => 'MUSCLE\nCHAMP';
+
+  @override
+  String get atleta_planoDeTreino => 'PLAN DE ENTRENAMIENTO';
+
+  @override
+  String get atleta_semTreinos => 'Aún no ha armado ningún entrenamiento';
+
+  @override
+  String get atleta_naoCarregou => 'No se pudo cargar este perfil';
+
+  @override
+  String atleta_metaSemanal(int n) {
+    return 'Meta de $n entrenamientos por semana';
+  }
+
+  @override
+  String get atleta_competidor => 'COMPETIDOR';
 }

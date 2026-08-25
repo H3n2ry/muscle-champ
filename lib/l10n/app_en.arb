@@ -687,5 +687,15 @@
   "perfil_excluirMinhaConta": "Delete my account",
   "perfil_excluindo": "Deleting...",
   "cad_limiteEmails": "The email server hit its sending limit. Your account was NOT created — try again in an hour.",
-  "conf_limiteEmails": "The email server hit its sending limit. Try resending in an hour."
+  "conf_limiteEmails": "The email server hit its sending limit. Try resending in an hour.",
+  "conq_primeiroTreino": "FIRST\nWORKOUT",
+  "conq_100pontos": "100\nPOINTS",
+  "conq_10treinos": "10\nWORKOUTS",
+  "conq_500pontos": "500\nPOINTS",
+  "conq_muscleChamp": "MUSCLE\nCHAMP",
+  "atleta_planoDeTreino": "WORKOUT PLAN",
+  "atleta_semTreinos": "No workouts built yet",
+  "atleta_naoCarregou": "Could not load this profile",
+  "atleta_metaSemanal": "Goal of {n} workouts a week",
+  "atleta_competidor": "COMPETITOR"
 }
