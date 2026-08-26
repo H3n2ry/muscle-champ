@@ -1,4 +1,4 @@
--- Esquema completo do banco, extraído da PRODUÇÃO em 2026-08-26.
+-- Esquema completo do banco, extraído da PRODUÇÃO em 2026-08-27.
 --
 -- Existe porque a pasta migrations/ nunca foi um registro completo: produção
 -- tinha 27 migrações e o repositório guardava 8. Reconstruir o banco a partir
@@ -680,6 +680,18 @@ AS $function$
     'total_treinos', coalesce((select count(*) from workout_completions
                                 where user_id = p.id), 0),
     'streak',        public._streak_de(p.id),
+    'amizade',       case
+                       when auth.uid() = p.id then 'proprio'
+                       else coalesce((
+                         select case when f.status = 'accepted'
+                                     then 'amigos' else 'pendente' end
+                         from friendships f
+                         where (f.user_id = auth.uid() and f.friend_id = p.id)
+                            or (f.user_id = p.id and f.friend_id = auth.uid())
+                         order by case when f.status = 'accepted' then 0 else 1 end
+                         limit 1
+                       ), 'nenhum')
+                     end,
     'treinos',       coalesce((
       select jsonb_agg(x.treino order by x.ordem)
       from (
@@ -1223,13 +1235,13 @@ alter table public.workouts enable row level security;
 
 create policy "assinatura: dono le" on public.assinaturas as PERMISSIVE for SELECT to public
   using ((auth.uid() = user_id));
-create policy "bio_delete_own" on public.bioimpedance_logs as PERMISSIVE for DELETE to authenticated
+create policy bio_delete_own on public.bioimpedance_logs as PERMISSIVE for DELETE to authenticated
   using ((auth.uid() = user_id));
-create policy "bio_insert_own" on public.bioimpedance_logs as PERMISSIVE for INSERT to authenticated
+create policy bio_insert_own on public.bioimpedance_logs as PERMISSIVE for INSERT to authenticated
   with check ((auth.uid() = user_id));
-create policy "bio_select_own" on public.bioimpedance_logs as PERMISSIVE for SELECT to public
+create policy bio_select_own on public.bioimpedance_logs as PERMISSIVE for SELECT to public
   using ((auth.uid() = user_id));
-create policy "bio_update_own" on public.bioimpedance_logs as PERMISSIVE for UPDATE to authenticated
+create policy bio_update_own on public.bioimpedance_logs as PERMISSIVE for UPDATE to authenticated
   using ((auth.uid() = user_id));
 create policy "cota: dono le" on public.cota_ia_diaria as PERMISSIVE for SELECT to public
   using ((auth.uid() = user_id));
@@ -1241,11 +1253,11 @@ create policy "Acesso próprios exercícios" on public.exercises as PERMISSIVE f
   WHERE ((w.id = exercises.workout_id) AND (w.user_id = auth.uid())))));
 create policy "Acesso próprias amizades" on public.friendships as PERMISSIVE for ALL to public
   using (((auth.uid() = user_id) OR (auth.uid() = friend_id)));
-create policy "friendships_delete" on public.friendships as PERMISSIVE for DELETE to authenticated
+create policy friendships_delete on public.friendships as PERMISSIVE for DELETE to authenticated
   using ((auth.uid() = user_id));
-create policy "friendships_insert" on public.friendships as PERMISSIVE for INSERT to authenticated
+create policy friendships_insert on public.friendships as PERMISSIVE for INSERT to authenticated
   with check ((auth.uid() = user_id));
-create policy "friendships_select" on public.friendships as PERMISSIVE for SELECT to public
+create policy friendships_select on public.friendships as PERMISSIVE for SELECT to public
   using (((auth.uid() = user_id) OR (auth.uid() = friend_id)));
 create policy "Acesso próprias metas" on public.goals as PERMISSIVE for ALL to public
   using ((auth.uid() = user_id));
@@ -1268,15 +1280,15 @@ create policy "own template exercises" on public.template_exercises as PERMISSIV
   with check ((EXISTS ( SELECT 1
    FROM workout_templates t
   WHERE ((t.id = template_exercises.template_id) AND (t.user_id = auth.uid())))));
-create policy "user_consents_insert_own" on public.user_consents as PERMISSIVE for INSERT to authenticated
+create policy user_consents_insert_own on public.user_consents as PERMISSIVE for INSERT to authenticated
   with check ((auth.uid() = user_id));
-create policy "user_consents_select_own" on public.user_consents as PERMISSIVE for SELECT to authenticated
+create policy user_consents_select_own on public.user_consents as PERMISSIVE for SELECT to authenticated
   using ((auth.uid() = user_id));
-create policy "water_logs_delete_own" on public.water_logs as PERMISSIVE for DELETE to authenticated
+create policy water_logs_delete_own on public.water_logs as PERMISSIVE for DELETE to authenticated
   using ((auth.uid() = user_id));
-create policy "water_logs_insert_own" on public.water_logs as PERMISSIVE for INSERT to authenticated
+create policy water_logs_insert_own on public.water_logs as PERMISSIVE for INSERT to authenticated
   with check ((auth.uid() = user_id));
-create policy "water_logs_select_own" on public.water_logs as PERMISSIVE for SELECT to authenticated
+create policy water_logs_select_own on public.water_logs as PERMISSIVE for SELECT to authenticated
   using ((auth.uid() = user_id));
 create policy "Acesso próprio peso" on public.weight_logs as PERMISSIVE for ALL to public
   using ((auth.uid() = user_id));

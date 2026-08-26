@@ -626,9 +626,23 @@ Split from now on:
 | `supabase/gerar_schema.sql` | a consulta que **regenera** o arquivo acima |
 | `supabase/migrations/` | registro do que **mudou**, daqui para frente |
 
-To regenerate after any schema change: run `gerar_schema.sql` in the SQL Editor
-and paste the single `script` column over everything below the header in
-`schema.sql`.
+### ⚠️ Ritual obrigatório ao mexer no esquema
+
+Applying a migration is **three steps, not one**. Skipping steps 2–3 has already
+happened twice in two days (`copiar_treino_de_outro_atleta` on 25/08 and
+`perfil_publico_estado_de_amizade` on 26/08), each time leaving production ahead
+of the repo:
+
+1. Apply the migration.
+2. **Save the same SQL** as a file in `supabase/migrations/`.
+3. **Regenerate `schema.sql`** — run `gerar_schema.sql` in the SQL Editor and
+   paste the single `script` column over everything below the header. Then fix
+   the policy quoting: the generator emits `create policy '...'` and the name is
+   an identifier, so it must become `create policy "..."`.
+
+To check for drift at any time, compare the applied migration list against
+`ls supabase/migrations/`. A name in one and not the other means the repo can no
+longer rebuild the database.
 
 Two things the generator gets right that are easy to miss:
 
