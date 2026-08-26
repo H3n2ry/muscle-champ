@@ -4,11 +4,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../core/gamification/level_system.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../../../shared/widgets/badge_gallery.dart';
+import '../../../../shared/widgets/language_selector.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../subscription/data/repositories/assinatura_repository.dart';
+import '../../../subscription/data/repositories/cota_ia_repository.dart';
+import '../../../subscription/presentation/providers/assinatura_provider.dart';
+import '../../../subscription/presentation/providers/cota_ia_provider.dart';
+import '../../../../shared/widgets/mk_snack.dart';
 import '../../data/repositories/profile_repository.dart';
 import '../providers/profile_provider.dart';
+import '../widgets/excluir_conta.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -31,7 +41,7 @@ class ProfilePage extends ConsumerWidget {
               const Icon(Icons.error_outline,
                   color: AppColors.error, size: 40),
               const SizedBox(height: 12),
-              Text('Erro ao carregar perfil',
+              Text(L.of(context).perfil_erroCarregar,
                   style: AppTypography.bodyMd
                       .copyWith(color: AppColors.error)),
               const SizedBox(height: 16),
@@ -71,15 +81,16 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
   String get _goalLabel {
     switch (widget.profile.goalType as String) {
       case 'lose_weight':
-        return 'PERDA DE PESO';
+        return L.of(context).objetivo_perdaPeso;
       case 'gain_weight':
-        return 'GANHO DE MASSA';
+        return L.of(context).objetivo_ganhoMassa;
       default:
-        return 'MANUTENÇÃO';
+        return L.of(context).objetivo_manutencaoUp;
     }
   }
 
-  int _calcLevel(int points) => (points ~/ 100) + 1;
+  // _calcLevel local removido: era `(pontos ~/ 100) + 1`, linear, e divergia do
+  // dashboard. O cálculo agora é único, em LevelSystem.
 
   Future<void> _pickAndUploadAvatar() async {
     final picker = ImagePicker();
@@ -103,7 +114,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erro ao carregar foto: $e'),
+            content: Text('${L.of(context).perfil_erroFoto}: $e'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -141,9 +152,25 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               onPressed: () => context.push('/edit-profile', extra: p),
             ),
             const SizedBox(width: 4),
+            // Privacidade e dados (LGPD Art. 18 / GDPR Art. 15-22)
+            IconButton(
+              tooltip: L.of(context).perfil_privacidadeDados,
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.surfaceContainerHigh),
+                ),
+                child: const Icon(Icons.shield_outlined,
+                    color: AppColors.onSurface, size: 16),
+              ),
+              onPressed: () => context.push('/privacy'),
+            ),
+            const SizedBox(width: 4),
             // Sair
             IconButton(
-              tooltip: 'Sair',
+              tooltip: L.of(context).perfil_sair,
               icon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
@@ -248,7 +275,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
-                                  'LVL ${_calcLevel(p.totalPoints as int)}',
+                                  'LVL ${LevelSystem.nivelDe(p.totalPoints as int)}',
                                   style: AppTypography.labelSm.copyWith(
                                     color: AppColors.onPrimary,
                                     fontSize: 10,
@@ -296,22 +323,25 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               Row(
                 children: [
                   _StatBox(
-                      label: 'PONTOS',
+                      label: L.of(context).perfil_pontos,
                       value: '${p.totalPoints}',
                       accent: true),
                   const SizedBox(width: 10),
-                  _StatBox(label: 'TREINOS', value: '${p.totalWorkouts}'),
+                  _StatBox(label: L.of(context).perfil_treinos, value: '${p.totalWorkouts}'),
                   const SizedBox(width: 10),
                   _StatBox(
-                      label: 'SEQUÊNCIA', value: '${p.streak}d'),
+                      label: L.of(context).perfil_sequencia, value: '${p.streak}d'),
                 ],
               ),
+
+              const SizedBox(height: 12),
+              _LevelProgressCard(points: p.totalPoints as int),
 
               const SizedBox(height: 24),
 
               // ── IMC ──────────────────────────────────────────
               if ((p.heightCm as double? ?? 0) > 0) ...[
-                _SectionLabel(label: 'ÍNDICE DE MASSA CORPORAL'),
+                _SectionLabel(label: L.of(context).perfil_imc),
                 const SizedBox(height: 12),
                 _ProfileBmiCard(
                   heightCm:      p.heightCm as double,
@@ -322,14 +352,14 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               ],
 
               // ── Sequência ─────────────────────────────────────
-              _SectionLabel(label: 'SEQUÊNCIA ATIVA'),
+              _SectionLabel(label: L.of(context).perfil_sequenciaAtiva),
               const SizedBox(height: 12),
               _StreakCard(streak: p.streak as int),
 
               const SizedBox(height: 24),
 
               // ── Meta ──────────────────────────────────────────
-              _SectionLabel(label: 'META DE COMPOSIÇÃO'),
+              _SectionLabel(label: L.of(context).perfil_metaComposicao),
               const SizedBox(height: 12),
               _GoalProgressCard(
                 goalType:      p.goalType as String,
@@ -339,35 +369,70 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
 
               const SizedBox(height: 24),
 
+              // ── Assinatura ────────────────────────────────────
+              _SectionLabel(label: L.of(context).perfil_assinatura),
+              const SizedBox(height: 12),
+              const _AssinaturaCard(),
+
+              const SizedBox(height: 24),
+
               // ── Bioimpedância ─────────────────────────────────
-              _SectionLabel(label: 'BIOIMPEDÂNCIA CORPORAL'),
+              _SectionLabel(label: L.of(context).perfil_bioimpedanciaCorporal),
               const SizedBox(height: 12),
               _BioimpedanceCard(profile: p),
 
               const SizedBox(height: 24),
 
               // ── Pontuação ─────────────────────────────────────
-              _SectionLabel(label: 'SISTEMA DE PONTUAÇÃO'),
+              _SectionLabel(label: L.of(context).perfil_sistemaPontuacao),
               const SizedBox(height: 12),
               _PointsGuideCard(),
 
               const SizedBox(height: 24),
 
               // ── Evolução ──────────────────────────────────────
-              _SectionLabel(label: 'EVOLUÇÃO DE PONTOS'),
+              _SectionLabel(label: L.of(context).perfil_evolucaoPontos),
               const SizedBox(height: 12),
               _EvolutionChart(totalPoints: p.totalPoints as int),
 
               const SizedBox(height: 24),
 
               // ── Conquistas ────────────────────────────────────
-              _SectionLabel(label: 'CONQUISTAS CHAMP'),
+              _SectionLabel(label: L.of(context).perfil_conquistas),
               const SizedBox(height: 12),
-              _BadgeGallery(
+              BadgeGallery(
                 totalPoints:   p.totalPoints as int,
                 totalWorkouts: p.totalWorkouts as int,
                 streak:        p.streak as int,
               ),
+
+              const SizedBox(height: 28),
+
+              // ── Idioma ────────────────────────────────────────
+              // No fim da página, como no login: é ajuste de preferência, não
+              // algo que se consulta a toda hora.
+              _SectionLabel(label: L.of(context).idioma_titulo),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.surfaceContainerHigh),
+                ),
+                child: const LanguageListTile(),
+              ),
+
+              const SizedBox(height: 28),
+
+              // ── Zona de perigo ────────────────────────────────
+              // No fim da rolagem: precisa ser encontravel (o Google Play
+              // exige exclusao acessivel no app) sem ficar ao alcance de um
+              // toque distraido.
+              _SectionLabel(label: L.of(context).perfil_zonaPerigo),
+              const SizedBox(height: 12),
+              const BlocoExcluirConta(),
+
+              const SizedBox(height: 20),
             ]),
           ),
         ),
@@ -421,7 +486,7 @@ class _BioimpedanceCard extends ConsumerWidget {
                             color: AppColors.onSurface,
                             fontWeight: FontWeight.w700)),
                     const SizedBox(height: 2),
-                    Text('Registre sua composição corporal',
+                    Text(L.of(context).perfil_registreComposicao,
                         style: AppTypography.bodySm.copyWith(
                             color: AppColors.onSurfaceVariant)),
                   ],
@@ -467,7 +532,7 @@ class _BioimpedanceCard extends ConsumerWidget {
                       color: AppColors.primary, size: 16),
                 ),
                 const SizedBox(width: 10),
-                Text('COMPOSIÇÃO CORPORAL',
+                Text(L.of(context).perfil_composicaoCorporal,
                     style: AppTypography.labelSm
                         .copyWith(letterSpacing: 1.5, color: AppColors.primary)),
                 const Spacer(),
@@ -496,25 +561,25 @@ class _BioimpedanceCard extends ConsumerWidget {
                       color: const Color(0xFFFF6B6B)),
                 if (profile.muscleMassKg != null)
                   _BioStat(
-                      label: 'MÚSCULO',
+                      label: L.of(context).perfil_musculo,
                       value: '${(profile.muscleMassKg as double).toStringAsFixed(1)} kg',
                       icon: Icons.fitness_center,
                       color: AppColors.primary),
                 if (profile.visceralFat != null)
                   _BioStat(
                       label: 'VISCERAL',
-                      value: 'Nível ${profile.visceralFat}',
+                      value: L.of(context).perfil_nivelN2(profile.visceralFat),
                       icon: Icons.monitor_heart_outlined,
                       color: const Color(0xFFFFD700)),
                 if (profile.hydrationPct != null)
                   _BioStat(
-                      label: 'HIDRATAÇÃO',
+                      label: L.of(context).perfil_hidratacao,
                       value: '${(profile.hydrationPct as double).toStringAsFixed(1)}%',
                       icon: Icons.opacity,
                       color: const Color(0xFF5B8DF6)),
                 if (profile.boneMassKg != null)
                   _BioStat(
-                      label: 'ÓSSEA',
+                      label: L.of(context).perfil_ossea,
                       value: '${(profile.boneMassKg as double).toStringAsFixed(1)} kg',
                       icon: Icons.accessibility_new,
                       color: AppColors.warning),
@@ -654,7 +719,7 @@ class _BioimpedanceSheetState extends ConsumerState<_BioimpedanceSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro: $e'),
+          SnackBar(content: Text('${L.of(context).comum_erro}: $e'),
               backgroundColor: AppColors.error),
         );
       }
@@ -708,7 +773,7 @@ class _BioimpedanceSheetState extends ConsumerState<_BioimpedanceSheet> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('BIOIMPEDÂNCIA',
+                      Text(L.of(context).perfil_bioimpedanciaUp,
                           style: AppTypography.headlineSm
                               .copyWith(fontWeight: FontWeight.w700)),
                       Text('dados opcionais',
@@ -721,8 +786,7 @@ class _BioimpedanceSheetState extends ConsumerState<_BioimpedanceSheet> {
 
               const SizedBox(height: 4),
               Text(
-                'Preencha os valores gerados pelo aparelho de bioimpedância. '
-                'Todos os campos são opcionais.',
+                'L.of(context).perfil_preenchaValores',
                 style: AppTypography.bodySm
                     .copyWith(color: AppColors.onSurfaceVariant),
               ),
@@ -763,7 +827,7 @@ class _BioimpedanceSheetState extends ConsumerState<_BioimpedanceSheet> {
                       ctrl: _visceralCtrl,
                       label: 'GORDURA VISCERAL',
                       hint: '1–20',
-                      suffix: 'nível',
+                      suffix: L.of(context).perfil_nivelMinusculo,
                       icon: Icons.monitor_heart_outlined,
                       color: const Color(0xFFFFD700),
                       isInt: true,
@@ -773,7 +837,7 @@ class _BioimpedanceSheetState extends ConsumerState<_BioimpedanceSheet> {
                   Expanded(
                     child: _BioField(
                       ctrl: _hydroCtrl,
-                      label: 'HIDRATAÇÃO',
+                      label: L.of(context).perfil_hidratacao,
                       hint: '60.0',
                       suffix: '%',
                       icon: Icons.opacity,
@@ -788,7 +852,7 @@ class _BioimpedanceSheetState extends ConsumerState<_BioimpedanceSheet> {
                   Expanded(
                     child: _BioField(
                       ctrl: _boneCtrl,
-                      label: 'MASSA ÓSSEA',
+                      label: L.of(context).perfil_massaOssea,
                       hint: '3.0',
                       suffix: 'kg',
                       icon: Icons.accessibility_new,
@@ -831,7 +895,7 @@ class _BioimpedanceSheetState extends ConsumerState<_BioimpedanceSheet> {
                           child: CircularProgressIndicator(
                               strokeWidth: 2.5,
                               color: AppColors.onPrimary))
-                      : Text('SALVAR BIOIMPEDÂNCIA',
+                      : Text(L.of(context).perfil_salvarBioimpedancia,
                           style: AppTypography.labelMd.copyWith(
                             color: AppColors.onPrimary,
                             fontWeight: FontWeight.w700,
@@ -925,11 +989,11 @@ class _PointsGuideCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const items = [
-      (Icons.fitness_center,    '+10 pts', 'Treino concluído'),
-      (Icons.restaurant,        '+10 pts', 'Meta de dieta atingida'),
-      (Icons.trending_up,       '+5 pts',  'Progressão de carga (por exercício)'),
-      (Icons.monitor_weight,    '+20 pts', 'Evolução de peso na direção da meta'),
+    final items = [
+      (Icons.fitness_center,    '+10 pts', L.of(context).perfil_pontosTreino),
+      (Icons.restaurant,        '+10 pts', L.of(context).perfil_pontosDieta),
+      (Icons.trending_up,       '+5 pts',  L.of(context).perfil_pontosProgressao),
+      (Icons.monitor_weight,    '+20 pts', L.of(context).perfil_pontosEvolucao),
     ];
 
     return Container(
@@ -1005,12 +1069,12 @@ class _ProfileBmiCard extends StatelessWidget {
     return targetWeight / (hm * hm);
   }
 
-  String _label(double bmi) {
-    if (bmi < 18.5) return 'Abaixo do peso';
-    if (bmi < 25.0) return 'Normal ✓';
-    if (bmi < 30.0) return 'Sobrepeso';
-    if (bmi < 35.0) return 'Obesidade I';
-    return 'Obesidade II+';
+  String _label(double bmi, L l) {
+    if (bmi < 18.5) return l.imc_abaixoPeso;
+    if (bmi < 25.0) return l.imc_normalOk;
+    if (bmi < 30.0) return l.imc_sobrepeso;
+    if (bmi < 35.0) return l.imc_obesidade1;
+    return l.imc_obesidade2;
   }
 
   Color _color(double bmi) {
@@ -1044,7 +1108,7 @@ class _ProfileBmiCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('IMC ATUAL',
+                    Text(L.of(context).perfil_imcAtual,
                         style: AppTypography.labelSm
                             .copyWith(letterSpacing: 2)),
                     const SizedBox(height: 4),
@@ -1058,7 +1122,7 @@ class _ProfileBmiCard extends StatelessWidget {
                             )),
                         Padding(
                           padding: const EdgeInsets.only(bottom: 4),
-                          child: Text('  ${_label(bmi)}',
+                          child: Text('  ${_label(bmi, L.of(context))}',
                               style: AppTypography.bodySm),
                         ),
                       ],
@@ -1070,11 +1134,11 @@ class _ProfileBmiCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   _MiniInfo(
-                      label: 'ALTURA',
+                      label: L.of(context).perfil_altura,
                       value: '${heightCm.toInt()} cm'),
                   const SizedBox(height: 4),
                   _MiniInfo(
-                      label: 'PESO',
+                      label: L.of(context).perfil_peso,
                       value: '${currentWeight.toStringAsFixed(1)} kg'),
                 ],
               ),
@@ -1157,8 +1221,9 @@ class _ProfileBmiCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Meta: IMC ${tBmi.toStringAsFixed(1)} (${_label(tBmi)})  '
-                      'com ${targetWeight.toStringAsFixed(1)} kg',
+                      '${L.of(context).perfil_metaImc} ${tBmi.toStringAsFixed(1)} '
+                      '(${_label(tBmi, L.of(context))})  '
+                      '${L.of(context).perfil_comKg(targetWeight.toStringAsFixed(1))}',
                       style: AppTypography.bodySm.copyWith(fontSize: 11),
                     ),
                   ),
@@ -1226,6 +1291,95 @@ class _TagChip extends StatelessWidget {
 
 // ── Stat box ──────────────────────────────────────────────────────────────────
 
+/// Progresso rumo ao próximo nível.
+///
+/// A barra usa a faixa DO NÍVEL (do requisito atual até o próximo), não os
+/// pontos totais — senão ela ficaria quase cheia o tempo todo conforme os
+/// requisitos crescem.
+class _LevelProgressCard extends StatelessWidget {
+  final int points;
+  const _LevelProgressCard({required this.points});
+
+  @override
+  Widget build(BuildContext context) {
+    final nivel    = LevelSystem.nivelDe(points);
+    final falta    = LevelSystem.pontosParaProximo(points);
+    final progresso = LevelSystem.progressoNoNivel(points);
+    final alvo     = LevelSystem.requisito(nivel + 1);
+    final noTeto   = nivel >= LevelSystem.nivelMaximo;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.surfaceContainerHigh),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(L.of(context).nivel_nivelN(nivel),
+                  style: AppTypography.labelMd
+                      .copyWith(color: AppColors.primary)),
+              const Spacer(),
+              if (!noTeto)
+                Text(L.of(context).nivel_nivelN(nivel + 1),
+                    style: AppTypography.labelSm
+                        .copyWith(color: AppColors.onSurfaceVariant)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progresso,
+              minHeight: 8,
+              backgroundColor: AppColors.surfaceContainerHigh,
+              valueColor:
+                  const AlwaysStoppedAnimation(AppColors.primary),
+            ),
+          ),
+          const SizedBox(height: 10),
+          if (noTeto)
+            Text(L.of(context).perfil_nivelMaximoAlcancado,
+                style: AppTypography.bodySm.copyWith(fontSize: 12))
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: RichText(
+                    text: TextSpan(
+                      style: AppTypography.bodySm.copyWith(fontSize: 12),
+                      children: [
+                        TextSpan(
+                          text: '$falta ',
+                          style: AppTypography.bodySm.copyWith(
+                            fontSize: 13,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        TextSpan(
+                          text: falta == 1
+                              ? L.of(context).nivel_pontoParaNivelResto(nivel + 1)
+                              : L.of(context).nivel_pontosParaNivelResto(nivel + 1),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Text('$points / $alvo',
+                    style: AppTypography.bodySm.copyWith(fontSize: 11)),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class _StatBox extends StatelessWidget {
   final String label;
   final String value;
@@ -1284,13 +1438,20 @@ class _SectionLabel extends StatelessWidget {
 
 // ── Streak card ───────────────────────────────────────────────────────────────
 
-class _StreakCard extends StatelessWidget {
+/// Card de sequência: 7 caixas terminando HOJE na direita.
+///
+/// A versão anterior tinha dois bugs. Os rótulos eram um array fixo começando
+/// na segunda, então a faixa nunca batia com o dia real; e o preenchimento
+/// acendia as N primeiras caixas da esquerda, sem relação com o dia que cada
+/// uma representava. Agora cada caixa é um dia concreto vindo do servidor.
+class _StreakCard extends ConsumerWidget {
   final int streak;
   const _StreakCard({required this.streak});
 
   @override
-  Widget build(BuildContext context) {
-    const displayDays = 7;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final semana = ref.watch(weekActivityProvider);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -1306,7 +1467,7 @@ class _StreakCard extends StatelessWidget {
               const Icon(Icons.local_fire_department,
                   color: AppColors.warning, size: 22),
               const SizedBox(width: 8),
-              Text('$streak dias consecutivos',
+              Text(L.of(context).perfil_diasConsecutivos(streak),
                   style: AppTypography.bodyMd.copyWith(
                     color: AppColors.onSurface,
                     fontWeight: FontWeight.w600,
@@ -1314,41 +1475,74 @@ class _StreakCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(displayDays, (i) {
-              final active = i <
-                  (streak % displayDays == 0 && streak > 0
-                      ? displayDays
-                      : streak % displayDays);
-              return Column(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: active
-                          ? AppColors.warning.withOpacity(0.2)
-                          : AppColors.surfaceContainerHigh,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: active
-                            ? AppColors.warning
-                            : AppColors.outlineVariant,
-                      ),
-                    ),
-                    child: active
-                        ? const Icon(Icons.local_fire_department,
-                            color: AppColors.warning, size: 16)
-                        : null,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(['S', 'T', 'Q', 'Q', 'S', 'S', 'D'][i],
-                      style:
-                          AppTypography.labelSm.copyWith(fontSize: 9)),
-                ],
-              );
-            }),
+          semana.when(
+            loading: () => const SizedBox(
+              height: 52,
+              child: Center(
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+            error: (_, __) => SizedBox(
+              height: 52,
+              child: Center(
+                child: Text(L.of(context).perfil_semanaNaoCarregou,
+                    style: AppTypography.bodySm.copyWith(fontSize: 11)),
+              ),
+            ),
+            data: (dias) => Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                for (var i = 0; i < dias.length; i++)
+                  Builder(builder: (_) {
+                    final d = dias[i];
+                    final hoje = i == dias.length - 1;
+                    return Column(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: d.treinou
+                                ? AppColors.warning.withOpacity(0.2)
+                                : AppColors.surfaceContainerHigh,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: d.treinou
+                                  ? AppColors.warning
+                                  : hoje
+                                      // Hoje sem treino: contorno destacado,
+                                      // para o usuário achar o dia atual.
+                                      ? AppColors.primary.withOpacity(0.7)
+                                      : AppColors.outlineVariant,
+                              width: hoje ? 1.5 : 1,
+                            ),
+                          ),
+                          child: d.treinou
+                              ? const Icon(Icons.local_fire_department,
+                                  color: AppColors.warning, size: 16)
+                              : null,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          d.inicial,
+                          style: AppTypography.labelSm.copyWith(
+                            fontSize: 9,
+                            color: hoje
+                                ? AppColors.primary
+                                : AppColors.onSurfaceVariant,
+                            fontWeight:
+                                hoje ? FontWeight.w700 : FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+              ],
+            ),
           ),
         ],
       ),
@@ -1368,14 +1562,14 @@ class _GoalProgressCard extends StatelessWidget {
     required this.targetWeight,
   });
 
-  String get _goalLabel {
+  String _goalLabel(L l) {
     switch (goalType) {
       case 'lose_weight':
-        return 'Perder Peso';
+        return l.objetivo_perderPesoCap;
       case 'gain_weight':
-        return 'Ganhar Massa';
+        return l.objetivo_ganharMassaCap;
       default:
-        return 'Manutenção';
+        return l.objetivo_manutencaoCap;
     }
   }
 
@@ -1406,7 +1600,7 @@ class _GoalProgressCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(_goalLabel, style: AppTypography.bodyMd),
+              Text(_goalLabel(L.of(context)), style: AppTypography.bodyMd),
               Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 10, vertical: 4),
@@ -1475,7 +1669,7 @@ class _GoalProgressCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '${(_progress * 100).toStringAsFixed(0)}% do objetivo',
+            L.of(context).perfil_percentualObjetivo((_progress * 100).toStringAsFixed(0)),
             style: AppTypography.bodySm,
           ),
         ],
@@ -1486,14 +1680,18 @@ class _GoalProgressCard extends StatelessWidget {
 
 // ── Evolution chart ───────────────────────────────────────────────────────────
 
-class _EvolutionChart extends StatelessWidget {
+/// Curva acumulada de pontos das últimas 6 semanas.
+///
+/// Já foi um desenho decorativo — dividia o total em seis fatias iguais, então
+/// a escada saía idêntica para qualquer usuário em qualquer momento. Agora as
+/// barras vêm da tabela `points` e a última fecha exatamente no total do perfil.
+class _EvolutionChart extends ConsumerWidget {
   final int totalPoints;
   const _EvolutionChart({required this.totalPoints});
 
   @override
-  Widget build(BuildContext context) {
-    final weeks =
-        List.generate(6, (i) => (totalPoints * (i + 1) / 6).round());
+  Widget build(BuildContext context, WidgetRef ref) {
+    final semanas = ref.watch(pointsEvolutionProvider(totalPoints));
 
     return Container(
       height: 160,
@@ -1503,62 +1701,105 @@ class _EvolutionChart extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.surfaceContainerHigh),
       ),
-      child: BarChart(
-        BarChartData(
-          maxY: (totalPoints + 20).toDouble(),
-          barGroups: weeks.asMap().entries.map((e) {
-            return BarChartGroupData(
-              x: e.key,
-              barRods: [
-                BarChartRodData(
-                  toY: e.value.toDouble(),
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [
-                      AppColors.primary.withOpacity(0.4),
-                      AppColors.primary,
-                    ],
-                  ),
-                  width: 18,
-                  borderRadius: BorderRadius.circular(4),
+      child: semanas.when(
+        loading: () => const Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(
+                strokeWidth: 2, color: AppColors.primary),
+          ),
+        ),
+        error: (_, __) => Center(
+          child: Text(L.of(context).perfil_evolucaoNaoCarregou,
+              textAlign: TextAlign.center,
+              style: AppTypography.bodySm
+                  .copyWith(color: AppColors.onSurfaceVariant)),
+        ),
+        data: (ws) => ws.last.acumulado == 0
+            ? Center(
+                child: Text(L.of(context).perfil_semDados,
+                    style: AppTypography.bodySm
+                        .copyWith(color: AppColors.onSurfaceVariant)),
+              )
+            : _grafico(context, ws),
+      ),
+    );
+  }
+
+  Widget _grafico(BuildContext context, List<WeeklyPoints> ws) {
+    final l = L.of(context);
+    final topo = ws.last.acumulado;
+
+    return BarChart(
+      BarChartData(
+        maxY: (topo * 1.15).ceilToDouble(),
+        barGroups: ws.asMap().entries.map((e) {
+          return BarChartGroupData(
+            x: e.key,
+            barRods: [
+              BarChartRodData(
+                toY: e.value.acumulado.toDouble(),
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    AppColors.primary.withOpacity(0.4),
+                    AppColors.primary,
+                  ],
                 ),
-              ],
-            );
-          }).toList(),
-          titlesData: FlTitlesData(
-            leftTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
-            topTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                getTitlesWidget: (value, meta) {
-                  final labels = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6'];
-                  final i = value.toInt();
-                  if (i >= labels.length) return const SizedBox();
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(labels[i],
-                        style:
-                            AppTypography.labelSm.copyWith(fontSize: 9)),
-                  );
-                },
-                reservedSize: 22,
+                width: 18,
+                borderRadius: BorderRadius.circular(4),
               ),
+            ],
+          );
+        }).toList(),
+        barTouchData: BarTouchData(
+          touchTooltipData: BarTouchTooltipData(
+            getTooltipColor: (_) => AppColors.surfaceContainerHigh,
+            tooltipRoundedRadius: 8,
+            getTooltipItem: (group, _, __, ___) {
+              final w = ws[group.x];
+              return BarTooltipItem(
+                l.perfil_tooltipSemana(w.acumulado, w.ganhos),
+                AppTypography.bodySm.copyWith(
+                  color: AppColors.onSurface,
+                  fontSize: 11,
+                ),
+              );
+            },
+          ),
+        ),
+        titlesData: FlTitlesData(
+          leftTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false)),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (value, meta) {
+                final i = value.toInt();
+                if (i < 0 || i >= ws.length) return const SizedBox();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text('${l.perfil_semanaAbrev}${i + 1}',
+                      style: AppTypography.labelSm.copyWith(fontSize: 9)),
+                );
+              },
+              reservedSize: 22,
             ),
           ),
-          borderData: FlBorderData(show: false),
-          gridData: FlGridData(
-            show: true,
-            drawVerticalLine: false,
-            getDrawingHorizontalLine: (_) => FlLine(
-              color: AppColors.surfaceContainerHigh,
-              strokeWidth: 1,
-            ),
+        ),
+        borderData: FlBorderData(show: false),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          getDrawingHorizontalLine: (_) => FlLine(
+            color: AppColors.surfaceContainerHigh,
+            strokeWidth: 1,
           ),
         ),
       ),
@@ -1568,104 +1809,176 @@ class _EvolutionChart extends StatelessWidget {
 
 // ── Badge gallery ─────────────────────────────────────────────────────────────
 
-class _BadgeGallery extends StatelessWidget {
-  final int totalPoints;
-  final int totalWorkouts;
-  final int streak;
-  const _BadgeGallery({
-    required this.totalPoints,
-    required this.totalWorkouts,
-    required this.streak,
-  });
+// ── Assinatura ───────────────────────────────────────────────────────────────
+
+/// Estado da assinatura no perfil.
+///
+/// ⚠️ DEMONSTRAÇÃO: lê de SharedPreferences, não de entitlement no servidor.
+/// Nenhuma função do app está bloqueada por isto — decidir o que é grátis e o
+/// que é Pro ainda está em aberto.
+class _AssinaturaCard extends ConsumerWidget {
+  const _AssinaturaCard();
+
+  String _data(DateTime d) => '${d.day.toString().padLeft(2, '0')}/'
+      '${d.month.toString().padLeft(2, '0')}/${d.year}';
 
   @override
-  Widget build(BuildContext context) {
-    final badges = [
-      _Badge(
-          icon: Icons.fitness_center,
-          label: 'PRIMEIRO\nTREINO',
-          unlocked: totalWorkouts >= 1),
-      _Badge(
-          icon: Icons.local_fire_department,
-          label: 'SEQUÊNCIA\nDE 7 DIAS',
-          unlocked: streak >= 7),
-      _Badge(
-          icon: Icons.bolt,
-          label: '100\nPONTOS',
-          unlocked: totalPoints >= 100),
-      _Badge(
-          icon: Icons.emoji_events,
-          label: '10\nTREINOS',
-          unlocked: totalWorkouts >= 10),
-      _Badge(
-          icon: Icons.star,
-          label: '500\nPONTOS',
-          unlocked: totalPoints >= 500),
-      _Badge(
-          icon: Icons.military_tech,
-          label: 'MUSCLE\nCHAMP',
-          unlocked: totalPoints >= 1000),
-    ];
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = L.of(context);
+    final assinatura = ref.watch(assinaturaProvider);
 
-    return GridView.count(
-      crossAxisCount: 3,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 10,
-      mainAxisSpacing: 10,
-      childAspectRatio: 1.1,
-      children: badges.map((b) => _BadgeTile(badge: b)).toList(),
-    );
-  }
-}
-
-class _Badge {
-  final IconData icon;
-  final String label;
-  final bool unlocked;
-  const _Badge(
-      {required this.icon, required this.label, required this.unlocked});
-}
-
-class _BadgeTile extends StatelessWidget {
-  final _Badge badge;
-  const _BadgeTile({required this.badge});
-
-  @override
-  Widget build(BuildContext context) {
     return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: badge.unlocked
-            ? AppColors.primary.withOpacity(0.08)
-            : AppColors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: badge.unlocked
-              ? AppColors.primary.withOpacity(0.5)
-              : AppColors.surfaceContainerHigh,
-        ),
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.surfaceContainerHigh),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(badge.icon,
-              size: 26,
-              color: badge.unlocked
-                  ? AppColors.primary
-                  : AppColors.onSurfaceVariant.withOpacity(0.3)),
-          const SizedBox(height: 6),
-          Text(
-            badge.label,
-            textAlign: TextAlign.center,
-            style: AppTypography.labelSm.copyWith(
-              fontSize: 9,
-              color: badge.unlocked
-                  ? AppColors.onSurface
-                  : AppColors.onSurfaceVariant.withOpacity(0.4),
+      child: assinatura.when(
+        loading: () => const SizedBox(
+          height: 44,
+          child: Center(
+            child: SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: AppColors.primary),
             ),
           ),
-        ],
+        ),
+        error: (_, __) => Text(l.comum_algoDeuErrado,
+            style: AppTypography.bodySm
+                .copyWith(color: AppColors.onSurfaceVariant)),
+        data: (a) => a == null || !a.ativa
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _semAssinatura(context, l),
+                  // Só para conta de desenvolvimento: a RPC recusa o resto,
+                  // e botão que sempre falha é pior que botão nenhum.
+                  if (ref.watch(contaDeTesteProvider).valueOrNull ?? false)
+                    _zerarCota(context, ref, l),
+                ],
+              )
+            : _comAssinatura(context, ref, l, a),
       ),
+    );
+  }
+
+  /// Atalho de desenvolvimento: zera o contador do dia para dar para testar
+  /// o limite sem esperar a meia-noite. Sai junto com o modo demonstração.
+  Widget _zerarCota(BuildContext context, WidgetRef ref, L l) => Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton(
+          onPressed: () async {
+            await ref.read(cotaIaRepositoryProvider).zerar();
+            ref.invalidate(saldosDeCotaProvider);
+            if (context.mounted) MkSnack.success(context, l.cota_zerada);
+          },
+          style: TextButton.styleFrom(
+            padding: EdgeInsets.zero,
+            minimumSize: const Size(0, 0),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: Text(l.cota_zerarDemo,
+              style: AppTypography.bodySm.copyWith(
+                color: AppColors.warning,
+                fontSize: 11,
+              )),
+        ),
+      );
+
+  Widget _semAssinatura(BuildContext context, L l) => Row(
+        children: [
+          const Icon(Icons.workspace_premium_outlined,
+              size: 22, color: AppColors.onSurfaceVariant),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(l.perfil_planoGratuito,
+                style: AppTypography.bodyMd
+                    .copyWith(fontWeight: FontWeight.w600)),
+          ),
+          TextButton(
+            onPressed: () => context.push('/assinatura'),
+            style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+            child: Text(l.perfil_verPlanos,
+                style: AppTypography.labelSm
+                    .copyWith(color: AppColors.primary, fontSize: 12)),
+          ),
+        ],
+      );
+
+  Widget _comAssinatura(
+      BuildContext context, WidgetRef ref, L l, Assinatura a) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.workspace_premium,
+                size: 22, color: AppColors.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(l.perfil_proAtivo,
+                  style: AppTypography.bodyMd.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  )),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          a.emTrial
+              ? l.perfil_trialRestante(a.diasRestantes)
+              : l.perfil_renovaEm(_data(a.expiraEm)),
+          style: AppTypography.bodySm
+              .copyWith(color: AppColors.onSurfaceVariant),
+        ),
+        const SizedBox(height: 4),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton(
+            onPressed: () async {
+              final ok = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  backgroundColor: AppColors.surfaceContainerLow,
+                  content: Text(l.perfil_cancelarConfirma,
+                      style: AppTypography.bodySm),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: Text(l.comum_cancelar),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: Text(l.perfil_cancelarAssinatura,
+                          style: const TextStyle(color: AppColors.error)),
+                    ),
+                  ],
+                ),
+              );
+              if (ok != true || !context.mounted) return;
+              await ref.read(assinaturaControllerProvider).cancelar();
+              if (context.mounted) {
+                MkSnack.success(context, l.perfil_assinaturaCancelada);
+              }
+            },
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(0, 0),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(l.perfil_cancelarAssinatura,
+                style: AppTypography.bodySm.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                  decoration: TextDecoration.underline,
+                  fontSize: 12,
+                )),
+          ),
+        ),
+      ],
     );
   }
 }

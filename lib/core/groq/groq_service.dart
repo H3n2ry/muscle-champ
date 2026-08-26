@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:meta/meta.dart';
 import 'package:image/image.dart' as img;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../i18n/locale_provider.dart';
 import 'groq_config.dart';
 import 'taco_table.dart';
 
@@ -218,6 +220,11 @@ Não invente acompanhamentos que não foram citados/vistos.''';
     'brownie': (400, 5.0, 50.0, 20.0),     'pacoca': (480, 14.0, 50.0, 25.0),
     'goiabada': (270, 0.4, 68.0, 0.1),     'geleia': (250, 0.4, 62.0, 0.1),
     'mel': (309, 0.3, 84.0, 0.0),          'acai': (58, 0.8, 6.2, 3.9),
+    // A polpa pura tem 58kcal; o que se come na tigela vem com xarope e
+    // granola e passa de 200. Sem esta chave o casamento por substring pegava
+    // 'acai' e registrava um terço do valor real.
+    'acai com granola': (200, 2.0, 35.0, 6.0),
+    'acai na tigela': (200, 2.0, 35.0, 6.0),
     'sorvete': (207, 3.5, 24.0, 11.0),     'chocolate': (535, 7.6, 59.0, 30.0),
     'acucar': (387, 0.0, 100.0, 0.0),
     // Pratos prontos
@@ -234,6 +241,12 @@ Não invente acompanhamentos que não foram citados/vistos.''';
     'brocolis': (35, 2.8, 7.0, 0.4),       'tomate': (18, 0.9, 3.9, 0.2),
     'cenoura': (41, 0.9, 10.0, 0.2),       'legumes': (35, 2.0, 7.0, 0.3),
     'molho de tomate': (35, 1.5, 7.0, 0.3), 'ketchup': (100, 1.2, 24.0, 0.2),
+    // Refogados levam óleo: tratá-los como verdura crua subestimava em 3×.
+    // A TACO tem estes, mas o matcher recusa "couve refogada" — o substantivo
+    // principal dela é "couve, manteiga, refogada".
+    'couve refogada': (90, 4.4, 8.1, 4.7),
+    'abobrinha refogada': (60, 1.2, 4.5, 4.2),
+    'chuchu refogado': (55, 0.7, 4.3, 4.0),
     // Bebidas (por 100ml — densidade ~1g/ml, tratadas como gramas)
     'agua': (0, 0.0, 0.0, 0.0),            'agua de coco': (22, 0.7, 5.3, 0.2),
     'cafe': (2, 0.1, 0.3, 0.0),            'cafe com acucar': (20, 0.1, 5.0, 0.0),
@@ -272,6 +285,10 @@ Não invente acompanhamentos que não foram citados/vistos.''';
     'unidade|esfiha': 80,       'unidade|pao de queijo': 30,
     'unidade|hamburguer': 200,  'unidade|sushi': 25,
     'unidade|brigadeiro': 20,   'unidade|pacoca': 25,
+    'unidade|acai': 300,        // "um açaí" é a tigela, não 100g de polpa
+    'unidade|mamao': 400,       'unidade|abacate': 300,
+    'unidade|melancia': 5000,   'unidade|melao': 1200,
+    'unidade|vinho': 150,       'unidade|cerveja': 350,
     'unidade': 100,             // padrão quando o alimento não está listado
     // fatia
     'fatia|pizza': 110,         'fatia|pao de forma': 25,
@@ -304,11 +321,39 @@ Não invente acompanhamentos que não foram citados/vistos.''';
     'lata': 350,                'garrafa': 500,
     'taca|vinho': 150,          'taca': 150,
     'dose|destilado': 50,       'dose': 50,
+    // Medidas que o modelo usa mesmo sem estarem na lista antiga do prompt.
+    // Sem elas a unidade não resolvia e a refeição inteira virava 1 grama.
+    'pote|acai': 300,           'pote|iogurte': 170,  'pote': 200,
+    'scoop|whey': 30,           'scoop': 30,
   };
+
+  /// Peso de UMA peça quando o alimento não está em [_kMedidas].
+  ///
+  /// Só vale para `unit: "unidade"`. Existe porque o default de 100g erra por
+  /// ordem de grandeza nos alimentos pequenos: "3 castanhas do pará" virava
+  /// 300g e 1701kcal, vinte vezes o valor real.
+  static const Map<String, double> _kUnidadeDaCategoria = {
+    'oleaginosa': 5,          // castanha, noz, amêndoa
+    'fruta_seca': 8,          // damasco, tâmara, uva passa
+    'biscoito': 8,
+    'ovo': 50,
+    'doce_concentrado': 20,   // brigadeiro, paçoca, bombom
+    'queijo': 20,
+    'embutido': 30,
+    'sanduiche': 180,         // Big Mac e afins pesam bem mais que 100g
+  };
+
+  /// Peso assumido quando a unidade é desconhecida.
+  ///
+  /// Antes o item era descartado; se fosse o único, a refeição caía no
+  /// `clamp(1.0, ...)` e o usuário registrava **1 kcal** por um pote de açaí,
+  /// sem erro nenhum na tela. Uma porção plausível erra menos que zero.
+  static const double _kPorcaoPadrao = 100;
 
   /// Converte (quantidade, unidade, alimento) em gramas.
   /// Retorna null quando a unidade não é reconhecida.
-  static double? _resolverPeso(double qtd, String? unidade, String? alimento) {
+  static double? _resolverPeso(double qtd, String? unidade, String? alimento,
+      [String? categoria]) {
     if (unidade == null || qtd <= 0) return null;
     final u = _slug(unidade);
     // gramas e ml vêm prontos
@@ -320,22 +365,32 @@ Não invente acompanhamentos que não foram citados/vistos.''';
     if (u == 'l' || u == 'litro' || u == 'litros') return qtd * 1000;
 
     final a = alimento == null ? '' : _slug(alimento);
-    // procura 'unidade|alimento' mais específico, depois só 'unidade'
-    String? melhor;
+    // 'unidade|alimento' é o mais confiável; a chave genérica é o último
+    // recurso e fica separada para a categoria poder entrar na frente dela.
+    String? especifica;
+    String? generica;
     for (final chave in _kMedidas.keys) {
       final partes = chave.split('|');
       if (partes[0] != u) continue;
       if (partes.length == 1) {
-        melhor ??= chave;
+        generica = chave;
       } else if (a.contains(partes[1]) &&
-          (melhor == null ||
-              !melhor.contains('|') ||
-              partes[1].length > melhor.split('|')[1].length)) {
-        melhor = chave;
+          (especifica == null ||
+              partes[1].length > especifica.split('|')[1].length)) {
+        especifica = chave;
       }
     }
-    final peso = melhor == null ? null : _kMedidas[melhor];
-    return peso == null ? null : qtd * peso;
+    if (especifica != null) return qtd * _kMedidas[especifica]!;
+
+    // Alimento desconhecido: a categoria evita o erro de ordem de grandeza do
+    // default de 100g. Só para "unidade" — nas outras medidas o valor genérico
+    // já é o certo (uma colher de sopa é 15g independente do que tem nela).
+    if (u == 'unidade') {
+      final porCategoria = _kUnidadeDaCategoria[categoria];
+      if (porCategoria != null) return qtd * porCategoria;
+    }
+
+    return generica == null ? null : qtd * _kMedidas[generica]!;
   }
 
   static String _slug(String s) {
@@ -507,12 +562,28 @@ Não invente acompanhamentos que não foram citados/vistos.''';
         // Preferido: a IA manda a medida como o usuário falou (qty + unit) e
         // o app converte. weight_g fica como retrocompatibilidade.
         final nome = m['name'] as String?;
-        final w = (_resolverPeso(num0(m['qty']), m['unit'] as String?, nome) ??
-                num0(m['weight_g']))
-            .clamp(0.0, 3000.0);
+        final categoria = m['categoria'] as String?;
+        var bruto = _resolverPeso(
+                num0(m['qty']), m['unit'] as String?, nome, categoria) ??
+            num0(m['weight_g']);
+        if (bruto <= 0) {
+          // Unidade fora do vocabulário ("1 pote", "1 scoop"): assume porção.
+          // Descartar era pior — zerava o item e, sendo o único, a refeição
+          // inteira desabava para 1 grama sem nenhum sinal na tela.
+          final q = num0(m['qty']);
+          bruto = (q > 0 ? q : 1) * _kPorcaoPadrao;
+        }
+        final w = bruto.clamp(0.0, 3000.0);
         if (w <= 0) continue;
         // Alimento conhecido → usa os valores oficiais, ignora os da IA
-        final oficial = _lookupDensity(nome, m['categoria'] as String?);
+        //
+        // A busca casa por nome em PORTUGUÊS (_kDensity, kTacoTable). Com o app
+        // em inglês ou espanhol o `name` vem traduzido e não casaria nada, caindo
+        // na densidade crua da IA. Por isso o modelo devolve `name_pt` junto: o
+        // usuário lê no idioma dele, a tabela continua sendo consultada em
+        // português. Sem `name_pt` (resposta antiga), usa `name`.
+        final nomeBusca = (m['name_pt'] as String?) ?? nome;
+        final oficial = _lookupDensity(nomeBusca, m['categoria'] as String?);
         var p = (oficial?.$2 ?? num0(m['protein_per_100g'])) * w / 100;
         var c = (oficial?.$3 ?? num0(m['carbs_per_100g'])) * w / 100;
         var f = (oficial?.$4 ?? num0(m['fat_per_100g'])) * w / 100;
@@ -549,15 +620,21 @@ Não invente acompanhamentos que não foram citados/vistos.''';
 
     // Item único: a IA devolve o objeto direto, sem o array "items".
     // Aceita qty/unit (preferido) e weight_g (retrocompatibilidade).
-    final weight = (_resolverPeso(
-                num0(raw['qty']), raw['unit'] as String?, raw['name'] as String?) ??
-            num0(raw['weight_g']))
-        .clamp(1.0, 3000.0);
+    var pesoBruto = _resolverPeso(num0(raw['qty']), raw['unit'] as String?,
+            raw['name'] as String?, raw['categoria'] as String?) ??
+        num0(raw['weight_g']);
+    if (pesoBruto <= 0) {
+      final q = num0(raw['qty']);
+      pesoBruto = (q > 0 ? q : 1) * _kPorcaoPadrao;
+    }
+    final weight = pesoBruto.clamp(1.0, 3000.0);
 
     // Caminho preferido: a IA informou os valores por 100g → app faz a conta.
     // Se o alimento for conhecido, a densidade oficial tem prioridade.
-    final oficial =
-        _lookupDensity(raw['name'] as String?, raw['categoria'] as String?);
+    // name_pt: mesmo motivo do caminho por itens — a tabela é em português.
+    final oficial = _lookupDensity(
+        (raw['name_pt'] as String?) ?? raw['name'] as String?,
+        raw['categoria'] as String?);
     final p100 = oficial?.$2 ?? num0(raw['protein_per_100g']);
     final c100 = oficial?.$3 ?? num0(raw['carbs_per_100g']);
     final f100 = oficial?.$4 ?? num0(raw['fat_per_100g']);
@@ -610,7 +687,7 @@ Não invente acompanhamentos que não foram citados/vistos.''';
   static Future<List<Map<String, dynamic>>> generateWorkout(
       String muscleGroup) async {
     final body = jsonEncode({
-      'model': GroqConfig.textModel,
+      'task': 'text',
       'temperature': 0.7,
       'response_format': {'type': 'json_object'},
       'messages': [
@@ -620,9 +697,11 @@ Não invente acompanhamentos que não foram citados/vistos.''';
 Gere um treino completo para o agrupamento muscular solicitado.
 Retorne SOMENTE JSON válido no formato exato:
 {"exercises":[{"name":"Nome do Exercício","sets":3,"reps":12,"tip":"dica curta de execução"}]}
+
+IDIOMA: ${AiLocale.instrucao}
+
 Regras:
 - 5 a 8 exercícios por treino
-- Nomes dos exercícios em português
 - "reps" deve ser um número inteiro (ex: 12, não "8-12")
 - "sets" entre 3 e 4
 - "tip" máximo 60 caracteres''',
@@ -648,63 +727,38 @@ Regras:
     return List<Map<String, dynamic>>.from(parsed['exercises'] as List);
   }
 
+  /// Corpo exato da requisição de [calculateFoodMacros].
+  ///
+  /// Existe separado para a bateria de validação nutricional poder gravar
+  /// respostas do modelo com o prompt REAL. Se o gravador tivesse a própria
+  /// cópia do prompt, os dois divergiriam com o tempo e a bateria passaria a
+  /// validar uma coisa que o app não faz.
+  @visibleForTesting
+  static String corpoDaRequisicaoDeMacros(String description) => jsonEncode({
+        'task': 'text',
+        // temperature 0 + seed fixo: a mesma descrição sempre gera o mesmo
+        // resultado, e descrições parecidas param de oscilar.
+        'temperature': 0,
+        'top_p': 1,
+        'seed': 42,
+        'response_format': {'type': 'json_object'},
+        'messages': [
+          {'role': 'system', 'content': _promptMacros},
+          {'role': 'user', 'content': description},
+        ],
+      });
+
+  /// Metade em Dart do cálculo nutricional, exposta para teste.
+  ///
+  /// É aqui que mora a aritmética — conversão de medida, cascata de densidade
+  /// e travas físicas. Erra em silêncio, então precisa de teste em cima.
+  @visibleForTesting
+  static Map<String, dynamic> normalizarNutricao(Map<String, dynamic> raw) =>
+      _normalizeNutrition(raw);
+
   static Future<Map<String, dynamic>> calculateFoodMacros(
       String description) async {
-    final body = jsonEncode({
-      'model': GroqConfig.textModel,
-      // temperature 0 + seed fixo: a mesma descrição sempre gera o mesmo
-      // resultado, e descrições parecidas param de oscilar.
-      'temperature': 0,
-      'top_p': 1,
-      'seed': 42,
-      'response_format': {'type': 'json_object'},
-      'messages': [
-        {
-          'role': 'system',
-          'content': '''Você é um nutricionista brasileiro. Calcule os macronutrientes
-do alimento ou refeição descrito pelo usuário.
-
-$_kNutritionReference
-
-$_kAtwaterRule
-
-QUANTIDADE — NÃO converta para gramas. O aplicativo converte.
-Informe a medida do jeito que o usuário falou, em "qty" (número) e "unit":
-- unidades aceitas: g, ml, kg, l, unidade, fatia, colher de sopa, colher de chá,
-  colher de servir, concha, file, bife, prato, marmita, porcao, cumbuca,
-  copo, xicara, lata, garrafa, taca, dose
-- "2 ovos"            -> qty 2, unit "unidade"
-- "1 concha de feijão"-> qty 1, unit "concha"
-- "200g de frango"    -> qty 200, unit "g"
-- "1 copo de suco"    -> qty 1, unit "copo"
-- "meia banana"       -> qty 0.5, unit "unidade"
-- Sem quantidade dita: use a porção típica (1 unidade / 1 porção / 1 copo)
-
-Retorne SOMENTE JSON válido, sem texto antes ou depois, com UM item por
-alimento citado (mesmo que seja só um):
-{"name":"Resumo curto da refeição","items":[
-  {"name":"ovo cozido","qty":2,"unit":"unidade","categoria":"ovo","protein_per_100g":13.0,"carbs_per_100g":1.1,"fat_per_100g":9.5},
-  {"name":"pizza de calabresa","qty":1,"unit":"fatia","categoria":"prato_pronto","protein_per_100g":12.0,"carbs_per_100g":30.0,"fat_per_100g":11.0}
-]}
-- "name" do topo: resumo curto em português da refeição inteira
-- "name" do item: o alimento SEM a quantidade (use "ovo cozido", não "2 ovos")
-- os *_per_100g: densidade daquele alimento, nunca multiplicada pela quantidade
-- NÃO envie "calories", "weight_g", totais nem médias — o app calcula tudo
-
-"categoria" — escolha UMA desta lista (o app usa como rede de segurança
-quando não reconhece o alimento):
-verdura, legume, fruta, fruta_seca, cereal, leguminosa, tuberculo, massa,
-pao, biscoito, carne_magra, carne_gorda, embutido, peixe, ovo, laticinio,
-queijo, oleaginosa, gordura, doce_cremoso, doce_concentrado, frito,
-prato_pronto, sanduiche, sopa, bebida_zero, bebida_acucarada, suco_natural,
-bebida_alcoolica, suplemento''',
-        },
-        {
-          'role': 'user',
-          'content': description,
-        },
-      ],
-    });
+    final body = corpoDaRequisicaoDeMacros(description);
 
     final res = await http
         .post(
@@ -719,6 +773,56 @@ bebida_alcoolica, suplemento''',
     return _normalizeNutrition(
         Map<String, dynamic>.from(jsonDecode(content) as Map));
   }
+
+  static String get _promptMacros => '''Você é um nutricionista brasileiro. Calcule os macronutrientes
+do alimento ou refeição descrito pelo usuário.
+
+IDIOMA: ${AiLocale.instrucao}
+Além de `name` no idioma do usuário, inclua SEMPRE `name_pt` com o nome do
+alimento em português do Brasil. O aplicativo consulta a tabela nutricional
+brasileira por esse campo — sem ele a precisão cai. Quando o idioma já for
+português, repita o mesmo valor nos dois campos.
+
+$_kNutritionReference
+
+$_kAtwaterRule
+
+QUANTIDADE — NÃO converta para gramas. O aplicativo converte.
+Informe a medida do jeito que o usuário falou, em "qty" (número) e "unit":
+- unidades aceitas: g, ml, kg, l, unidade, fatia, colher de sopa, colher de chá,
+  colher de servir, concha, file, bife, prato, marmita, porcao, cumbuca,
+  copo, xicara, lata, garrafa, taca, dose, pote, scoop
+- "2 ovos"            -> qty 2, unit "unidade"
+- "1 concha de feijão"-> qty 1, unit "concha"
+- "200g de frango"    -> qty 200, unit "g"
+- "1 copo de suco"    -> qty 1, unit "copo"
+- "meia banana"       -> qty 0.5, unit "unidade"
+- "1 taça de vinho"   -> qty 1, unit "taca"
+- "1 scoop de whey"   -> qty 1, unit "scoop"
+- Use a unidade MAIS ESPECÍFICA da lista. "unidade" é o último recurso —
+  dentro de uma marmita ou prato feito, prefira concha/colher/file/porcao,
+  senão o app assume peça inteira para cada item e a conta sai errada.
+- Sem quantidade dita: use a porção típica (1 unidade / 1 porção / 1 copo)
+
+Retorne SOMENTE JSON válido, sem texto antes ou depois, com UM item por
+alimento citado (mesmo que seja só um):
+{"name":"Resumo curto da refeição","items":[
+  {"name":"ovo cozido","name_pt":"ovo cozido","qty":2,"unit":"unidade","categoria":"ovo","protein_per_100g":13.0,"carbs_per_100g":1.1,"fat_per_100g":9.5},
+  {"name":"pizza de calabresa","name_pt":"pizza de calabresa","qty":1,"unit":"fatia","categoria":"prato_pronto","protein_per_100g":12.0,"carbs_per_100g":30.0,"fat_per_100g":11.0}
+]}
+- "name_pt" é OBRIGATÓRIO em CADA item, mesmo em português (repita o "name")
+- "name" do topo: resumo curto em português da refeição inteira
+- "name" do item: o alimento SEM a quantidade (use "ovo cozido", não "2 ovos")
+- os *_per_100g: densidade daquele alimento, nunca multiplicada pela quantidade
+- NÃO envie "calories", "weight_g", totais nem médias — o app calcula tudo
+
+"categoria" — escolha UMA desta lista (o app usa como rede de segurança
+quando não reconhece o alimento):
+verdura, legume, fruta, fruta_seca, cereal, leguminosa, tuberculo, massa,
+pao, biscoito, carne_magra, carne_gorda, embutido, peixe, ovo, laticinio,
+queijo, oleaginosa, gordura, doce_cremoso, doce_concentrado, frito,
+prato_pronto, sanduiche, sopa, bebida_zero, bebida_acucarada, suco_natural,
+bebida_alcoolica, suplemento''';
 
   /// Gera um plano alimentar diário completo baseado nas calorias alvo e objetivo.
   /// Retorna Map com goal_protein_g, goal_carbs_g, goal_fat_g e lista de meals.
@@ -740,7 +844,7 @@ bebida_alcoolica, suplemento''',
     final fatMeta   = goalFat?.round()     ?? (calories * 0.30 ~/ 9);
 
     final body = jsonEncode({
-      'model': GroqConfig.textModel,
+      'task': 'text',
       'temperature': 0.3,
       'response_format': {'type': 'json_object'},
       'messages': [
@@ -748,6 +852,9 @@ bebida_alcoolica, suplemento''',
           'role': 'system',
           'content': '''Você é nutricionista esportivo brasileiro especializado em dietas para atletas.
 Crie um plano alimentar diário completo com alimentos típicos do Brasil.
+
+IDIOMA: ${AiLocale.instrucao}
+Mantenha os alimentos brasileiros, apenas escreva os nomes no idioma pedido.
 Retorne SOMENTE JSON válido neste formato exato:
 {
   "goal_protein_g": $protMeta,
@@ -847,7 +954,7 @@ Regras OBRIGATÓRIAS — respeite com precisão:
             'Se não aparecer, use essas medidas como noção do porte físico do usuário para calibrar melhor a estimativa.'
         : '';
     final body = jsonEncode({
-      'model': GroqConfig.visionModel,
+      'task': 'vision',
       'temperature': 0,
       'top_p': 1,
       'seed': 42,
@@ -869,6 +976,10 @@ Regras OBRIGATÓRIAS — respeite com precisão:
               'type': 'text',
               'text': 'Você é nutricionista. Analise a foto e identifique o(s) alimento(s).\n'
                   'Se houver um prato com vários itens, calcule item a item e some tudo.\n'
+                  'IDIOMA: ${AiLocale.instrucao}\n'
+                  'Inclua SEMPRE `name_pt` com o nome em português do Brasil, além '
+                  'de `name` no idioma do usuário: o app consulta a tabela '
+                  'nutricional brasileira por esse campo.\n'
                   'Use objetos de referência visíveis (garfo~20cm, faca~22cm, prato~26cm) '
                   'para estimar o peso.$portionCtx$handCtx\n'
                   '\n$_kNutritionReference\n'
@@ -919,7 +1030,7 @@ Regras OBRIGATÓRIAS — respeite com precisão:
       String base64Input, double coinDiameterMm) async {
     final (optimized, mime) = _optimizeImage(base64Input);
     final body = jsonEncode({
-      'model': GroqConfig.visionModel,
+      'task': 'vision',
       'temperature': 0.1,
       'reasoning_effort': 'none',
       'max_tokens': 200,

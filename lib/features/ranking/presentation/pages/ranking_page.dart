@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../providers/ranking_provider.dart';
@@ -58,12 +60,12 @@ class _RankingPageState extends ConsumerState<RankingPage> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('ELITE',
+                          Text(L.of(context).rank_elite,
                               style: AppTypography.headlineLg.copyWith(
                                 fontSize: 30,
                                 fontWeight: FontWeight.w700,
                               )),
-                          Text('RANKINGS',
+                          Text(L.of(context).rank_titulo,
                               style: AppTypography.headlineLg.copyWith(
                                 fontSize: 30,
                                 fontWeight: FontWeight.w700,
@@ -118,7 +120,7 @@ class _RankingPageState extends ConsumerState<RankingPage> {
                     child: Row(
                       children: [
                         _ToggleChip(
-                          label: 'GLOBAL',
+                          label: L.of(context).rank_global,
                           active: _isGlobal,
                           onTap: () => setState(() {
                             _isGlobal = true;
@@ -127,7 +129,7 @@ class _RankingPageState extends ConsumerState<RankingPage> {
                           }),
                         ),
                         _ToggleChip(
-                          label: 'AMIGOS',
+                          label: L.of(context).rank_amigos,
                           active: !_isGlobal,
                           onTap: () => setState(() {
                             _isGlobal = false;
@@ -156,7 +158,7 @@ class _RankingPageState extends ConsumerState<RankingPage> {
                       onChanged: (v) =>
                           setState(() => _query = v.toLowerCase()),
                       decoration: InputDecoration(
-                        hintText: 'Buscar atleta...',
+                        hintText: L.of(context).rank_buscarAtleta,
                         hintStyle: AppTypography.bodyMd
                             .copyWith(color: AppColors.onSurfaceVariant),
                         prefixIcon: const Icon(Icons.search,
@@ -186,7 +188,7 @@ class _RankingPageState extends ConsumerState<RankingPage> {
                     const Icon(Icons.wifi_off,
                         color: AppColors.onSurfaceVariant, size: 40),
                     const SizedBox(height: 12),
-                    Text('Erro ao carregar',
+                    Text(L.of(context).rank_erroCarregar,
                         style: AppTypography.bodyMd),
                   ],
                 )),
@@ -210,8 +212,8 @@ class _RankingPageState extends ConsumerState<RankingPage> {
                           const SizedBox(height: 12),
                           Text(
                             _isGlobal
-                                ? 'Nenhum competidor ainda'
-                                : 'Adicione amigos para competir!',
+                                ? L.of(context).rank_nenhumCompetidor
+                                : L.of(context).rank_adicioneAmigos,
                             style: AppTypography.bodyMd.copyWith(
                                 color: AppColors.onSurfaceVariant),
                           ),
@@ -220,7 +222,7 @@ class _RankingPageState extends ConsumerState<RankingPage> {
                             ElevatedButton.icon(
                               onPressed: _openAddFriend,
                               icon: const Icon(Icons.person_add, size: 18),
-                              label: const Text('ADICIONAR AMIGO'),
+                              label: Text(L.of(context).rank_adicionarAmigo),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
                                 foregroundColor: AppColors.onPrimary,
@@ -347,7 +349,7 @@ class _AddFriendSheetState extends ConsumerState<_AddFriendSheet> {
       if (mounted) {
         setState(() => _loadingIds.remove(user.userId));
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro: $e'),
+          SnackBar(content: Text('${L.of(context).comum_erro}: $e'),
               backgroundColor: AppColors.error),
         );
       }
@@ -396,10 +398,10 @@ class _AddFriendSheetState extends ConsumerState<_AddFriendSheet> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('ADICIONAR',
+                      Text(L.of(context).rank_adicionar,
                           style: AppTypography.headlineSm.copyWith(
                               fontWeight: FontWeight.w700)),
-                      Text('AMIGO',
+                      Text(L.of(context).rank_amigo,
                           style: AppTypography.headlineSm.copyWith(
                               fontWeight: FontWeight.w700,
                               color: AppColors.primary)),
@@ -426,7 +428,7 @@ class _AddFriendSheetState extends ConsumerState<_AddFriendSheet> {
                   style: AppTypography.bodyMd,
                   onChanged: _search,
                   decoration: InputDecoration(
-                    hintText: 'Buscar por nome...',
+                    hintText: L.of(context).rank_buscarPorNome,
                     hintStyle: AppTypography.bodyMd
                         .copyWith(color: AppColors.onSurfaceVariant),
                     prefixIcon: const Icon(Icons.search,
@@ -468,8 +470,8 @@ class _AddFriendSheetState extends ConsumerState<_AddFriendSheet> {
                           const SizedBox(height: 12),
                           Text(
                             _ctrl.text.length < 2
-                                ? 'Digite pelo menos 2 letras'
-                                : 'Nenhum usuário encontrado',
+                                ? L.of(context).rank_digite2Letras
+                                : L.of(context).rank_nenhumUsuario,
                             style: AppTypography.bodyMd.copyWith(
                                 color: AppColors.onSurfaceVariant),
                           ),
@@ -534,7 +536,7 @@ class _AddFriendSheetState extends ConsumerState<_AddFriendSheet> {
                                             AppTypography.bodyMd.copyWith(
                                           fontWeight: FontWeight.w600,
                                         )),
-                                    Text('${user.totalPoints} pts',
+                                    Text('${user.totalPoints} ${L.of(context).rank_pts}',
                                         style:
                                             AppTypography.bodySm.copyWith(
                                           color:
@@ -567,7 +569,7 @@ class _AddFriendSheetState extends ConsumerState<_AddFriendSheet> {
                                           size: 12,
                                           color: AppColors.primary),
                                       const SizedBox(width: 4),
-                                      Text('AMIGO',
+                                      Text(L.of(context).rank_amigo,
                                           style: AppTypography.labelSm.copyWith(
                                             color: AppColors.primary,
                                             fontSize: 10,
@@ -593,7 +595,7 @@ class _AddFriendSheetState extends ConsumerState<_AddFriendSheet> {
                                           size: 12,
                                           color: AppColors.onSurfaceVariant),
                                       const SizedBox(width: 4),
-                                      Text('AGUARDANDO',
+                                      Text(L.of(context).rank_aguardando,
                                           style: AppTypography.labelSm.copyWith(
                                             color: AppColors.onSurfaceVariant,
                                             fontSize: 10,
@@ -613,7 +615,7 @@ class _AddFriendSheetState extends ConsumerState<_AddFriendSheet> {
                                       borderRadius:
                                           BorderRadius.circular(20),
                                     ),
-                                    child: Text('+ ADICIONAR',
+                                    child: Text(L.of(context).rank_maisAdicionar,
                                         style: AppTypography.labelSm
                                             .copyWith(
                                           color: AppColors.onPrimary,
@@ -736,7 +738,14 @@ class _PodiumColumn extends StatelessWidget {
         Stack(
           clipBehavior: Clip.none,
           children: [
-            Container(
+            // Toque no avatar abre o perfil do competidor. O proprio
+            // usuario tem a aba Perfil; mandar ele para a versao publica de
+            // si mesmo so confundiria.
+            GestureDetector(
+              onTap: entry.isCurrentUser
+                  ? null
+                  : () => context.push('/atleta/' + entry.userId),
+              child: Container(
               width: place == 1 ? 64 : 52,
               height: place == 1 ? 64 : 52,
               decoration: BoxDecoration(
@@ -751,6 +760,7 @@ class _PodiumColumn extends StatelessWidget {
                   : Icon(Icons.person,
                       color: _placeColor,
                       size: place == 1 ? 32 : 24),
+            ),
             ),
             if (entry.isCurrentUser)
               Positioned(
@@ -858,24 +868,29 @@ class _AthleteRow extends StatelessWidget {
                 )),
           ),
           // Avatar
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: entry.isCurrentUser
-                    ? AppColors.primary
-                    : AppColors.outlineVariant,
+          GestureDetector(
+            onTap: entry.isCurrentUser
+                ? null
+                : () => context.push('/atleta/' + entry.userId),
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: entry.isCurrentUser
+                      ? AppColors.primary
+                      : AppColors.outlineVariant,
+                ),
+                color: AppColors.surfaceContainerHigh,
               ),
-              color: AppColors.surfaceContainerHigh,
+              child: entry.avatarUrl != null
+                  ? ClipOval(
+                      child: Image.network(entry.avatarUrl!,
+                          fit: BoxFit.cover))
+                  : const Icon(Icons.person,
+                      color: AppColors.secondary, size: 18),
             ),
-            child: entry.avatarUrl != null
-                ? ClipOval(
-                    child: Image.network(entry.avatarUrl!,
-                        fit: BoxFit.cover))
-                : const Icon(Icons.person,
-                    color: AppColors.secondary, size: 18),
           ),
           const SizedBox(width: 12),
           // Name
@@ -893,7 +908,7 @@ class _AthleteRow extends StatelessWidget {
                   ),
                 ),
                 if (entry.isCurrentUser)
-                  Text('VOCÊ',
+                  Text(L.of(context).rank_voce,
                       style: AppTypography.labelSm.copyWith(
                         color: AppColors.primary,
                         fontSize: 9,
@@ -909,7 +924,7 @@ class _AthleteRow extends StatelessWidget {
               color: AppColors.surfaceContainerHigh,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Text('${entry.points} pts',
+            child: Text('${entry.points} ${L.of(context).rank_pts}',
                 style: AppTypography.labelSm.copyWith(
                   color: entry.isCurrentUser
                       ? AppColors.primary
@@ -929,17 +944,17 @@ class _AthleteRow extends StatelessWidget {
                     // página da navegação (tela preta) em vez do diálogo
                     builder: (dialogCtx) => AlertDialog(
                       backgroundColor: AppColors.surfaceContainerLow,
-                      title: const Text('Remover amigo?'),
+                      title: Text(L.of(context).rank_removerAmigo),
                       content: Text(
-                          '${entry.userName} será removido do seu ranking de amigos.'),
+                          L.of(context).rank_seraRemovido(entry.userName)),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(dialogCtx, false),
-                          child: const Text('CANCELAR'),
+                          child: Text(L.of(context).rank_cancelar),
                         ),
                         TextButton(
                           onPressed: () => Navigator.pop(dialogCtx, true),
-                          child: Text('REMOVER',
+                          child: Text(L.of(context).rank_remover,
                               style: TextStyle(color: AppColors.error)),
                         ),
                       ],

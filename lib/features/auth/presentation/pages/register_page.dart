@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../../../core/legal/legal_documents.dart';
+import '../../../../core/legal/legal_texts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../subscription/presentation/widgets/paywall_popup.dart';
+import '../../../../shared/widgets/language_selector.dart';
+import '../../../../shared/widgets/legal_document_sheet.dart';
 import '../../../../shared/widgets/mk_date_field.dart';
 import '../../../../shared/widgets/mk_error_banner.dart';
 import '../../../../shared/widgets/mk_text_field.dart';
@@ -45,6 +51,45 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   // ── Step 2 ────────────────────────────────────────────────────────────────
   int _weeklyGoal = 3;
+
+  /// Consentimentos. Todos começam desmarcados — consentimento pré-marcado
+  /// não é consentimento válido (GDPR Art. 4(11) / LGPD Art. 5 XII).
+  final Map<String, bool> _consents = {
+    for (final c in LegalTexts.signupConsents) c.type: false,
+  };
+  bool _consentError = false;
+
+  bool get _requiredConsentsGiven => LegalTexts.signupConsents
+      .where((c) => c.required)
+      .every((c) => _consents[c.type] == true);
+
+  /// Habilita o botão do passo atual. Nos passos 0 e 1 a validação é do
+  /// Form (só dá para saber ao tocar); no passo 2 dá para saber de antemão,
+  /// então o botão fica visivelmente apagado até os obrigatórios entrarem.
+  bool get _canAdvance => _step < 2 || _requiredConsentsGiven;
+
+  /// "Li e aceito todos os termos": marca tudo de uma vez.
+  ///
+  /// Os itens com documento (Termos e Privacidade) normalmente exigem abrir o
+  /// popup e rolar até o fim. Este atalho é uma declaração explícita e
+  /// separada de que o usuário leu — continua sendo ato afirmativo dele, que é
+  /// o que a lei pede (GDPR Art. 4(11) / LGPD Art. 5 XII). Desmarcar aqui
+  /// limpa apenas os obrigatórios, deixando as escolhas opcionais intactas.
+  void _toggleAceitarTudo(bool aceitar) {
+    setState(() {
+      for (final c in LegalTexts.signupConsents) {
+        if (aceitar) {
+          _consents[c.type] = true;
+        } else if (c.required) {
+          _consents[c.type] = false;
+        }
+      }
+      if (_requiredConsentsGiven) _consentError = false;
+    });
+  }
+
+  bool get _tudoAceito =>
+      LegalTexts.signupConsents.every((c) => _consents[c.type] == true);
 
   // Infere automaticamente o objetivo a partir dos pesos
   String get _goalType {
@@ -92,11 +137,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
 
   String _bmiLabel(double bmi) {
-    if (bmi < 18.5) return 'Abaixo do peso';
-    if (bmi < 25.0) return 'Peso normal';
-    if (bmi < 30.0) return 'Sobrepeso';
-    if (bmi < 35.0) return 'Obesidade grau I';
-    return 'Obesidade grau II+';
+    if (bmi < 18.5) return L.of(context).imc_abaixoPeso;
+    if (bmi < 25.0) return L.of(context).imc_pesoNormal;
+    if (bmi < 30.0) return L.of(context).imc_sobrepeso;
+    if (bmi < 35.0) return L.of(context).imc_obesidadeGrau1;
+    return L.of(context).imc_obesidadeGrau2;
   }
 
   Color _bmiColor(double bmi) {
@@ -113,6 +158,17 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       final formOk = _step1Key.currentState!.validate();
       if (_birthDate == null) setState(() => _birthDateError = true);
       if (!formOk || _birthDate == null) return;
+
+      // Barreira de idade — abaixo do mínimo a lei exige consentimento
+      // parental verificável, fluxo que o app não implementa.
+      if (!LegalTexts.isOldEnough(_birthDate!)) {
+        setState(() => _errorMessage = LegalTexts.underageMessage);
+        return;
+      }
+    }
+    if (_step == 2 && !_requiredConsentsGiven) {
+      setState(() => _consentError = true);
+      return;
     }
     if (_step < 2) {
       setState(() => _step++);
@@ -151,6 +207,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       currentWeight:     currWt,
       targetWeight:      targWt,
       weeklyWorkoutGoal: _weeklyGoal,
+      consents:          _consents,
       birthDate:         _birthDate,
     );
 
@@ -164,7 +221,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           setState(() => _errorMessage = _friendlyError(err!));
         }
       } else {
-        context.go('/dashboard');
+        // Convite ao Pro no fim do cadastro, antes de entrar no app. E o
+        // momento em que a pessoa esta configurando as coisas e receptiva —
+        // e evita que o convite dispute espaco com o tutorial la dentro.
+        await PaywallPopup.mostrar(context, recemCadastrado: true);
+        // Ja convidou: a abertura seguinte nao repete na mesma sessao.
+        ref.read(conviteProMostradoProvider.notifier).state = true;
+        if (mounted) context.go('/dashboard');
       }
     }
   }
@@ -172,15 +235,39 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   String _friendlyError(Object error) {
     final msg = error.toString().toLowerCase();
     if (msg.contains('já está cadastrado') || msg.contains('already registered')) {
-      return 'Este email já está cadastrado. Faça login.';
+      return L.of(context).cadastro_emailJaCadastrado;
     }
-    if (msg.contains('weak_password') || msg.contains('senha')) {
-      return 'Senha fraca. Use letras, números e símbolos.';
+    // O Supabase responde 422 em INGLÊS ("Password should contain at least one
+    // character of each: ..."). Sem casar por 'password' a mensagem caía no
+    // genérico e o usuário não tinha como saber o que corrigir.
+    if (msg.contains('weak_password') ||
+        msg.contains('password') ||
+        msg.contains('senha')) {
+      return L.of(context).cad_senhaFraca;
     }
-    if (msg.contains('network') || msg.contains('socketexception')) {
-      return 'Sem conexão com a internet.';
+    if (msg.contains('underage') || msg.contains('anos para criar')) {
+      return LegalTexts.underageMessage;
     }
-    return 'Algo deu errado. Tente novamente.';
+    if (msg.contains('consent') || msg.contains('consentimento')) {
+      return L.of(context).cad_necessarioAceitar;
+    }
+    if (msg.contains('network') ||
+        msg.contains('socketexception') ||
+        msg.contains('failed host lookup')) {
+      return L.of(context).comum_semConexao;
+    }
+    // O limite de ENVIO DE E-MAIL do Supabase e diferente de 'muitas
+    // tentativas suas': quem estourou a cota foi o cadastro de outra pessoa,
+    // e a janela e de uma hora, nao de minutos. Culpar o usuario por algo que
+    // ele nao fez, e mandar esperar o tempo errado, e pior que nao explicar.
+    if (msg.contains('over_email_send_rate_limit') ||
+        msg.contains('email rate limit')) {
+      return L.of(context).cad_limiteEmails;
+    }
+    if (msg.contains('rate') || msg.contains('too many')) {
+      return L.of(context).cad_muitasTentativasEspere;
+    }
+    return L.of(context).comum_algoDeuErrado;
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
@@ -254,7 +341,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     targWtCtrl: _targWtCtrl,
                     birthDate:  _birthDate,
                     birthDateError: _birthDateError
-                        ? 'Informe sua data de nascimento'
+                        ? L.of(context).cad_informeNascimento
                         : null,
                     onBirthDate: (d) => setState(() {
                       _birthDate = d;
@@ -272,6 +359,16 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     goalType:      _goalType,
                     currentWeight: double.tryParse(_currWtCtrl.text) ?? 0,
                     targetWeight:  double.tryParse(_targWtCtrl.text) ?? 0,
+                    consentBlock: _ConsentBlock(
+                      values:      _consents,
+                      showError:   _consentError,
+                      tudoAceito:  _tudoAceito,
+                      onAceitarTudo: _toggleAceitarTudo,
+                      onChanged: (type, value) => setState(() {
+                        _consents[type] = value;
+                        if (_requiredConsentsGiven) _consentError = false;
+                      }),
+                    ),
                   ),
                 ],
               ),
@@ -287,6 +384,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               ),
             ),
 
+            // Idioma no rodapé do cadastro: é onde o usuário chega antes de
+            // ler os termos, e é o único momento em que ele ainda não tem
+            // perfil para trocar depois.
+            const Padding(
+              padding: EdgeInsets.only(top: 4),
+              child: LanguageSelector(),
+            ),
+
             // ── Bottom button ─────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
@@ -294,12 +399,16 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: isLoading ? null : _goNext,
+                  // No último passo o botão fica apagado até os consentimentos
+                  // obrigatórios entrarem — o usuário vê que falta algo em vez
+                  // de tocar e receber erro.
+                  onPressed: (isLoading || !_canAdvance) ? null : _goNext,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.onPrimary,
                     disabledBackgroundColor:
                         AppColors.surfaceContainerHigh,
+                    disabledForegroundColor: AppColors.onSurfaceVariant,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16)),
                     elevation: 0,
@@ -315,9 +424,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              _step < 2 ? 'PRÓXIMO' : 'CRIAR CONTA',
+                              _step < 2 ? L.of(context).comum_proximo : L.of(context).cadastro_criarConta,
                               style: AppTypography.labelMd.copyWith(
-                                color: AppColors.onPrimary,
+                                color: _canAdvance
+                                    ? AppColors.onPrimary
+                                    : AppColors.onSurfaceVariant,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 1.5,
@@ -328,7 +439,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                               _step < 2
                                   ? Icons.arrow_forward
                                   : Icons.check,
-                              color: AppColors.onPrimary,
+                              color: _canAdvance
+                                  ? AppColors.onPrimary
+                                  : AppColors.onSurfaceVariant,
                               size: 18,
                             ),
                           ],
@@ -352,7 +465,10 @@ class _StepIndicator extends StatelessWidget {
   final int total;
   const _StepIndicator({required this.current, required this.total});
 
-  static const _labels = ['CONTA', 'CORPO', 'MISSÃO'];
+  // Os rótulos saem do L na hora de desenhar; um const aqui congelaria o
+  // idioma escolhido no primeiro build.
+  List<String> _labels(L l) =>
+      [l.cad_stepConta, l.cad_stepCorpo, l.cad_stepMissao];
 
   @override
   Widget build(BuildContext context) {
@@ -361,7 +477,7 @@ class _StepIndicator extends StatelessWidget {
       children: [
         // Label
         Text(
-          _labels[current],
+          _labels(L.of(context))[current],
           style: AppTypography.labelSm.copyWith(
             color: AppColors.primary,
             letterSpacing: 2,
@@ -454,7 +570,7 @@ class _Step0AccountState extends ConsumerState<_Step0Account> {
       if (!mounted) return;
       setState(() {
         _emailError = exists
-            ? 'Este e-mail já está cadastrado. Faça login.'
+            ? L.of(context).cad_emailJaCadastradoHifen
             : null;
       });
     } catch (_) {
@@ -466,18 +582,28 @@ class _Step0AccountState extends ConsumerState<_Step0Account> {
   }
 
   // ── Regras da senha ──────────────────────────────────────────────────────
+  //
+  // ⚠️ Precisam espelhar EXATAMENTE a política do Supabase Auth
+  // (Authentication → Policies): mínimo 8 + minúscula + maiúscula + dígito +
+  // símbolo. Qualquer regra a menos aqui deixa o usuário enviar uma senha que
+  // o servidor recusa com 422, e ele não descobre o motivo.
+  //
+  // Conjunto de símbolos aceito pelo Supabase:
+  //   !@#$%^&*()_+-=[]{};':"|<>?,./`~
   static bool _hasMin8(String v)   => v.length >= 8;
+  static bool _hasLower(String v)  => v.contains(RegExp(r'[a-z]'));
   static bool _hasUpper(String v)  => v.contains(RegExp(r'[A-Z]'));
   static bool _hasNumber(String v) => v.contains(RegExp(r'[0-9]'));
   static bool _hasSymbol(String v) =>
-      v.contains(RegExp(r'[!@#\$%^&*()\-_=+\[\]{};:,.<>?/|\\]'));
+      v.contains(RegExp('[!@#\\\$%^&*()_+\\-=\\[\\]{};\':"|<>?,./`~\\\\]'));
 
   String? _validatePass(String? v) {
     final s = v ?? '';
-    if (!_hasMin8(s))   return 'Mínimo 8 caracteres';
-    if (!_hasUpper(s))  return 'Precisa de letra maiúscula (A-Z)';
-    if (!_hasNumber(s)) return 'Precisa de número (0-9)';
-    if (!_hasSymbol(s)) return r'Precisa de símbolo (!@#$%...)';
+    if (!_hasMin8(s))   return L.of(context).senha_errMin8;
+    if (!_hasLower(s))  return L.of(context).senha_errMinuscula;
+    if (!_hasUpper(s))  return L.of(context).senha_errMaiuscula;
+    if (!_hasNumber(s)) return L.of(context).senha_errNumero;
+    if (!_hasSymbol(s)) return L.of(context).senha_errSimbolo;
     return null;
   }
 
@@ -493,28 +619,28 @@ class _Step0AccountState extends ConsumerState<_Step0Account> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Title
-            Text('QUEM',
+            Text(L.of(context).cad_quem,
                 style: AppTypography.headlineLg.copyWith(
                   fontSize: 32, fontWeight: FontWeight.w700)),
-            Text('É VOCÊ?',
+            Text(L.of(context).cad_eVoce,
                 style: AppTypography.headlineLg.copyWith(
                   fontSize: 32,
                   fontWeight: FontWeight.w700,
                   color: AppColors.primary,
                 )),
             const SizedBox(height: 6),
-            Text('Crie sua identidade de competidor',
+            Text(L.of(context).cad_crieIdentidade,
                 style: AppTypography.bodySm),
 
             const SizedBox(height: 36),
 
-            _FieldLabel('NOME DE GUERREIRO'),
+            _FieldLabel(L.of(context).cad_nomeGuerreiro),
             const SizedBox(height: 8),
             MkTextField(
               controller: widget.nameCtrl,
-              label: 'Como te chamam?',
+              label: L.of(context).cad_comoTeChamam,
               validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Obrigatório' : null,
+                  (v == null || v.trim().isEmpty) ? L.of(context).comum_obrigatorio : null,
             ),
 
             const SizedBox(height: 20),
@@ -522,7 +648,7 @@ class _Step0AccountState extends ConsumerState<_Step0Account> {
             // ── Label EMAIL + spinner ────────────────────────────────
             Row(
               children: [
-                _FieldLabel('EMAIL'),
+                _FieldLabel(L.of(context).cad_emailLabel),
                 if (_isCheckingEmail) ...[
                   const SizedBox(width: 8),
                   const SizedBox(
@@ -539,12 +665,12 @@ class _Step0AccountState extends ConsumerState<_Step0Account> {
             const SizedBox(height: 8),
             MkTextField(
               controller: widget.emailCtrl,
-              label: 'seu@email.com',
+              label: L.of(context).cad_emailPlaceholder,
               keyboardType: TextInputType.emailAddress,
               focusNode: _emailFocusNode,
               errorText: _emailError,
               validator: (v) {
-                if (v == null || !v.contains('@')) return 'Email inválido';
+                if (v == null || !v.contains('@')) return L.of(context).comum_emailInvalido;
                 if (_emailError != null) return _emailError;
                 return null;
               },
@@ -552,7 +678,7 @@ class _Step0AccountState extends ConsumerState<_Step0Account> {
 
             const SizedBox(height: 20),
 
-            _FieldLabel('SENHA'),
+            _FieldLabel(L.of(context).cad_senhaLabel),
             const SizedBox(height: 8),
             MkTextField(
               controller: widget.passCtrl,
@@ -573,17 +699,18 @@ class _Step0AccountState extends ConsumerState<_Step0Account> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('REQUISITOS DA SENHA',
+                  Text(L.of(context).cad_requisitosSenha,
                       style: AppTypography.labelSm.copyWith(
                         letterSpacing: 1.5,
                         fontSize: 9,
                         color: AppColors.onSurfaceVariant,
                       )),
                   const SizedBox(height: 10),
-                  _Req('Mínimo 8 caracteres',   _hasMin8(passValue)),
-                  _Req('Letra maiúscula (A-Z)', _hasUpper(passValue)),
-                  _Req('Número (0-9)',           _hasNumber(passValue)),
-                  _Req('Símbolo (!@#\$%...)',    _hasSymbol(passValue)),
+                  _Req(L.of(context).req_min8, _hasMin8(passValue)),
+                  _Req(L.of(context).req_minuscula, _hasLower(passValue)),
+                  _Req(L.of(context).req_maiuscula, _hasUpper(passValue)),
+                  _Req(L.of(context).req_numero, _hasNumber(passValue)),
+                  _Req(L.of(context).req_simbolo, _hasSymbol(passValue)),
                 ],
               ),
             ),
@@ -594,7 +721,7 @@ class _Step0AccountState extends ConsumerState<_Step0Account> {
             Center(
               child: TextButton(
                 onPressed: () => GoRouter.of(context).go('/login'),
-                child: Text('Já tenho conta →',
+                child: Text(L.of(context).cad_jaTenhoConta,
                     style: AppTypography.bodyMd.copyWith(
                         color: AppColors.onSurfaceVariant)),
               ),
@@ -684,17 +811,17 @@ class _Step1Body extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Title
-            Text('SUAS',
+            Text(L.of(context).cad_suas,
                 style: AppTypography.headlineLg.copyWith(
                   fontSize: 32, fontWeight: FontWeight.w700)),
-            Text('MEDIDAS',
+            Text(L.of(context).cad_medidas,
                 style: AppTypography.headlineLg.copyWith(
                   fontSize: 32,
                   fontWeight: FontWeight.w700,
                   color: AppColors.primary,
                 )),
             const SizedBox(height: 6),
-            Text('Usadas para IMC, meta calórica e hidratação',
+            Text(L.of(context).cad_usadasPara,
                 style: AppTypography.bodySm),
 
             const SizedBox(height: 32),
@@ -706,7 +833,7 @@ class _Step1Body extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _FieldLabel('ALTURA'),
+                      _FieldLabel(L.of(context).cad_alturaLabel),
                       const SizedBox(height: 8),
                       _UnitField(
                         controller: heightCtrl,
@@ -730,7 +857,7 @@ class _Step1Body extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _FieldLabel('PESO ATUAL'),
+                      _FieldLabel(L.of(context).cad_pesoAtualLabel),
                       const SizedBox(height: 8),
                       _UnitField(
                         controller: currWtCtrl,
@@ -754,7 +881,7 @@ class _Step1Body extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            _FieldLabel('PESO ALVO'),
+            _FieldLabel(L.of(context).cad_pesoAlvoLabel),
             const SizedBox(height: 8),
             _UnitField(
               controller: targWtCtrl,
@@ -773,7 +900,7 @@ class _Step1Body extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            _FieldLabel('DATA DE NASCIMENTO'),
+            _FieldLabel(L.of(context).cad_dataNascimentoLabel),
             const SizedBox(height: 8),
             MkDateField(
               value: birthDate,
@@ -823,6 +950,7 @@ class _Step2Frequency extends StatelessWidget {
   final String goalType;
   final double currentWeight;
   final double targetWeight;
+  final Widget consentBlock;
 
   const _Step2Frequency({
     required this.selected,
@@ -830,15 +958,16 @@ class _Step2Frequency extends StatelessWidget {
     required this.goalType,
     required this.currentWeight,
     required this.targetWeight,
+    required this.consentBlock,
   });
 
   static const _options = [2, 3, 4, 5, 6];
 
-  String get _goalLabel {
+  String _goalLabel(L l) {
     switch (goalType) {
-      case 'lose_weight': return 'Perder Peso';
-      case 'gain_weight': return 'Ganhar Massa';
-      default:            return 'Manutenção';
+      case 'lose_weight': return l.objetivo_perderPesoCap;
+      case 'gain_weight': return l.objetivo_ganharMassaCap;
+      default:            return l.objetivo_manutencaoCap;
     }
   }
 
@@ -850,13 +979,13 @@ class _Step2Frequency extends StatelessWidget {
     }
   }
 
-  String _daysLabel(int days) {
+  String _daysLabel(int days, L l) {
     switch (days) {
-      case 2: return 'Iniciante';
-      case 3: return 'Regular';
-      case 4: return 'Dedicado';
-      case 5: return 'Avançado';
-      case 6: return 'Elite';
+      case 2: return l.freq_iniciante;
+      case 3: return l.freq_regular;
+      case 4: return l.freq_dedicado;
+      case 5: return l.freq_avancado;
+      case 6: return l.freq_elite;
       default: return '';
     }
   }
@@ -868,17 +997,17 @@ class _Step2Frequency extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('SEU',
+          Text(L.of(context).cad_seu,
               style: AppTypography.headlineLg.copyWith(
                 fontSize: 32, fontWeight: FontWeight.w700)),
-          Text('COMPROMISSO',
+          Text(L.of(context).cad_compromisso,
               style: AppTypography.headlineLg.copyWith(
                 fontSize: 32,
                 fontWeight: FontWeight.w700,
                 color: AppColors.primary,
               )),
           const SizedBox(height: 6),
-          Text('Quantos dias por semana você vai treinar?',
+          Text(L.of(context).cad_quantosDias,
               style: AppTypography.bodySm),
 
           const SizedBox(height: 32),
@@ -921,7 +1050,7 @@ class _Step2Frequency extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            'dias',
+                            L.of(context).cad_dias,
                             style: AppTypography.labelSm.copyWith(
                               color: isSelected
                                   ? AppColors.primary
@@ -945,7 +1074,7 @@ class _Step2Frequency extends StatelessWidget {
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 200),
               child: Text(
-                _daysLabel(selected),
+                _daysLabel(selected, L.of(context)),
                 key: ValueKey(selected),
                 style: AppTypography.labelMd.copyWith(
                   color: AppColors.primary,
@@ -983,14 +1112,14 @@ class _Step2Frequency extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('OBJETIVO DETECTADO',
+                      Text(L.of(context).cad_objetivoDetectado,
                           style: AppTypography.labelSm.copyWith(
                             color: AppColors.onSurfaceVariant,
                             fontSize: 9,
                             letterSpacing: 2,
                           )),
                       const SizedBox(height: 2),
-                      Text(_goalLabel,
+                      Text(_goalLabel(L.of(context)),
                           style: AppTypography.labelMd.copyWith(
                             color: AppColors.primary,
                           )),
@@ -1009,7 +1138,206 @@ class _Step2Frequency extends StatelessWidget {
             ),
           ),
 
+          const SizedBox(height: 28),
+
+          // Consentimentos — LGPD Art. 8/11 e GDPR Art. 6/7/9
+          consentBlock,
+
           const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+/// Bloco de consentimento exibido no último passo do cadastro.
+///
+/// Os itens obrigatórios bloqueiam a criação da conta; os opcionais vêm
+/// desmarcados por padrão — consentimento tem que ser afirmativo e não pode
+/// ser pré-selecionado (GDPR Art. 4(11), LGPD Art. 5 XII).
+///
+/// Termos e Política têm documento associado. Para esses, marcar o checkbox
+/// **só é possível abrindo e aceitando o popup** — assim o consentimento é
+/// necessariamente informado (LGPD Art. 9 / GDPR Art. 13). Desmarcar é livre.
+class _ConsentBlock extends StatelessWidget {
+  final Map<String, bool> values;
+  final void Function(String type, bool value) onChanged;
+  final bool showError;
+  final bool tudoAceito;
+  final void Function(bool) onAceitarTudo;
+
+  const _ConsentBlock({
+    required this.values,
+    required this.onChanged,
+    required this.showError,
+    required this.tudoAceito,
+    required this.onAceitarTudo,
+  });
+
+  Future<void> _handleTap(BuildContext context, ConsentItem item) async {
+    final checked = values[item.type] ?? false;
+    final doc = LegalDocuments.forConsent(item.type);
+
+    // Sem documento (dados de saúde, foto por IA, marketing) → alterna direto.
+    if (doc == null || checked) {
+      onChanged(item.type, !checked);
+      return;
+    }
+
+    final accepted = await LegalDocumentSheet.show(context, doc);
+    if (accepted == true) onChanged(item.type, true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: showError
+              ? AppColors.error.withOpacity(0.6)
+              : AppColors.surfaceContainerHigh,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(L.of(context).cad_privacidadeLabel,
+              style: AppTypography.labelSm.copyWith(letterSpacing: 2)),
+          const SizedBox(height: 4),
+          Text(
+            L.of(context).cadastro_tratamosDadosSaude,
+            style: AppTypography.bodySm,
+          ),
+          const SizedBox(height: 12),
+
+          for (final item in LegalTexts.signupConsents)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => _handleTap(context, item),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 26,
+                      height: 26,
+                      child: IgnorePointer(
+                        child: Checkbox(
+                          value: values[item.type] ?? false,
+                          onChanged: (_) {},
+                          activeColor: AppColors.primary,
+                          checkColor: AppColors.onPrimary,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  item.label,
+                                  style: AppTypography.bodyMd.copyWith(
+                                    fontSize: 13,
+                                    color:
+                                        LegalDocuments.forConsent(item.type) !=
+                                                null
+                                            ? AppColors.primary
+                                            : AppColors.onSurface,
+                                    decoration:
+                                        LegalDocuments.forConsent(item.type) !=
+                                                null
+                                            ? TextDecoration.underline
+                                            : null,
+                                  ),
+                                ),
+                              ),
+                              if (item.required)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 6),
+                                  child: Text('*',
+                                      style: AppTypography.bodyMd.copyWith(
+                                          color: AppColors.primary)),
+                                ),
+                              if (LegalDocuments.forConsent(item.type) != null)
+                                const Padding(
+                                  padding: EdgeInsets.only(left: 6),
+                                  child: Icon(Icons.article_outlined,
+                                      size: 13, color: AppColors.primary),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(item.detail,
+                              style: AppTypography.bodySm
+                                  .copyWith(fontSize: 11)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // ── Aceitar tudo de uma vez ──────────────────────────────────
+          Divider(color: AppColors.surfaceContainerHigh, height: 20),
+          InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () => onAceitarTudo(!tudoAceito),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 26,
+                    height: 26,
+                    child: IgnorePointer(
+                      child: Checkbox(
+                        value: tudoAceito,
+                        onChanged: (_) {},
+                        activeColor: AppColors.primary,
+                        checkColor: AppColors.onPrimary,
+                        materialTapTargetSize:
+                            MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      L.of(context).cadastro_liAceitoTodos,
+                      style: AppTypography.bodyMd.copyWith(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          if (showError)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                L.of(context).cadastro_marqueObrigatorios,
+                style: AppTypography.bodySm
+                    .copyWith(color: AppColors.error, fontSize: 11),
+              ),
+            ),
+
+          const SizedBox(height: 6),
         ],
       ),
     );
@@ -1065,7 +1393,7 @@ class _BmiLiveCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('IMC CALCULADO',
+                  Text(L.of(context).cad_imcCalculado,
                       style: AppTypography.labelSm
                           .copyWith(letterSpacing: 2, fontSize: 9)),
                   Row(

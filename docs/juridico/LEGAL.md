@@ -13,8 +13,11 @@
 |-----|---------------|
 | **LGPD** (Lei 13.709/2018) | ✅ Dados pessoais de usuários brasileiros |
 | **Marco Civil da Internet** (Lei 12.965/2014) | ✅ App web + app mobile com dados de brasileiros |
-| **ECA** (Lei 8.069/90) | ⚠️ Se app for usado por menores — verificar restrição de idade |
-| **CFN** (Conselho Federal de Nutrição) | ⚠️ App não pode dar diagnóstico nutricional — apenas estimativas |
+| **CDC** (Lei 8.078/90) | ✅ Assinatura paga — direito de arrependimento de 7 dias (Art. 49) |
+| **ECA** (Lei 8.069/90) | ✅ Resolvido com idade mínima de 16 anos no cadastro |
+| **CFN** (Conselho Federal de Nutrição) | ✅ Disclaimers de estimativa exibidos em todo resultado de IA |
+| **GDPR** (UE 2016/679) | ⚠️ Se distribuir no EEE — exige representante na UE (Art. 27) |
+| **UK GDPR** + Data Protection Act 2018 | ⚠️ Mesma lógica do GDPR para o Reino Unido |
 | **Google Play Policies** | ✅ Obrigatório para publicação |
 
 ---
@@ -40,29 +43,58 @@
 
 ## 3. Checklist Jurídico Pré-Publicação Play Store
 
+> **Implementado em 17/08/2026** — migration `20260817_lgpd_gdpr_compliance.sql`
+> + `lib/core/legal/` + `lib/features/profile/presentation/pages/privacy_page.dart`.
+
 ### Política de Privacidade
 - [x] Criar página web com Política de Privacidade — `PRIVACY.md` preenchido (Henry de Araujo Fernandes)
-- [ ] Hospedar em URL permanente: `https://musclechamp.com.br/privacidade` (aguarda compra do domínio)
+- [x] Páginas públicas geradas: `web/privacidade.html`, `web/termos.html`, `web/excluir-conta.html`
+- [x] Exibir link dentro do app — cadastro (passo 3) e Perfil → Privacidade e dados
+- [ ] Migrar para domínio próprio `https://musclechamp.com.br/privacidade` (aguarda compra do domínio)
 - [ ] Vincular no Play Console (obrigatório para apps que coletam dados)
-- [ ] Exibir link dentro do app (tela de cadastro ou configurações)
 
 ### Consentimento
-- [ ] Adicionar checkbox de consentimento explícito no cadastro para **dados de saúde**
-- [ ] Consentimento deve ser granular: treino, dieta, bioimpedância separados (ou agrupado com linguagem clara)
-- [ ] Implementar botão "Excluir minha conta e dados" no perfil
+- [x] Checkbox de consentimento explícito no cadastro para **dados de saúde**
+- [x] Consentimento granular por finalidade — `LegalTexts.signupConsents`
+- [x] Nenhum item pré-marcado (GDPR Art. 4(11) / LGPD Art. 5 XII)
+- [x] Registro auditável em `user_consents` (finalidade + versão do documento + data)
+- [x] Revogação dos consentimentos opcionais no app (GDPR Art. 7(3))
+- [x] Botão "Excluir minha conta" no perfil
 
-### Direitos do Titular (LGPD Art. 18)
-- [ ] Direito de acesso: exportar dados do usuário
-- [ ] Direito de correção: edição de perfil já existe ✅
-- [ ] Direito de exclusão: implementar `DELETE CASCADE` em todas as tabelas por `user_id`
-- [ ] Direito de portabilidade: exportar histórico de treinos/dieta em JSON ou CSV
-- [ ] Canal de contato: e-mail para exercício de direitos (informar na Privacy Policy)
+### Direitos do Titular (LGPD Art. 18 / GDPR Art. 15-22)
+- [x] Acesso e portabilidade: RPC `export_my_data()` → JSON completo, com share/cópia no app
+- [x] Correção: edição de perfil já existia
+- [x] Exclusão: RPC `delete_my_account()` — apaga tabela por tabela, avatar no Storage e o usuário do `auth`
+- [x] Revogação de consentimento: RPCs `grant_consent()` / `revoke_consent()`
+- [x] Canal de contato exposto na tela de privacidade (`LegalTexts.privacyEmail`)
+
+### Idade mínima
+- [x] Barreira de 16 anos no cadastro (`LegalTexts.minimumAge`), validada na UI e no repositório
+- [x] Cobre LGPD Art. 14 (BR) e GDPR Art. 8 (UE) com uma regra só, evitando ter que
+      construir fluxo de consentimento parental verificável
+
+### Disclaimers (política de apps de saúde do Google Play + restrição do CFN)
+- [x] Nutricional — exibido em todo resultado de IA (`_NutritionPreview` com `isAi: true`)
+- [x] Treino — exibido no resultado da geração por IA
+- [x] Geral ("não é dispositivo médico") — tela de privacidade e Termos de Uso
+- [ ] Bioimpedância — texto pronto em `LegalTexts.bioimpedanceDisclaimer`, ainda não exibido na UI
 
 ### Play Store — Data Safety Form
 - [ ] Preencher seção "Data Safety" no Play Console
 - [ ] Declarar: coleta de dados de saúde, nome, e-mail, fotos (avatar), atividade física
 - [ ] Declarar: envio de dados a terceiros (Groq API para análise de fotos)
-- [ ] Declarar: criptografia em trânsito (HTTPS) ✅
+- [ ] Declarar URL de exclusão de conta: `/excluir-conta.html`
+- [x] Criptografia em trânsito (HTTPS)
+
+### GDPR — pendências que exigem decisão comercial
+- [ ] **Representante na UE (Art. 27)** — obrigatório para oferecer o app a residentes do
+      EEE sem estabelecimento lá. É serviço pago de terceiro. Sem isso, o caminho seguro
+      é **não** distribuir o app no EEE (restringir países no Play Console).
+- [ ] Registro de operações de tratamento (Art. 30) — exigível acima de 250 funcionários
+      ou quando há tratamento de categoria especial não ocasional. Dados de saúde
+      contínuos provavelmente enquadram; vale manter um registro simples.
+- [ ] Avaliar necessidade de DPIA (Art. 35 / LGPD Art. 38) — tratamento de dado de saúde
+      em larga escala é gatilho típico.
 
 ---
 

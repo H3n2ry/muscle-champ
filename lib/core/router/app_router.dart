@@ -11,8 +11,14 @@ import '../../features/diet/presentation/pages/diet_page.dart';
 import '../../features/diet/presentation/pages/calibration_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/edit_profile_page.dart';
+import '../../features/profile/presentation/pages/privacy_page.dart';
 import '../../features/profile/data/models/profile_model.dart';
+import '../../features/ranking/presentation/pages/perfil_publico_page.dart';
 import '../../features/ranking/presentation/pages/ranking_page.dart';
+import '../../features/subscription/data/models/plano.dart';
+import '../../features/subscription/presentation/pages/pagamento_page.dart';
+import '../../features/subscription/presentation/pages/paywall_page.dart';
+import '../../features/subscription/presentation/pages/sucesso_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../shared/widgets/bottom_nav_bar.dart';
 
@@ -53,6 +59,33 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/calibrate',
         builder: (_, __) => const CalibrationPage(),
+      ),
+      GoRoute(
+        path: '/privacy',
+        builder: (_, __) => const PrivacyPage(),
+      ),
+      // Perfil publico de outro competidor, aberto pelo ranking.
+      GoRoute(
+        path: '/atleta/:id',
+        builder: (_, state) =>
+            PerfilPublicoPage(userId: state.pathParameters['id']!),
+      ),
+      // Assinatura (DEMONSTRAÇÃO — ver features/subscription)
+      GoRoute(
+        path: '/assinatura',
+        builder: (_, __) => const PaywallPage(),
+      ),
+      GoRoute(
+        path: '/assinatura/pagamento',
+        // O plano chega por extra; sem ele a rota não faz sentido e cai no
+        // anual, que é o padrão da tela anterior.
+        builder: (_, state) =>
+            PagamentoPage(plano: state.extra as Plano? ?? Planos.anual),
+      ),
+      GoRoute(
+        path: '/assinatura/sucesso',
+        builder: (_, state) => AssinaturaSucessoPage(
+            plano: state.extra as Plano? ?? Planos.anual),
       ),
       ShellRoute(
         builder: (context, state, child) => MainScaffold(child: child),

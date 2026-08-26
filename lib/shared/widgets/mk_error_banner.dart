@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/app_localizations.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 
@@ -77,14 +78,16 @@ class MkErrorBanner extends StatelessWidget {
 
 /// Estado de erro para tela inteira (ex: falha ao carregar dados).
 class MkErrorState extends StatelessWidget {
-  final String title;
-  final String subtitle;
+  /// Nulo = usa o texto padrão traduzido. Não dá para pôr o default aqui:
+  /// valor de parâmetro precisa ser constante, e a tradução depende do context.
+  final String? title;
+  final String? subtitle;
   final VoidCallback? onRetry;
 
   const MkErrorState({
     super.key,
-    this.title = 'Algo deu errado',
-    this.subtitle = 'Verifique sua conexão e tente novamente.',
+    this.title,
+    this.subtitle,
     this.onRetry,
   });
 
@@ -109,14 +112,14 @@ class MkErrorState extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             Text(
-              title,
+              title ?? L.of(context).comum_algoDeuErrado,
               style: AppTypography.bodyLg
                   .copyWith(fontWeight: FontWeight.w600),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 6),
             Text(
-              subtitle,
+              subtitle ?? L.of(context).erro_verifiqueConexao,
               style: AppTypography.bodySm
                   .copyWith(color: AppColors.onSurfaceVariant),
               textAlign: TextAlign.center,
@@ -126,7 +129,7 @@ class MkErrorState extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: const Text('TENTAR NOVAMENTE'),
+                label: Text(L.of(context).comum_tentarNovamente),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primary,
                   side: const BorderSide(color: AppColors.primary),

@@ -4,11 +4,13 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/gamification/level_system.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../notifications/presentation/providers/notifications_provider.dart';
 import '../../../profile/data/repositories/profile_repository.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../providers/dashboard_provider.dart';
 import '../../../../features/dashboard/data/models/dashboard_model.dart';
 
@@ -79,12 +81,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                           color: AppColors.primary, size: 32),
                     ),
                     const SizedBox(height: 16),
-                    Text('ATUALIZAÇÃO\nSEMANAL',
+                    Text(L.of(context).dash_atualizacaoSemanalQuebra,
                         textAlign: TextAlign.center,
                         style: AppTypography.headlineMd.copyWith(
                             fontWeight: FontWeight.w700)),
                     const SizedBox(height: 6),
-                    Text('Registre seu peso desta semana\npara acompanhar sua evolução.',
+                    Text(L.of(context).dash_registrePesoSemana,
                         textAlign: TextAlign.center,
                         style: AppTypography.bodySm.copyWith(
                             color: AppColors.onSurfaceVariant)),
@@ -101,7 +103,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                       textAlign: TextAlign.center,
                       validator: (v) {
                         final val = double.tryParse(v ?? '');
-                        if (val == null || val <= 0) return 'Peso inválido';
+                        if (val == null || val <= 0) return L.of(context).dash_pesoInvalidoMsg;
                         return null;
                       },
                       decoration: InputDecoration(
@@ -147,7 +149,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                               padding:
                                   const EdgeInsets.symmetric(vertical: 14),
                             ),
-                            child: Text('PULAR',
+                            child: Text(L.of(context).dash_pular,
                                 style: AppTypography.labelMd.copyWith(
                                     color: AppColors.onSurfaceVariant)),
                           ),
@@ -250,7 +252,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('BEM-VINDO,',
+                      Text(L.of(context).dash_bemVindo,
                           style: AppTypography.labelSm
                               .copyWith(letterSpacing: 2)),
                       Text(
@@ -348,7 +350,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                             color: AppColors.primary,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Text('LVL 1',
+                          // Era 'LVL 1' fixo, então o dashboard e o perfil
+                          // mostravam níveis diferentes para o mesmo usuário.
+                          // Agora as duas telas usam LevelSystem.
+                          child: Text(
+                              'LVL ${LevelSystem.nivelDe(dashboard.valueOrNull?.totalPoints ?? user?.totalPoints ?? 0)}',
                               style: AppTypography.labelSm.copyWith(
                                 color: AppColors.onPrimary,
                                 fontSize: 8,
@@ -446,7 +452,7 @@ class _DashboardContent extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('MISSÃO DIÁRIA',
+                          Text(L.of(context).dash_missaoDiaria,
                               style: AppTypography.labelSm.copyWith(
                                 letterSpacing: 2,
                                 color: AppColors.onSurfaceVariant,
@@ -454,9 +460,9 @@ class _DashboardContent extends StatelessWidget {
                           const SizedBox(height: 6),
                           Text(
                             _dailyProgress == 1.0
-                                ? 'Concluída!'
+                                ? L.of(context).dash_concluida
                                 : _dailyProgress == 0.0
-                                    ? 'Começe agora'
+                                    ? L.of(context).dash_comeceAgora
                                     : 'Em progresso',
                             style: AppTypography.headlineSm.copyWith(
                               color: AppColors.onSurface,
@@ -493,7 +499,7 @@ class _DashboardContent extends StatelessWidget {
                     _MiniDivider(),
                     const SizedBox(width: 1),
                     _MiniStat(
-                      label: 'PESO\nATUAL',
+                      label: L.of(context).dash_pesoAtualQuebra,
                       value: '${data.currentWeight.toStringAsFixed(1)}',
                       max: 'kg',
                     ),
@@ -518,7 +524,7 @@ class _DashboardContent extends StatelessWidget {
         // ── Daily Protocols ────────────────────────────────────────
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Text('PROTOCOLOS DIÁRIOS',
+          child: Text(L.of(context).dash_protocolosDiarios,
               style: AppTypography.labelSm.copyWith(
                 letterSpacing: 2,
                 color: AppColors.onSurfaceVariant,
@@ -532,7 +538,7 @@ class _DashboardContent extends StatelessWidget {
               Expanded(
                 child: _ProtocolCard(
                   icon: Icons.fitness_center,
-                  title: 'TREINO',
+                  title: L.of(context).treino_treinoUp,
                   done: data.workoutDoneToday,
                 ),
               ),
@@ -631,7 +637,7 @@ class _DashboardContent extends StatelessWidget {
           const SizedBox(height: 28),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Text('HISTÓRICO DE PONTOS',
+            child: Text(L.of(context).dash_historicoPontos,
                 style: AppTypography.labelSm.copyWith(
                   letterSpacing: 2,
                   color: AppColors.onSurfaceVariant,
@@ -706,7 +712,7 @@ class _BigCircle extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              Text('completo',
+              Text(L.of(context).dash_completo,
                   style: AppTypography.labelSm.copyWith(
                     fontSize: 10,
                   )),
@@ -1014,9 +1020,16 @@ class _NextMilestoneCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Milestones at every 100
-    final nextMilestone = ((points ~/ 100) + 1) * 100;
-    final progress = points / nextMilestone;
+    // Este card já dizia "pontos para o próximo nível", mas calculava de 100
+    // em 100 — contradizendo o nível mostrado na mesma tela. Agora usa a
+    // mesma fonte das duas badges.
+    final nivel = LevelSystem.nivelDe(points);
+    final noTeto = nivel >= LevelSystem.nivelMaximo;
+    final nextMilestone =
+        noTeto ? points : LevelSystem.requisito(nivel + 1);
+    // Progresso dentro do nível, não sobre o total: senão a barra ficaria
+    // quase cheia o tempo todo nos níveis altos.
+    final progress = LevelSystem.progressoNoNivel(points);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -1041,7 +1054,7 @@ class _NextMilestoneCard extends StatelessWidget {
               const Icon(Icons.military_tech,
                   color: AppColors.primary, size: 20),
               const SizedBox(width: 8),
-              Text('PRÓXIMO MARCO',
+              Text(L.of(context).dash_proximoMarco,
                   style: AppTypography.labelSm.copyWith(
                     letterSpacing: 2,
                     color: AppColors.primary,
@@ -1072,7 +1085,10 @@ class _NextMilestoneCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '${nextMilestone - points} pontos para o próximo nível',
+            noTeto
+                ? L.of(context).perfil_nivelMaximoAlcancado
+                : '${LevelSystem.pontosParaProximo(points)} '
+                    '${L.of(context).nivel_pontosParaNivelResto(nivel + 1)}',
             style: AppTypography.bodySm,
           ),
         ],
@@ -1128,7 +1144,7 @@ class _ErrorState extends StatelessWidget {
           const Icon(Icons.wifi_off,
               color: AppColors.onSurfaceVariant, size: 48),
           const SizedBox(height: 16),
-          Text('Erro ao carregar',
+          Text(L.of(context).dash_erroCarregar,
               style: AppTypography.headlineSm),
           const SizedBox(height: 8),
           Text(message,

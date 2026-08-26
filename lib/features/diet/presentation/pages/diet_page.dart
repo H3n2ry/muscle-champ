@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../../../core/legal/legal_texts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/groq/groq_config.dart';
@@ -15,6 +17,9 @@ import '../../data/models/diet_model.dart';
 import '../../data/repositories/calibration_repository.dart';
 import '../providers/diet_provider.dart';
 import '../providers/water_provider.dart';
+import '../../../subscription/data/models/cota_ia.dart';
+import '../../../subscription/presentation/providers/cota_ia_provider.dart';
+import '../../../subscription/presentation/widgets/limite_atingido_sheet.dart';
 
 // ── Modo de entrada de refeição ───────────────────────────────────────────────
 
@@ -37,7 +42,7 @@ class DietPage extends ConsumerWidget {
           loading: () => const Center(
               child: CircularProgressIndicator(color: AppColors.primary)),
           error: (e, _) => MkErrorState(
-            subtitle: 'Não foi possível carregar sua dieta.',
+            subtitle: L.of(context).dieta_erroDieta,
             onRetry: () => ref.invalidate(dietControllerProvider),
           ),
           data: (data) => _DietContent(
@@ -100,11 +105,11 @@ class _DietContent extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('NUTRIÇÃO',
+                    Text(L.of(context).dieta_nutricao,
                         style: AppTypography.labelSm.copyWith(
                             letterSpacing: 2,
                             color: AppColors.onSurfaceVariant)),
-                    Text('DIETA',
+                    Text(L.of(context).dieta_titulo,
                         style: AppTypography.headlineLg.copyWith(
                             fontSize: 28, fontWeight: FontWeight.w700)),
                   ],
@@ -164,7 +169,7 @@ class _DietContent extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('IA ATIVA',
+                          Text(L.of(context).dieta_iaAtiva,
                               style: TextStyle(
                                   color: Color(0xFF7C3AED),
                                   fontSize: 10,
@@ -172,7 +177,7 @@ class _DietContent extends StatelessWidget {
                                   fontWeight: FontWeight.w700)),
                           const SizedBox(height: 2),
                           Text(
-                            'Digite qualquer alimento ou tire uma foto',
+                            L.of(context).dieta_digiteQualquerAlimento,
                             style: AppTypography.bodySm
                                 .copyWith(color: AppColors.onSurface, fontSize: 12),
                           ),
@@ -217,7 +222,7 @@ class _DietContent extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text('CALORIAS DO DIA',
+                      Text(L.of(context).dieta_caloriasDoDia,
                           style: AppTypography.labelSm
                               .copyWith(letterSpacing: 2)),
                       const Spacer(),
@@ -229,7 +234,7 @@ class _DietContent extends StatelessWidget {
                             color: AppColors.primary,
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: Text('META +10 PTS',
+                          child: Text(L.of(context).dieta_metaPts,
                               style: AppTypography.labelSm.copyWith(
                                 color: AppColors.onPrimary,
                                 fontSize: 10,
@@ -278,28 +283,28 @@ class _DietContent extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('MACROS DO DIA',
+                Text(L.of(context).dieta_macrosDoDia,
                     style: AppTypography.labelSm
                         .copyWith(letterSpacing: 2, color: AppColors.onSurfaceVariant)),
                 const SizedBox(height: 14),
                 Row(
                   children: [
                     _MacroRing(
-                      label: 'PROTEÍNA',
+                      label: L.of(context).dieta_proteina,
                       current: data!.totalProtein,
                       goal: data!.goalProtein,
                       color: const Color(0xFF5B8DF6),
                     ),
                     const SizedBox(width: 12),
                     _MacroRing(
-                      label: 'CARBOIDRATO',
+                      label: L.of(context).dieta_carboidrato,
                       current: data!.totalCarbs,
                       goal: data!.goalCarbs,
                       color: AppColors.warning,
                     ),
                     const SizedBox(width: 12),
                     _MacroRing(
-                      label: 'GORDURA',
+                      label: L.of(context).dieta_gordura,
                       current: data!.totalFat,
                       goal: data!.goalFat,
                       color: const Color(0xFFFF6B6B),
@@ -331,7 +336,7 @@ class _DietContent extends StatelessWidget {
           // ── Refeições logadas ─────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Text('REFEIÇÕES DO DIA',
+            child: Text(L.of(context).dieta_refeicoesDoDia,
                 style: AppTypography.labelSm.copyWith(
                     letterSpacing: 2, color: AppColors.onSurfaceVariant)),
           ),
@@ -346,7 +351,7 @@ class _DietContent extends StatelessWidget {
                     const Icon(Icons.restaurant,
                         color: AppColors.onSurfaceVariant, size: 40),
                     const SizedBox(height: 12),
-                    Text('Nenhuma refeição registrada hoje',
+                    Text(L.of(context).dieta_nenhumaRefeicao,
                         style: AppTypography.bodyMd.copyWith(
                             color: AppColors.onSurfaceVariant)),
                   ],
@@ -403,13 +408,13 @@ class _WaterCard extends ConsumerWidget {
                   color: _accent, size: 20),
               const SizedBox(width: 10),
               Expanded(
-                child: Text('Não foi possível carregar a hidratação.',
+                child: Text(L.of(context).dieta_erroHidratacao,
                     style: AppTypography.bodySm
                         .copyWith(color: AppColors.onSurfaceVariant)),
               ),
               TextButton(
                 onPressed: () => ref.invalidate(waterControllerProvider),
-                child: const Text('Tentar'),
+                child: Text(L.of(context).comum_tentar),
               ),
             ],
           ),
@@ -420,7 +425,7 @@ class _WaterCard extends ConsumerWidget {
                 children: [
                   const Icon(Icons.water_drop, color: _accent, size: 18),
                   const SizedBox(width: 8),
-                  Text('HIDRATAÇÃO',
+                  Text(L.of(context).dieta_hidratacao,
                       style: AppTypography.labelSm
                           .copyWith(letterSpacing: 2)),
                   const Spacer(),
@@ -432,7 +437,7 @@ class _WaterCard extends ConsumerWidget {
                         color: _accent,
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: Text('META ✓',
+                      child: Text(L.of(context).dieta_metaOk,
                           style: AppTypography.labelSm.copyWith(
                               color: Colors.white, fontSize: 10)),
                     ),
@@ -483,23 +488,23 @@ class _WaterCard extends ConsumerWidget {
               ),
               if (w.goalMl > 0 && !w.goalMet) ...[
                 const SizedBox(height: 8),
-                Text('Faltam ${w.remainingMl} ml para a meta de hoje',
+                Text(L.of(context).dieta_faltamMl(w.remainingMl),
                     style: AppTypography.bodySm.copyWith(
                         color: AppColors.onSurfaceVariant, fontSize: 12)),
               ] else if (w.goalMl == 0) ...[
                 const SizedBox(height: 8),
-                Text('Defina seu peso no perfil para calcular a meta',
+                Text(L.of(context).dieta_definaPeso,
                     style: AppTypography.bodySm.copyWith(
                         color: AppColors.onSurfaceVariant, fontSize: 12)),
               ],
               const SizedBox(height: 16),
               Row(
                 children: [
-                  _addBtn(ref, 200, 'Copo'),
+                  _addBtn(ref, 200, L.of(context).dieta_copo),
                   const SizedBox(width: 8),
-                  _addBtn(ref, 350, 'Caneca'),
+                  _addBtn(ref, 350, L.of(context).dieta_caneca),
                   const SizedBox(width: 8),
-                  _addBtn(ref, 500, 'Garrafa'),
+                  _addBtn(ref, 500, L.of(context).dieta_garrafa),
                 ],
               ),
             ],
@@ -724,7 +729,7 @@ class _DietPlanSectionState extends ConsumerState<_DietPlanSection> {
         children: [
           Row(
             children: [
-              Text('PLANO DO DIA',
+              Text(L.of(context).dieta_planoDoDia,
                   style: AppTypography.labelSm.copyWith(
                       letterSpacing: 2, color: AppColors.onSurfaceVariant)),
               const Spacer(),
@@ -769,7 +774,7 @@ class _PlanToggle extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           _seg('IA', !manual, const Color(0xFF7C3AED), () => onChanged(false)),
-          _seg('MANUAL', manual, AppColors.primary, () => onChanged(true)),
+          _seg(L.of(context).dieta_manual, manual, AppColors.primary, () => onChanged(true)),
         ],
       ),
     );
@@ -824,11 +829,11 @@ class _CustomDietBody extends ConsumerWidget {
                 const Icon(Icons.edit_note,
                     color: AppColors.primary, size: 28),
                 const SizedBox(height: 8),
-                Text('Monte sua própria dieta',
+                Text(L.of(context).dieta_monteSuaDieta,
                     style: AppTypography.labelMd
                         .copyWith(fontWeight: FontWeight.w700)),
                 const SizedBox(height: 4),
-                Text('Adicione refeições e escolha os alimentos do banco',
+                Text(L.of(context).dieta_adicioneRefeicoes,
                     textAlign: TextAlign.center,
                     style: AppTypography.bodySm.copyWith(
                         color: AppColors.onSurfaceVariant, fontSize: 12)),
@@ -859,7 +864,7 @@ class _CustomDietBody extends ConsumerWidget {
               children: [
                 const Icon(Icons.add, color: AppColors.primary, size: 18),
                 const SizedBox(width: 8),
-                Text('ADICIONAR REFEIÇÃO',
+                Text(L.of(context).dieta_adicionarRefeicao,
                     style: AppTypography.labelSm.copyWith(
                         color: AppColors.primary,
                         letterSpacing: 1.5,
@@ -1018,7 +1023,7 @@ class _CustomMealCardState extends ConsumerState<_CustomMealCard> {
               padding: const EdgeInsets.all(14),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Nenhum alimento ainda',
+                child: Text(L.of(context).dieta_nenhumAlimento,
                     style: AppTypography.bodySm.copyWith(
                         color: AppColors.onSurfaceVariant, fontSize: 12)),
               ),
@@ -1059,7 +1064,7 @@ class _CustomMealCardState extends ConsumerState<_CustomMealCard> {
                               : AppColors.primary,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Text(done ? 'OK' : '+LOG',
+                        child: Text(done ? L.of(context).dieta_ok : L.of(context).dieta_log,
                             style: AppTypography.labelSm.copyWith(
                               fontSize: 9,
                               fontWeight: FontWeight.w700,
@@ -1090,7 +1095,7 @@ class _CustomMealCardState extends ConsumerState<_CustomMealCard> {
                   const Icon(Icons.add_circle_outline,
                       color: AppColors.primary, size: 16),
                   const SizedBox(width: 6),
-                  Text('ADICIONAR ALIMENTO',
+                  Text(L.of(context).dieta_adicionarAlimento,
                       style: AppTypography.labelSm.copyWith(
                           color: AppColors.primary,
                           fontSize: 10,
@@ -1118,10 +1123,13 @@ class _AddMealSheet extends StatefulWidget {
 class _AddMealSheetState extends State<_AddMealSheet> {
   final _ctrl = TextEditingController();
 
-  static const _presets = [
-    'Café da Manhã', 'Lanche da Manhã', 'Almoço', 'Lanche da Tarde',
-    'Jantar', 'Ceia', 'Pré-treino', 'Pós-treino',
-  ];
+  // Sugestões de refeição: método em vez de const porque precisam do L — um
+  // const aqui deixaria os nomes em português para sempre.
+  List<String> _presets(L l) => [
+        l.dieta_refCafeManha, l.dieta_refLancheManha, l.dieta_refAlmoco,
+        l.dieta_refLancheTarde, l.dieta_refJantar, l.dieta_refCeia,
+        l.dieta_refPreTreino, l.dieta_refPosTreino,
+      ];
 
   @override
   void dispose() {
@@ -1149,14 +1157,14 @@ class _AddMealSheetState extends State<_AddMealSheet> {
                 ),
               ),
             ),
-            Text('NOVA REFEIÇÃO',
+            Text(L.of(context).dieta_novaRefeicao,
                 style: AppTypography.headlineSm
                     .copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 16),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: _presets
+              children: _presets(L.of(context))
                   .map((p) => GestureDetector(
                         onTap: () => widget.onConfirm(p),
                         child: Container(
@@ -1174,7 +1182,7 @@ class _AddMealSheetState extends State<_AddMealSheet> {
                   .toList(),
             ),
             const SizedBox(height: 18),
-            Text('OU PERSONALIZE',
+            Text(L.of(context).dieta_ouPersonalize,
                 style: AppTypography.labelSm.copyWith(
                     letterSpacing: 1.5,
                     fontSize: 9,
@@ -1191,7 +1199,7 @@ class _AddMealSheetState extends State<_AddMealSheet> {
                       if (t.trim().isNotEmpty) widget.onConfirm(t.trim());
                     },
                     decoration: InputDecoration(
-                      hintText: 'Nome da refeição',
+                      hintText: L.of(context).dieta_nomeDaRefeicao,
                       hintStyle: AppTypography.bodyMd
                           .copyWith(color: AppColors.onSurfaceVariant),
                       filled: true,
@@ -1293,7 +1301,7 @@ class _AddFoodSheetState extends State<_AddFoodSheet> {
                 ),
               ),
             ),
-            Text('ADICIONAR ALIMENTO',
+            Text(L.of(context).dieta_adicionarAlimento,
                 style: AppTypography.headlineSm
                     .copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 16),
@@ -1305,7 +1313,7 @@ class _AddFoodSheetState extends State<_AddFoodSheet> {
                 _selected = null;
               }),
               decoration: InputDecoration(
-                hintText: 'Buscar no banco de alimentos',
+                hintText: L.of(context).dieta_buscarNoBanco,
                 hintStyle: AppTypography.bodyMd
                     .copyWith(color: AppColors.onSurfaceVariant),
                 prefixIcon: const Icon(Icons.search,
@@ -1400,7 +1408,7 @@ class _AddFoodSheetState extends State<_AddFoodSheet> {
                                     decimal: true),
                             onChanged: (_) => setState(() {}),
                             decoration: InputDecoration(
-                              labelText: 'Peso',
+                              labelText: L.of(context).dieta_pesoLabel,
                               suffixText: 'g',
                               isDense: true,
                               filled: true,
@@ -1464,7 +1472,7 @@ class _AddFoodSheetState extends State<_AddFoodSheet> {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14)),
                   ),
-                  child: Text('ADICIONAR À REFEIÇÃO',
+                  child: Text(L.of(context).dieta_adicionarARefeicao,
                       style: AppTypography.labelMd.copyWith(
                           color: AppColors.onPrimary,
                           fontWeight: FontWeight.w700)),
@@ -1509,12 +1517,17 @@ class _AiDietBody extends ConsumerWidget {
             Align(
               alignment: Alignment.centerRight,
               child: GestureDetector(
-                onTap: () => ref
-                    .read(aiDietPlanProvider.notifier)
-                    .generate(goalCalories, goalType,
+                onTap: () => _gerarPlanoComCota(
+                  context,
+                  ref,
+                  () => ref.read(aiDietPlanProvider.notifier).generate(
+                        goalCalories,
+                        goalType,
                         goalProtein: goalProtein,
                         goalCarbs: goalCarbs,
-                        goalFat: goalFat),
+                        goalFat: goalFat,
+                      ),
+                ),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 4),
@@ -1530,7 +1543,7 @@ class _AiDietBody extends ConsumerWidget {
                       const Icon(Icons.refresh,
                           color: Color(0xFF7C3AED), size: 12),
                       const SizedBox(width: 4),
-                      Text('REGENERAR',
+                      Text(L.of(context).dieta_regenerar,
                           style: AppTypography.labelSm.copyWith(
                             color: Color(0xFF7C3AED),
                             fontSize: 9,
@@ -1555,12 +1568,12 @@ class _AiDietBody extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: AppColors.surfaceContainerHigh),
               ),
-              child: const Column(
+              child: Column(
                 children: [
-                  CircularProgressIndicator(
+                  const CircularProgressIndicator(
                       color: Color(0xFF7C3AED), strokeWidth: 2.5),
-                  SizedBox(height: 14),
-                  Text('Gerando seu plano personalizado...',
+                  const SizedBox(height: 14),
+                  Text(L.of(context).dieta_gerandoPlano,
                       style: TextStyle(
                           color: AppColors.onSurfaceVariant, fontSize: 13)),
                 ],
@@ -1577,9 +1590,13 @@ class _AiDietBody extends ConsumerWidget {
           // Sem plano → botão de gerar
           else if (planState.plan == null)
             GestureDetector(
-              onTap: () => ref
-                  .read(aiDietPlanProvider.notifier)
-                  .generate(goalCalories, goalType),
+              onTap: () => _gerarPlanoComCota(
+                context,
+                ref,
+                () => ref
+                    .read(aiDietPlanProvider.notifier)
+                    .generate(goalCalories, goalType),
+              ),
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 18),
@@ -1607,7 +1624,7 @@ class _AiDietBody extends ConsumerWidget {
                           color: Color(0xFF7C3AED), size: 24),
                     ),
                     const SizedBox(height: 12),
-                    Text('GERAR PLANO DO DIA',
+                    Text(L.of(context).dieta_gerarPlano,
                         style: AppTypography.labelSm.copyWith(
                           color: Color(0xFF7C3AED),
                           letterSpacing: 1.5,
@@ -1615,7 +1632,7 @@ class _AiDietBody extends ConsumerWidget {
                         )),
                     const SizedBox(height: 4),
                     Text(
-                      'A IA cria uma dieta personalizada para ${goalCalories} kcal',
+                      L.of(context).dieta_iaCriaDieta(goalCalories),
                       style: AppTypography.bodySm.copyWith(
                           color: AppColors.onSurfaceVariant, fontSize: 12),
                     ),
@@ -1684,7 +1701,7 @@ class _PlanMacroSummary extends StatelessWidget {
                   color: AppColors.onSurface, fontWeight: FontWeight.w500),
             ),
           ),
-          Text('META ${plan.targetCalories} kcal',
+          Text(L.of(context).dieta_metaKcal(plan.targetCalories),
               style: AppTypography.labelSm.copyWith(
                   fontSize: 9,
                   color: AppColors.onSurfaceVariant)),
@@ -1822,19 +1839,19 @@ class _PlanMealCardState extends State<_PlanMealCard> {
                               Row(
                                 children: [
                                   _MacroPill(
-                                      label: 'Prot',
+                                      label: L.of(context).dieta_protAbrev,
                                       value:
                                           '${food.protein.toStringAsFixed(1)}g',
                                       color: const Color(0xFF5B8DF6)),
                                   const SizedBox(width: 6),
                                   _MacroPill(
-                                      label: 'Carb',
+                                      label: L.of(context).dieta_carbAbrev,
                                       value:
                                           '${food.carbs.toStringAsFixed(1)}g',
                                       color: AppColors.warning),
                                   const SizedBox(width: 6),
                                   _MacroPill(
-                                      label: 'Gord',
+                                      label: L.of(context).dieta_gordAbrev,
                                       value:
                                           '${food.fat.toStringAsFixed(1)}g',
                                       color: const Color(0xFFFF6B6B)),
@@ -1863,7 +1880,7 @@ class _PlanMealCardState extends State<_PlanMealCard> {
                                   color: AppColors.surfaceContainerHigh,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: Text('ALTERAR',
+                                child: Text(L.of(context).dieta_alterar,
                                     style: AppTypography.labelSm.copyWith(
                                         fontSize: 9,
                                         fontWeight: FontWeight.w700,
@@ -2082,7 +2099,7 @@ class _SwapFoodSheetState extends State<_SwapFoodSheet> {
             ),
             const SizedBox(height: 20),
 
-            Text('ALTERAR ALIMENTO',
+            Text(L.of(context).dieta_alterarAlimento,
                 style: AppTypography.headlineMd),
             const SizedBox(height: 4),
             Text(widget.food.name,
@@ -2104,15 +2121,15 @@ class _SwapFoodSheetState extends State<_SwapFoodSheet> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _SwapMacroItem(
-                      label: 'Prot',
+                      label: L.of(context).dieta_protAbrev,
                       value: '${p.protein.toStringAsFixed(1)}g',
                       color: const Color(0xFF5B8DF6)),
                   _SwapMacroItem(
-                      label: 'Carb',
+                      label: L.of(context).dieta_carbAbrev,
                       value: '${p.carbs.toStringAsFixed(1)}g',
                       color: AppColors.warning),
                   _SwapMacroItem(
-                      label: 'Gord',
+                      label: L.of(context).dieta_gordAbrev,
                       value: '${p.fat.toStringAsFixed(1)}g',
                       color: const Color(0xFFFF6B6B)),
                   _SwapMacroItem(
@@ -2131,7 +2148,7 @@ class _SwapFoodSheetState extends State<_SwapFoodSheet> {
                 const Icon(Icons.tune_rounded,
                     size: 14, color: AppColors.primary),
                 const SizedBox(width: 6),
-                Text('AJUSTAR PESO',
+                Text(L.of(context).dieta_ajustarPeso,
                     style: AppTypography.labelSm
                         .copyWith(letterSpacing: 1.5, fontSize: 10)),
                 const Spacer(),
@@ -2180,7 +2197,7 @@ class _SwapFoodSheetState extends State<_SwapFoodSheet> {
                     const SizedBox(width: 5),
                     Expanded(
                       child: Text(
-                        'Peso recalculado para manter ~${widget.food.calories} kcal do alimento original',
+                        L.of(context).dieta_pesoRecalculado(widget.food.calories),
                         style: AppTypography.bodySm.copyWith(
                           color: const Color(0xFF7C3AED),
                           fontWeight: FontWeight.w500,
@@ -2200,7 +2217,7 @@ class _SwapFoodSheetState extends State<_SwapFoodSheet> {
                 const Icon(Icons.swap_horiz,
                     size: 14, color: AppColors.onSurfaceVariant),
                 const SizedBox(width: 6),
-                Text('TROCAR ALIMENTO',
+                Text(L.of(context).dieta_trocarAlimento,
                     style: AppTypography.labelSm.copyWith(
                         letterSpacing: 1.5,
                         fontSize: 10,
@@ -2213,7 +2230,7 @@ class _SwapFoodSheetState extends State<_SwapFoodSheet> {
                       _searchCtrl.clear();
                       _results = [];
                     }),
-                    child: Text('limpar',
+                    child: Text(L.of(context).comum_limpar,
                         style: AppTypography.bodySm.copyWith(
                             fontSize: 11,
                             color: AppColors.error,
@@ -2261,7 +2278,7 @@ class _SwapFoodSheetState extends State<_SwapFoodSheet> {
                   style: AppTypography.bodyMd,
                   onChanged: _onSearch,
                   decoration: InputDecoration(
-                    hintText: 'Buscar alternativa...',
+                    hintText: L.of(context).dieta_buscarAlternativa,
                     hintStyle: AppTypography.bodyMd
                         .copyWith(color: AppColors.onSurfaceVariant),
                     prefixIcon: const Icon(Icons.search,
@@ -2338,7 +2355,7 @@ class _SwapFoodSheetState extends State<_SwapFoodSheet> {
                       borderRadius: BorderRadius.circular(14)),
                   elevation: 0,
                 ),
-                child: Text('CONFIRMAR',
+                child: Text(L.of(context).dieta_confirmar,
                     style: AppTypography.labelMd.copyWith(
                         color: AppColors.onPrimary,
                         fontWeight: FontWeight.w700,
@@ -2516,7 +2533,7 @@ class _EmptyDiet extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('IA ATIVA · GROQ',
+                      Text(L.of(context).dieta_iaAtivaGroq,
                           style: TextStyle(
                             color: Color(0xFF7C3AED),
                             fontSize: 10,
@@ -2525,7 +2542,7 @@ class _EmptyDiet extends StatelessWidget {
                           )),
                       const SizedBox(height: 2),
                       Text(
-                        'Calcule macros de qualquer alimento ou tire uma foto',
+                        L.of(context).dieta_calculeMacros,
                         style: AppTypography.bodySm.copyWith(
                             color: AppColors.onSurface, fontSize: 12),
                       ),
@@ -2547,7 +2564,7 @@ class _EmptyDiet extends StatelessWidget {
                 color: AppColors.onSurfaceVariant, size: 36),
           ),
           const SizedBox(height: 16),
-          Text('Configure sua meta calórica no perfil',
+          Text(L.of(context).dieta_configureMeta,
               style: AppTypography.bodyMd),
           const SizedBox(height: 24),
           SizedBox(
@@ -2555,7 +2572,7 @@ class _EmptyDiet extends StatelessWidget {
             child: ElevatedButton.icon(
               onPressed: onAdd,
               icon: const Icon(Icons.add, size: 18),
-              label: const Text('REGISTRAR REFEIÇÃO'),
+              label: Text(L.of(context).dieta_registrarRefeicao),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.onPrimary,
@@ -2665,7 +2682,15 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
     final desc = _aiCtrl.text.trim();
     if (desc.isEmpty) return;
     if (!GroqConfig.isConfigured) {
-      setState(() => _aiError = 'Sessão expirada. Faça login novamente.');
+      setState(() => _aiError = L.of(context).dieta_sessaoExpirada);
+      return;
+    }
+    if (!await ref
+        .read(cotaIaControllerProvider)
+        .podeUsar(RecursoIa.macrosTexto)) {
+      if (mounted) {
+        await LimiteAtingidoSheet.mostrar(context, RecursoIa.macrosTexto);
+      }
       return;
     }
     setState(() {
@@ -2676,12 +2701,17 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
     });
     try {
       final result = await GroqService.calculateFoodMacros(desc);
+      // Só conta depois que deu certo: cobrar a cota numa queda de rede
+      // gastaria o uso do dia sem entregar nada.
+      await ref
+          .read(cotaIaControllerProvider)
+          .registrarUso(RecursoIa.macrosTexto);
       if (mounted) setState(() => _aiResult = result);
     } catch (e) {
       if (mounted) {
         final msg = e.toString().replaceFirst('Exception: ', '');
         setState(() => _aiError =
-            msg.isNotEmpty ? msg : 'Não foi possível calcular. Tente novamente.');
+            msg.isNotEmpty ? msg : L.of(context).dieta_naoFoiPossivelCalcular);
       }
     } finally {
       if (mounted) setState(() => _aiLoading = false);
@@ -2696,7 +2726,15 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
     final bytes = await xfile.readAsBytes();
     if (!GroqConfig.isConfigured) {
       setState(
-          () => _photoError = 'Sessão expirada. Faça login novamente.');
+          () => _photoError = L.of(context).dieta_sessaoExpirada);
+      return;
+    }
+    if (!await ref
+        .read(cotaIaControllerProvider)
+        .podeUsar(RecursoIa.fotoRefeicao)) {
+      if (mounted) {
+        await LimiteAtingidoSheet.mostrar(context, RecursoIa.fotoRefeicao);
+      }
       return;
     }
     setState(() {
@@ -2716,6 +2754,13 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
         handLengthCm: cal?.lengthCm,
         handWidthCm: cal?.widthCm,
       );
+      // Resposta com 'error' é a IA dizendo que não reconheceu a foto —
+      // não entregou valor, então não consome a foto do dia.
+      if (!result.containsKey('error')) {
+        await ref
+            .read(cotaIaControllerProvider)
+            .registrarUso(RecursoIa.fotoRefeicao);
+      }
       if (mounted) {
         if (result.containsKey('error')) {
           setState(() => _photoError = result['error'] as String);
@@ -2754,13 +2799,13 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
             const Icon(Icons.check_circle, color: AppColors.primary, size: 15),
             const SizedBox(width: 8),
             Expanded(
-              child: Text('IA calibrada pela sua mão',
+              child: Text(L.of(context).dieta_iaCalibrada,
                   style: AppTypography.bodySm.copyWith(
                       color: AppColors.primary, fontSize: 12)),
             ),
             GestureDetector(
               onTap: () => context.push('/calibrate'),
-              child: Text('recalibrar',
+              child: Text(L.of(context).dieta_recalibrar,
                   style: AppTypography.labelSm.copyWith(
                       color: AppColors.onSurfaceVariant,
                       fontSize: 10,
@@ -2786,7 +2831,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Calibrar a IA com uma moeda deixa a análise mais precisa',
+                L.of(context).dieta_calibrarMoeda,
                 style: AppTypography.bodySm
                     .copyWith(color: accent, fontSize: 12),
               ),
@@ -2812,7 +2857,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
       final base = (_aiResult!['weight_g'] as num?)?.toDouble() ?? 100;
       final ratio = base > 0 ? (_aiAdjustedWeight ?? base) / base : 1.0;
       return {
-        'meal_name': _aiResult!['name'] ?? 'Alimento',
+        'meal_name': _aiResult!['name'] ?? L.of(context).dieta_alimentoGenerico,
         'calories': ((_aiResult!['calories'] as num) * ratio).round(),
         'protein':
             ((_aiResult!['protein'] as num) * ratio * 10).round() / 10,
@@ -2826,7 +2871,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
       final w = _adjustedWeight ?? aiWeight;
       final ratio = aiWeight > 0 ? w / aiWeight : 1.0;
       return {
-        'meal_name': _photoResult!['name'] ?? 'Alimento (foto)',
+        'meal_name': _photoResult!['name'] ?? L.of(context).dieta_alimentoFoto,
         'calories': ((_photoResult!['calories'] as num) * ratio).round(),
         'protein': ((_photoResult!['protein'] as num) * ratio * 10).round() /
             10,
@@ -2872,7 +2917,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
           ),
           const SizedBox(height: 20),
 
-          Text('REGISTRAR REFEIÇÃO', style: AppTypography.headlineMd),
+          Text(L.of(context).dieta_registrarRefeicao, style: AppTypography.headlineMd),
           const SizedBox(height: 16),
 
           // Seletor de modo
@@ -2885,7 +2930,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
             child: Row(
               children: [
                 _ModeTab(
-                  label: 'BANCO',
+                  label: L.of(context).dieta_banco,
                   icon: Icons.search,
                   selected: _mode == _MealInputMode.banco,
                   onTap: () => setState(() => _mode = _MealInputMode.banco),
@@ -2898,7 +2943,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
                   accentColor: const Color(0xFF7C3AED),
                 ),
                 _ModeTab(
-                  label: 'FOTO',
+                  label: L.of(context).dieta_foto,
                   icon: Icons.camera_alt_outlined,
                   selected: _mode == _MealInputMode.foto,
                   onTap: () => setState(() => _mode = _MealInputMode.foto),
@@ -2937,8 +2982,8 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
                           strokeWidth: 2.5, color: AppColors.onPrimary))
                   : Text(
                       _activeMeal != null
-                          ? 'ADICIONAR  •  ${_activeMeal!['calories']} kcal'
-                          : 'ADICIONAR REFEIÇÃO',
+                          ? L.of(context).dieta_adicionarKcal(_activeMeal!['calories'] as Object)
+                          : L.of(context).dieta_adicionarRefeicao,
                       style: AppTypography.labelMd.copyWith(
                         color: AppColors.onPrimary,
                         fontSize: 14,
@@ -2958,7 +3003,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _StepLabel(number: '1', label: 'ALIMENTO'),
+        _StepLabel(number: '1', label: L.of(context).dieta_alimento),
         const SizedBox(height: 10),
 
         if (_selected == null) ...[
@@ -2974,7 +3019,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
               autofocus: _mode == _MealInputMode.banco,
               onChanged: _onSearchChanged,
               decoration: InputDecoration(
-                hintText: 'Ex: frango, arroz, aveia...',
+                hintText: L.of(context).dieta_exBusca,
                 hintStyle: AppTypography.bodyMd
                     .copyWith(color: AppColors.onSurfaceVariant),
                 prefixIcon: const Icon(Icons.search,
@@ -3036,7 +3081,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
                   const Icon(Icons.search_off,
                       color: AppColors.onSurfaceVariant, size: 18),
                   const SizedBox(width: 10),
-                  Text('Nenhum alimento encontrado',
+                  Text(L.of(context).dieta_nenhumEncontrado,
                       style: AppTypography.bodySm),
                 ],
               ),
@@ -3074,7 +3119,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
                             color: AppColors.primary,
                           )),
                       Text(
-                        'Por 100g: ${_selected!.kcalPer100g.toInt()} kcal  '
+                        '${L.of(context).dieta_por100g} \${_selected!.kcalPer100g.toInt()} kcal  '
                         'P ${_selected!.proteinPer100g}g  '
                         'C ${_selected!.carbsPer100g}g  '
                         'G ${_selected!.fatPer100g}g',
@@ -3094,7 +3139,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
         ],
 
         const SizedBox(height: 16),
-        _StepLabel(number: '2', label: 'PESO (gramas)'),
+        _StepLabel(number: '2', label: L.of(context).dieta_pesoGramas),
         const SizedBox(height: 10),
 
         Row(
@@ -3180,7 +3225,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
 
         if (_preview != null) ...[
           const SizedBox(height: 16),
-          _StepLabel(number: '3', label: 'RESULTADO CALCULADO'),
+          _StepLabel(number: '3', label: L.of(context).dieta_resultadoCalculado),
           const SizedBox(height: 10),
           _NutritionPreview(
             name: _preview!.foodName,
@@ -3214,9 +3259,13 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
               ),
             ),
             const SizedBox(width: 8),
-            Text('DESCREVA O ALIMENTO',
+            Text(L.of(context).dieta_descrevaAlimento,
                 style:
                     AppTypography.labelSm.copyWith(letterSpacing: 2)),
+            const Spacer(),
+            // Saldo à vista ANTES de gastar: a pessoa decide se usa agora ou
+            // guarda. Limite sem contador visível é armadilha.
+            const _SeloDeCotaAsync(recurso: RecursoIa.macrosTexto),
           ],
         ),
         const SizedBox(height: 10),
@@ -3227,9 +3276,13 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
           maxLines: 3,
           minLines: 1,
           textCapitalization: TextCapitalization.sentences,
+          // Sem isto o widget não reconstrói ao digitar, e o botão CALCULAR
+          // MACROS — que lê _aiCtrl.text — continuava desabilitado até algo
+          // mais forçar rebuild (sair e voltar ao campo, por exemplo).
+          onChanged: (_) => setState(() {}),
           decoration: InputDecoration(
             hintText:
-                'Ex: "200g de frango grelhado"\n"arroz integral com feijão"',
+                L.of(context).dieta_exemploDescricao,
             hintStyle: AppTypography.bodyMd.copyWith(
                 color: AppColors.onSurfaceVariant, fontSize: 13),
             filled: true,
@@ -3270,7 +3323,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
                         strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.bolt, size: 16),
             label: Text(
-                _aiLoading ? 'CALCULANDO...' : 'CALCULAR MACROS',
+                _aiLoading ? L.of(context).dieta_calculando : L.of(context).dieta_calcularMacros,
                 style: AppTypography.labelSm
                     .copyWith(fontWeight: FontWeight.w700, fontSize: 12)),
             style: ElevatedButton.styleFrom(
@@ -3301,7 +3354,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _NutritionPreview(
-                  name: _aiResult!['name'] as String? ?? 'Alimento',
+                  name: _aiResult!['name'] as String? ?? L.of(context).dieta_alimentoGenerico,
                   weightG: w,
                   calories:
                       ((_aiResult!['calories'] as num) * ratio).round(),
@@ -3330,7 +3383,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
                           const Icon(Icons.tune,
                               size: 14, color: AppColors.onSurfaceVariant),
                           const SizedBox(width: 6),
-                          Text('AJUSTAR PESO',
+                          Text(L.of(context).dieta_ajustarPeso,
                               style: AppTypography.labelSm.copyWith(
                                   fontSize: 10, letterSpacing: 1.5)),
                           const Spacer(),
@@ -3343,7 +3396,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
                             GestureDetector(
                               onTap: () => setState(
                                   () => _aiAdjustedWeight = null),
-                              child: Text('resetar',
+                              child: Text(L.of(context).dieta_resetar,
                                   style: AppTypography.bodySm.copyWith(
                                       color: AppColors.onSurfaceVariant,
                                       fontSize: 11,
@@ -3403,9 +3456,11 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
               ),
             ),
             const SizedBox(width: 8),
-            Text('FOTO DO ALIMENTO',
+            Text(L.of(context).dieta_fotoDoAlimento,
                 style:
                     AppTypography.labelSm.copyWith(letterSpacing: 2)),
+            const Spacer(),
+            const _SeloDeCotaAsync(recurso: RecursoIa.fotoRefeicao),
           ],
         ),
         const SizedBox(height: 12),
@@ -3415,7 +3470,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
         const SizedBox(height: 12),
 
         if (_photoBytes == null) ...[
-          Text('TAMANHO DA PORÇÃO (opcional)',
+          Text(L.of(context).dieta_tamanhoPorcao,
               style: AppTypography.labelSm.copyWith(
                   fontSize: 10,
                   color: AppColors.onSurfaceVariant,
@@ -3424,10 +3479,10 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
           Row(
             children: [
               for (final p in [
-                ('PEQUENA', 'pequena'),
-                ('MÉDIA', 'media'),
-                ('GRANDE', 'grande'),
-                ('PRATO', 'prato_cheio'),
+                (L.of(context).dieta_porcaoPequena, 'pequena'),
+                (L.of(context).dieta_porcaoMedia, 'media'),
+                (L.of(context).dieta_porcaoGrande, 'grande'),
+                (L.of(context).dieta_porcaoPrato, 'prato_cheio'),
               ]) ...[
                 Expanded(
                   child: GestureDetector(
@@ -3474,7 +3529,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
               Expanded(
                 child: _PhotoButton(
                   icon: Icons.camera_alt_outlined,
-                  label: 'CÂMERA',
+                  label: L.of(context).dieta_camera,
                   onTap: () => _pickImage(ImageSource.camera),
                 ),
               ),
@@ -3482,7 +3537,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
               Expanded(
                 child: _PhotoButton(
                   icon: Icons.photo_library_outlined,
-                  label: 'GALERIA',
+                  label: L.of(context).dieta_galeria,
                   onTap: () => _pickImage(ImageSource.gallery),
                 ),
               ),
@@ -3505,7 +3560,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Dica: coloque um garfo, colher ou a mão perto do alimento para melhor estimativa de peso.',
+                    L.of(context).dieta_dicaGarfo,
                     style: AppTypography.bodySm.copyWith(
                         color: AppColors.onSurfaceVariant, fontSize: 12),
                   ),
@@ -3553,13 +3608,13 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
                       color: Colors.black.withOpacity(0.5),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Column(
+                    child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        CircularProgressIndicator(
+                        const CircularProgressIndicator(
                             color: AppColors.primary, strokeWidth: 2),
-                        SizedBox(height: 10),
-                        Text('Analisando...',
+                        const SizedBox(height: 10),
+                        Text(L.of(context).dieta_analisando,
                             style: TextStyle(
                                 color: Colors.white, fontSize: 13)),
                       ],
@@ -3588,7 +3643,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
               children: [
                 _NutritionPreview(
                   name: _photoResult!['name'] as String? ??
-                      'Alimento (foto)',
+                      L.of(context).dieta_alimentoFoto,
                   weightG: w,
                   calories:
                       ((_photoResult!['calories'] as num) * ratio).round(),
@@ -3602,7 +3657,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
                       ((_photoResult!['fat'] as num) * ratio * 10).round() /
                           10,
                   isAi: true,
-                  aiLabel: 'VISÃO IA',
+                  aiLabel: L.of(context).dieta_visaoIa,
                 ),
                 const SizedBox(height: 14),
                 Container(
@@ -3621,7 +3676,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
                           const Icon(Icons.tune_rounded,
                               size: 14, color: AppColors.primary),
                           const SizedBox(width: 6),
-                          Text('AJUSTAR PESO',
+                          Text(L.of(context).dieta_ajustarPeso,
                               style: AppTypography.labelSm.copyWith(
                                   fontSize: 10, letterSpacing: 1.5)),
                           const Spacer(),
@@ -3634,7 +3689,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
                             GestureDetector(
                               onTap: () =>
                                   setState(() => _adjustedWeight = null),
-                              child: Text('resetar',
+                              child: Text(L.of(context).dieta_resetar,
                                   style: AppTypography.bodySm.copyWith(
                                       color: AppColors.onSurfaceVariant,
                                       fontSize: 11,
@@ -3960,28 +4015,48 @@ class _NutritionPreview extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _PreviewMacro(
-                  label: 'CALORIAS',
+                  label: L.of(context).dieta_calorias,
                   value: '$calories',
                   unit: 'kcal',
                   color: AppColors.primary,
                   big: true),
               _PreviewMacro(
-                  label: 'PROTEÍNA',
+                  label: L.of(context).dieta_proteina,
                   value: protein.toStringAsFixed(1),
                   unit: 'g',
                   color: const Color(0xFF5B8DF6)),
               _PreviewMacro(
-                  label: 'CARBO',
+                  label: L.of(context).dieta_carbo,
                   value: carbs.toStringAsFixed(1),
                   unit: 'g',
                   color: AppColors.warning),
               _PreviewMacro(
-                  label: 'GORDURA',
+                  label: L.of(context).dieta_gordura,
                   value: fat.toStringAsFixed(1),
                   unit: 'g',
                   color: const Color(0xFFFF6B6B)),
             ],
           ),
+          // Disclaimer obrigatório sempre que o valor vier de IA —
+          // política de apps de saúde do Google Play + restrição do CFN
+          // (o app estima, não faz avaliação nutricional).
+          if (isAi) ...[
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.info_outline,
+                    color: AppColors.onSurfaceVariant, size: 13),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    LegalTexts.nutritionDisclaimer,
+                    style: AppTypography.bodySm.copyWith(fontSize: 10),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -4034,5 +4109,50 @@ class _PreviewMacro extends StatelessWidget {
                 .copyWith(fontSize: 9, letterSpacing: 0.5)),
       ],
     );
+  }
+}
+
+// ── Cota de IA ───────────────────────────────────────────────────────────────
+
+/// Verifica a cota antes de gerar o plano e registra o uso depois.
+///
+/// Fica aqui, na tela, e não dentro do `AiDietPlanNotifier`: o notifier gera
+/// dieta, não sabe o que é assinatura. Misturar as duas coisas faria o teste
+/// do gerador precisar de estado de cobrança.
+Future<void> _gerarPlanoComCota(
+  BuildContext context,
+  WidgetRef ref,
+  Future<void> Function() gerar,
+) async {
+  final controller = ref.read(cotaIaControllerProvider);
+  if (!await controller.podeUsar(RecursoIa.planoDieta)) {
+    if (context.mounted) {
+      await LimiteAtingidoSheet.mostrar(context, RecursoIa.planoDieta);
+    }
+    return;
+  }
+  await gerar();
+  // O notifier engole a exceção e guarda o erro no estado, então o sucesso é
+  // "sobrou um plano no fim". Sem isso, uma geração que falhou consumiria a
+  // única do dia.
+  if (ref.read(aiDietPlanProvider).plan != null) {
+    await controller.registrarUso(RecursoIa.planoDieta);
+  }
+}
+
+/// [SeloDeCota] resolvendo o provider sozinho.
+///
+/// Enquanto carrega não mostra nada: um "0 de 3" piscando antes do valor real
+/// assusta à toa.
+class _SeloDeCotaAsync extends ConsumerWidget {
+  final RecursoIa recurso;
+  const _SeloDeCotaAsync({required this.recurso});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ref.watch(saldoDeCotaProvider(recurso)).maybeWhen(
+          data: (s) => SeloDeCota(saldo: s),
+          orElse: () => const SizedBox.shrink(),
+        );
   }
 }

@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/legal/legal_texts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/groq/groq_config.dart';
@@ -11,12 +14,89 @@ import '../../data/models/workout_template_model.dart';
 import '../../data/repositories/workout_template_repository.dart';
 import '../../data/datasources/exercise_library.dart';
 import '../providers/workout_template_provider.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../../subscription/data/models/cota_ia.dart';
+import '../../../subscription/presentation/providers/cota_ia_provider.dart';
+import '../../../subscription/presentation/widgets/limite_atingido_sheet.dart';
 
-class WorkoutPage extends ConsumerWidget {
+// O grupo muscular é chave da ExerciseLibrary e vai no prompt da IA, então o
+// valor guardado continua em português; só o rótulo na tela é traduzido.
+String _grupoLabel(String g, L l) => switch (g) {
+      'Peito' => l.grupo_peito,
+      'Costas' => l.grupo_costas,
+      'Ombros' => l.grupo_ombros,
+      'Bíceps' => l.grupo_biceps,
+      'Tríceps' => l.grupo_triceps,
+      'Pernas' => l.grupo_pernas,
+      'Glúteos' => l.grupo_gluteos,
+      'Core' => l.grupo_core,
+      'Full Body' => l.grupo_fullBody,
+      _ => g,
+    };
+
+
+class WorkoutPage extends ConsumerStatefulWidget {
   const WorkoutPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WorkoutPage> createState() => _WorkoutPageState();
+}
+
+class _WorkoutPageState extends ConsumerState<WorkoutPage> {
+  /// Modo de reordenação. Fora dele a lista é comum — arrastar sem querer num
+  /// card cheio de botões seria fácil demais.
+  bool _reordenando = false;
+
+  /// Ordem local enquanto arrasta. O provider só é invalidado ao sair do modo,
+  /// senão cada arrasto recarregaria a lista e ela pularia sob o dedo.
+  List<WorkoutTemplateModel>? _ordemLocal;
+
+  Future<void> _aoReordenar(int de, int para) async {
+    final lista = List<WorkoutTemplateModel>.from(_ordemLocal!);
+    // O ReorderableListView entrega o índice de destino já contando o item
+    // removido quando se arrasta para baixo.
+    if (para > de) para -= 1;
+    lista.insert(para, lista.removeAt(de));
+    setState(() => _ordemLocal = lista);
+
+    try {
+      await ref
+          .read(workoutTemplateRepositoryProvider)
+          .reorderTemplates(lista.map((t) => t.id).toList());
+    } catch (_) {
+      if (mounted) {
+        MkSnack.error(context, L.of(context).treino_naoFoiPossivelSalvarOrdem);
+        // Volta ao que o servidor tem, para a tela não mentir.
+        setState(() => _ordemLocal = null);
+        ref.invalidate(workoutTemplatesProvider);
+      }
+    }
+  }
+
+  /// Recarrega a listagem E os exercícios exibidos em cada card.
+  ///
+  /// São dois providers distintos: o card observa `templateExercisesProvider`,
+  /// que NÃO é invalidado junto com `workoutTemplatesProvider`. Invalidar só o
+  /// segundo fazia o card seguir mostrando a lista anterior — foi por isso que
+  /// reordenar exercícios parecia "não salvar", com o banco já correto.
+  ///
+  /// Vale também para concluir treino, que atualiza as cargas em
+  /// `template_exercises`: sem isto o card mostraria os pesos antigos.
+  void _recarregarTreinos() {
+    ref.invalidate(workoutTemplatesProvider);
+    ref.invalidate(templateExercisesProvider);
+  }
+
+  void _alternarReordenacao(List<WorkoutTemplateModel> atual) {
+    setState(() {
+      _reordenando = !_reordenando;
+      _ordemLocal = _reordenando ? List.of(atual) : null;
+    });
+    if (!_reordenando) ref.invalidate(workoutTemplatesProvider);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final templates = ref.watch(workoutTemplatesProvider);
 
     return Scaffold(
@@ -34,12 +114,12 @@ class WorkoutPage extends ConsumerWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('MISSÕES',
+                      Text(L.of(context).treino_missoes,
                           style: AppTypography.labelSm.copyWith(
                             letterSpacing: 2,
                             color: AppColors.onSurfaceVariant,
                           )),
-                      Text('TREINO',
+                      Text(L.of(context).treino_treinoUp,
                           style: AppTypography.headlineLg.copyWith(
                             fontSize: 28,
                             fontWeight: FontWeight.w700,
@@ -47,6 +127,35 @@ class WorkoutPage extends ConsumerWidget {
                     ],
                   ),
                   const Spacer(),
+                  // Botão reordenar — só faz sentido com 2+ treinos
+                  if ((templates.valueOrNull?.length ?? 0) > 1)
+                    GestureDetector(
+                      onTap: () =>
+                          _alternarReordenacao(templates.valueOrNull ?? []),
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        margin: const EdgeInsets.only(right: 10),
+                        decoration: BoxDecoration(
+                          color: _reordenando
+                              ? AppColors.primary
+                              : AppColors.surfaceContainerLow,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _reordenando
+                                ? AppColors.primary
+                                : AppColors.surfaceContainerHigh,
+                          ),
+                        ),
+                        child: Icon(
+                          _reordenando ? Icons.check : Icons.swap_vert,
+                          color: _reordenando
+                              ? AppColors.onPrimary
+                              : AppColors.onSurface,
+                          size: 20,
+                        ),
+                      ),
+                    ),
                   // Botão IA
                   GestureDetector(
                     onTap: () => _showAiSheet(context, ref),
@@ -86,7 +195,7 @@ class WorkoutPage extends ConsumerWidget {
 
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
-              child: Text('MEUS TREINOS',
+              child: Text(L.of(context).treino_meusTreinos,
                   style: AppTypography.labelSm.copyWith(
                     letterSpacing: 2,
                     color: AppColors.onSurfaceVariant,
@@ -108,6 +217,55 @@ class WorkoutPage extends ConsumerWidget {
                         onManual: () => _showCreateSheet(context, ref),
                         onAi: () => _showAiSheet(context, ref));
                   }
+                  // ── Modo reordenação ───────────────────────────────
+                  if (_reordenando) {
+                    final ordem = _ordemLocal ?? list;
+                    return Column(
+                      children: [
+                        Padding(
+                          padding:
+                              const EdgeInsets.fromLTRB(24, 0, 24, 12),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.drag_indicator,
+                                  size: 15,
+                                  color: AppColors.onSurfaceVariant),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  L.of(context).treino_arrasteEConclua,
+                                  style: AppTypography.bodySm
+                                      .copyWith(fontSize: 11),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: ReorderableListView.builder(
+                            padding: EdgeInsets.fromLTRB(
+                                24, 0, 24,
+                                80 + MediaQuery.of(context).padding.bottom),
+                            itemCount: ordem.length,
+                            onReorder: _aoReordenar,
+                            proxyDecorator: (child, _, __) => Material(
+                              color: Colors.transparent,
+                              child: child,
+                            ),
+                            itemBuilder: (_, i) => Padding(
+                              key: ValueKey(ordem[i].id),
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: _ReorderTile(
+                                template: ordem[i],
+                                posicao: i,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+
                   return RefreshIndicator(
                     color: AppColors.primary,
                     backgroundColor: AppColors.surfaceContainer,
@@ -135,7 +293,7 @@ class WorkoutPage extends ConsumerWidget {
                           } catch (e) {
                             if (context.mounted) {
                               MkSnack.error(context,
-                                  'Não foi possível excluir o treino. Tente novamente.');
+                                  L.of(context).treino_naoFoiPossivelExcluirTreino);
                             }
                           }
                         },
@@ -161,7 +319,7 @@ class WorkoutPage extends ConsumerWidget {
           await ref
               .read(workoutTemplateRepositoryProvider)
               .createTemplate(name: name, exercises: exercises);
-          ref.invalidate(workoutTemplatesProvider);
+          _recarregarTreinos();
           if (context.mounted) Navigator.pop(context);
         },
       ),
@@ -178,7 +336,7 @@ class WorkoutPage extends ConsumerWidget {
           await ref
               .read(workoutTemplateRepositoryProvider)
               .createTemplate(name: name, exercises: exercises);
-          ref.invalidate(workoutTemplatesProvider);
+          _recarregarTreinos();
           if (context.mounted) Navigator.pop(context);
         },
       ),
@@ -198,7 +356,7 @@ class WorkoutPage extends ConsumerWidget {
           final repo = ref.read(workoutTemplateRepositoryProvider);
           await repo.updateTemplateName(template.id, name);
           await repo.updateExercises(template.id, exercises);
-          ref.invalidate(workoutTemplatesProvider);
+          _recarregarTreinos();
           if (context.mounted) Navigator.pop(context);
         },
       ),
@@ -218,17 +376,17 @@ class WorkoutPage extends ConsumerWidget {
               .read(workoutTemplateRepositoryProvider)
               .completeTemplate(
                   templateId: template.id, exercises: exercises);
-          ref.invalidate(workoutTemplatesProvider);
+          _recarregarTreinos();
           if (context.mounted) {
             Navigator.pop(context);
             final alreadyDone = result['already_done'] as bool? ?? false;
             final progression = result['progression'] as int? ?? 0;
             if (alreadyDone) {
-              MkSnack.info(context, 'Treino já registrado hoje!');
+              MkSnack.info(context, L.of(context).treino_jaRegistradoHoje);
             } else {
               final msg = progression > 0
-                  ? '+10 pts  +${progression * 5} pts por progressão!'
-                  : 'Treino concluído! +10 pts';
+                  ? L.of(context).treino_ptsComProgressao(progression * 5)
+                  : L.of(context).treino_concluidoPts;
               MkSnack.success(context, msg);
             }
           }
@@ -240,17 +398,17 @@ class WorkoutPage extends ConsumerWidget {
 
 // ── AI Workout Sheet ──────────────────────────────────────────────────────────
 
-class _AiWorkoutSheet extends StatefulWidget {
+class _AiWorkoutSheet extends ConsumerStatefulWidget {
   final Future<void> Function(String name, List<Map<String, dynamic>> exercises)
       onSave;
 
   const _AiWorkoutSheet({required this.onSave});
 
   @override
-  State<_AiWorkoutSheet> createState() => _AiWorkoutSheetState();
+  ConsumerState<_AiWorkoutSheet> createState() => _AiWorkoutSheetState();
 }
 
-class _AiWorkoutSheetState extends State<_AiWorkoutSheet> {
+class _AiWorkoutSheetState extends ConsumerState<_AiWorkoutSheet> {
   final _customCtrl = TextEditingController();
   String? _selectedGroup;
   List<Map<String, dynamic>> _generated = [];
@@ -275,10 +433,18 @@ class _AiWorkoutSheetState extends State<_AiWorkoutSheet> {
     if (group == null) return;
 
     if (!GroqConfig.isConfigured) {
-      setState(() => _error = 'Sessão expirada. Faça login novamente.');
+      setState(() => _error = L.of(context).treino_sessaoExpirada);
       return;
     }
 
+    if (!await ref
+        .read(cotaIaControllerProvider)
+        .podeUsar(RecursoIa.gerarTreino)) {
+      if (mounted) {
+        await LimiteAtingidoSheet.mostrar(context, RecursoIa.gerarTreino);
+      }
+      return;
+    }
     setState(() {
       _loading = true;
       _error = null;
@@ -287,11 +453,14 @@ class _AiWorkoutSheetState extends State<_AiWorkoutSheet> {
 
     try {
       final result = await GroqService.generateWorkout(group);
+      await ref
+          .read(cotaIaControllerProvider)
+          .registrarUso(RecursoIa.gerarTreino);
       if (mounted) setState(() => _generated = result);
     } catch (e) {
       if (mounted) {
         final msg = e.toString().replaceFirst('Exception: ', '');
-        setState(() => _error = msg.isNotEmpty ? msg : 'Erro ao gerar treino. Tente novamente.');
+        setState(() => _error = msg.isNotEmpty ? msg : L.of(context).treino_erroGerar);
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -356,15 +525,20 @@ class _AiWorkoutSheetState extends State<_AiWorkoutSheet> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('TREINO COM IA',
+                      Text(L.of(context).treino_treinoComIa,
                           style: AppTypography.headlineSm
                               .copyWith(fontWeight: FontWeight.w700)),
-                      Text('Groq · LLaMA 3.3',
+                      // Nao nomear o modelo aqui: quem escolhe e o proxy,
+                      // e o texto anterior ('LLaMA 3.3') ficou mentindo por
+                      // duas trocas de modelo seguidas.
+                      Text(L.of(context).dieta_iaAtivaGroq,
                           style: AppTypography.bodySm.copyWith(
                               color: AppColors.onSurfaceVariant,
                               fontSize: 11)),
                     ],
                   ),
+                  const Spacer(),
+                  const _SeloDeCotaTreino(),
                 ],
               ),
 
@@ -400,7 +574,7 @@ class _AiWorkoutSheetState extends State<_AiWorkoutSheet> {
                           width: selected ? 1.5 : 1,
                         ),
                       ),
-                      child: Text(g,
+                      child: Text(_grupoLabel(g, L.of(context)),
                           style: AppTypography.labelSm.copyWith(
                             color: selected
                                 ? const Color(0xFF7C3AED)
@@ -422,7 +596,7 @@ class _AiWorkoutSheetState extends State<_AiWorkoutSheet> {
                 style: AppTypography.bodyMd,
                 onChanged: (_) => setState(() => _selectedGroup = null),
                 decoration: InputDecoration(
-                  hintText: 'Ou descreva: "Peito e Tríceps pesado"',
+                  hintText: L.of(context).treino_ouDescreva,
                   hintStyle: AppTypography.bodyMd
                       .copyWith(color: AppColors.onSurfaceVariant),
                   filled: true,
@@ -490,11 +664,37 @@ class _AiWorkoutSheetState extends State<_AiWorkoutSheet> {
               // Exercícios gerados
               if (_generated.isNotEmpty) ...[
                 const SizedBox(height: 20),
-                Text('EXERCÍCIOS GERADOS',
+                Text(L.of(context).treino_exerciciosGerados,
                     style: AppTypography.labelSm.copyWith(letterSpacing: 2)),
                 const SizedBox(height: 10),
                 ..._generated.map((e) => _AiExerciseTile(exercise: e)),
                 const SizedBox(height: 16),
+                // Disclaimer obrigatório — política de apps de saúde do Google Play
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(10),
+                    border:
+                        Border.all(color: AppColors.warning.withOpacity(0.25)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.health_and_safety_outlined,
+                          color: AppColors.warning, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          LegalTexts.workoutDisclaimer,
+                          style: AppTypography.bodySm.copyWith(
+                              color: AppColors.onSurfaceVariant, fontSize: 11),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -510,7 +710,7 @@ class _AiWorkoutSheetState extends State<_AiWorkoutSheet> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'As cargas serão preenchidas na hora do treino.',
+                          L.of(context).treino_cargasNaHora,
                           style: AppTypography.bodySm.copyWith(
                               color: AppColors.onSurfaceVariant,
                               fontSize: 12),
@@ -608,6 +808,66 @@ class _AiExerciseTile extends StatelessWidget {
 
 // ── Template Card ─────────────────────────────────────────────────────────────
 
+/// Card enxuto usado só no modo de reordenação.
+///
+/// Sem os botões de fazer/editar/excluir de propósito: durante o arrasto eles
+/// viram alvo acidental, e a tarefa aqui é uma só — definir a ordem.
+class _ReorderTile extends StatelessWidget {
+  final WorkoutTemplateModel template;
+  final int posicao;
+
+  const _ReorderTile({required this.template, required this.posicao});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.surfaceContainerHigh),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 24,
+            child: Text(
+              '${posicao + 1}',
+              style: AppTypography.labelMd
+                  .copyWith(color: AppColors.onSurfaceVariant),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(template.name,
+                    style: AppTypography.bodyMd
+                        .copyWith(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 2),
+                Text(
+                  template.exerciseCount == 1
+                      ? L.of(context).treino_exercicioCount(template.exerciseCount)
+                      : L.of(context).treino_exerciciosCount(template.exerciseCount),
+                  style: AppTypography.bodySm.copyWith(fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+          if (template.doneToday)
+            Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: Icon(Icons.check_circle,
+                  size: 16, color: AppColors.primary),
+            ),
+          const Icon(Icons.drag_handle,
+              color: AppColors.onSurfaceVariant, size: 22),
+        ],
+      ),
+    );
+  }
+}
+
 class _TemplateCard extends ConsumerWidget {
   final WorkoutTemplateModel template;
   final VoidCallback onDo;
@@ -674,7 +934,7 @@ class _TemplateCard extends ConsumerWidget {
                                 ? AppColors.primary
                                 : AppColors.onSurface,
                           )),
-                      Text('${template.exerciseCount} exercício(s)',
+                      Text(L.of(context).treino_exerciciosParen(template.exerciseCount),
                           style: AppTypography.bodySm.copyWith(
                               color: AppColors.onSurfaceVariant)),
                     ],
@@ -701,9 +961,9 @@ class _TemplateCard extends ConsumerWidget {
                       // externo o pop removia a página de Treino (tela preta)
                       builder: (dialogCtx) => AlertDialog(
                         backgroundColor: AppColors.surfaceContainerLow,
-                        title: const Text('Excluir treino?'),
+                        title: Text(L.of(context).treino_excluirTreino),
                         content: Text(
-                            'O treino "${template.name}" será removido.'),
+                            L.of(context).treino_seraRemovido(template.name)),
                         actions: [
                           TextButton(
                               onPressed: () =>
@@ -801,7 +1061,7 @@ class _TemplateCard extends ConsumerWidget {
                           const Icon(Icons.check_circle,
                               color: AppColors.primary, size: 18),
                           const SizedBox(width: 8),
-                          Text('FEITO HOJE',
+                          Text(L.of(context).treino_feitoHoje,
                               style: AppTypography.labelMd.copyWith(
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.w700,
@@ -812,7 +1072,7 @@ class _TemplateCard extends ConsumerWidget {
                   : ElevatedButton.icon(
                       onPressed: onDo,
                       icon: const Icon(Icons.play_arrow, size: 18),
-                      label: const Text('FAZER HOJE'),
+                      label: Text(L.of(context).treino_fazerHoje),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: AppColors.onPrimary,
@@ -857,11 +1117,11 @@ class _EmptyState extends StatelessWidget {
                   color: AppColors.primary, size: 40),
             ),
             const SizedBox(height: 20),
-            Text('Nenhum treino criado',
+            Text(L.of(context).treino_nenhumCriado,
                 style: AppTypography.headlineSm
                     .copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
-            Text('Crie manualmente ou deixe a IA montar um treino pra você',
+            Text(L.of(context).treino_crieOuIa,
                 textAlign: TextAlign.center,
                 style: AppTypography.bodyMd
                     .copyWith(color: AppColors.onSurfaceVariant)),
@@ -871,7 +1131,7 @@ class _EmptyState extends StatelessWidget {
               child: ElevatedButton.icon(
                 onPressed: onAi,
                 icon: const Icon(Icons.auto_awesome, size: 18),
-                label: const Text('GERAR COM IA'),
+                label: Text(L.of(context).treino_gerarComIa),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF7C3AED),
                   foregroundColor: Colors.white,
@@ -946,6 +1206,7 @@ class _TemplateSheetState extends ConsumerState<_TemplateSheet> {
           // e o .add() de novos exercícios lança TypeError no modo edição
           _exercises = list
               .map((e) => <String, dynamic>{
+                    '_uid': _novoUid(),
                     'name': e.name,
                     'sets': e.sets,
                     'reps': e.reps,
@@ -960,7 +1221,7 @@ class _TemplateSheetState extends ConsumerState<_TemplateSheet> {
       if (mounted) {
         setState(() => _loaded = true);
         MkSnack.error(
-            context, 'Não foi possível carregar os exercícios do treino.');
+            context, L.of(context).treino_naoFoiPossivelCarregarExercicios);
       }
     }
   }
@@ -971,9 +1232,38 @@ class _TemplateSheetState extends ConsumerState<_TemplateSheet> {
     super.dispose();
   }
 
+  /// Identidade estável de cada exercício na lista da tela.
+  ///
+  /// Necessária porque `_emit()` devolve um Map NOVO a cada tecla digitada.
+  /// Chavear o widget pelo próprio Map fazia a chave mudar a cada letra, e o
+  /// Flutter destruía e recriava a linha — o campo perdia o foco no meio da
+  /// digitação. Só existe na tela: `updateExercises` monta o insert campo a
+  /// campo e ignora esta chave.
+  int _uidSeq = 0;
+  String _novoUid() => 'ex${_uidSeq++}';
+
   void _addExercise() {
-    setState(() => _exercises.add(
-        <String, dynamic>{'name': '', 'sets': 3, 'reps': 10, 'weight_kg': 0.0}));
+    setState(() => _exercises.add(<String, dynamic>{
+          '_uid': _novoUid(),
+          'name': '',
+          'sets': 3,
+          'reps': 10,
+          'weight_kg': 0.0,
+        }));
+  }
+
+  /// Move um exercício uma posição para cima ou para baixo.
+  ///
+  /// Setas em vez de arrastar: a lista vive dentro de um SingleChildScrollView
+  /// e o ReorderableListView aninhado brigava com a rolagem do painel — o
+  /// arrasto não firmava e a nova ordem se perdia. Com campos de texto na
+  /// linha, seta também é mais preciso que arrasto.
+  void _moverExercicio(int de, int para) {
+    if (para < 0 || para >= _exercises.length) return;
+    setState(() {
+      final item = _exercises.removeAt(de);
+      _exercises.insert(para, item);
+    });
   }
 
   void _openLibrary() {
@@ -984,6 +1274,7 @@ class _TemplateSheetState extends ConsumerState<_TemplateSheet> {
       builder: (_) => _ExerciseLibrarySheet(
         onSelect: (name) {
           setState(() => _exercises.add(<String, dynamic>{
+                '_uid': _novoUid(),
                 'name': name,
                 'sets': 3,
                 'reps': 10,
@@ -1032,9 +1323,12 @@ class _TemplateSheetState extends ConsumerState<_TemplateSheet> {
                 controller: _nameCtrl,
                 style: AppTypography.bodyMd,
                 textCapitalization: TextCapitalization.words,
+                // Mesmo motivo do campo da dieta: SALVAR TREINO lê
+                // _nameCtrl.text e ficava travado até o campo perder o foco.
+                onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
-                  labelText: 'Nome do treino',
-                  hintText: 'Ex: Peito e Tríceps',
+                  labelText: L.of(context).treino_nomeDoTreino,
+                  hintText: L.of(context).treino_exNome,
                   filled: true,
                   fillColor: AppColors.surfaceContainerLow,
                   border: OutlineInputBorder(
@@ -1059,7 +1353,7 @@ class _TemplateSheetState extends ConsumerState<_TemplateSheet> {
 
               Row(
                 children: [
-                  Text('EXERCÍCIOS',
+                  Text(L.of(context).treino_exercicios,
                       style: AppTypography.labelSm.copyWith(
                         letterSpacing: 2,
                         color: AppColors.onSurfaceVariant,
@@ -1070,7 +1364,7 @@ class _TemplateSheetState extends ConsumerState<_TemplateSheet> {
                     onPressed: _openLibrary,
                     icon: const Icon(Icons.library_books_outlined,
                         color: Color(0xFF7C3AED), size: 16),
-                    label: Text('BIBLIOTECA',
+                    label: Text(L.of(context).treino_biblioteca,
                         style: AppTypography.labelSm
                             .copyWith(color: Color(0xFF7C3AED))),
                   ),
@@ -1078,7 +1372,7 @@ class _TemplateSheetState extends ConsumerState<_TemplateSheet> {
                     onPressed: _addExercise,
                     icon: const Icon(Icons.add,
                         color: AppColors.primary, size: 16),
-                    label: Text('MANUAL',
+                    label: Text(L.of(context).treino_manual,
                         style: AppTypography.labelSm
                             .copyWith(color: AppColors.primary)),
                   ),
@@ -1111,7 +1405,7 @@ class _TemplateSheetState extends ConsumerState<_TemplateSheet> {
                         const Icon(Icons.library_books_outlined,
                             color: AppColors.primary, size: 28),
                         const SizedBox(height: 8),
-                        Text('Toque para escolher da biblioteca',
+                        Text(L.of(context).treino_toqueBiblioteca,
                             style: AppTypography.bodyMd.copyWith(
                                 color: AppColors.onSurfaceVariant)),
                       ],
@@ -1119,13 +1413,28 @@ class _TemplateSheetState extends ConsumerState<_TemplateSheet> {
                   ),
                 )
               else
+                // A ordem final é a da lista — updateExercises grava
+                // order_index pela posição, então não há nada a persistir aqui.
                 ..._exercises.asMap().entries.map((entry) {
                   final i = entry.key;
                   return _ExerciseInputRow(
-                    key: ValueKey(i),
+                    // Chave pelo uid, não pelo Map nem pelo índice: o Map muda
+                    // a cada tecla (perderia o foco) e o índice muda ao mover
+                    // (a linha mostraria os dados da outra).
+                    key: ValueKey(_exercises[i]['_uid']),
                     index: i,
                     data: _exercises[i],
-                    onChange: (v) => setState(() => _exercises[i] = v),
+                    podeSubir: i > 0,
+                    podeDescer: i < _exercises.length - 1,
+                    onSubir: () => _moverExercicio(i, i - 1),
+                    onDescer: () => _moverExercicio(i, i + 1),
+                    onChange: (v) => setState(() {
+                      // Preserva o uid: _emit() devolve um Map novo sem ele.
+                      _exercises[i] = <String, dynamic>{
+                        ...v,
+                        '_uid': _exercises[i]['_uid'],
+                      };
+                    }),
                     onRemove: () =>
                         setState(() => _exercises.removeAt(i)),
                   );
@@ -1160,7 +1469,7 @@ class _TemplateSheetState extends ConsumerState<_TemplateSheet> {
                           child: CircularProgressIndicator(
                               strokeWidth: 2,
                               color: AppColors.onPrimary))
-                      : Text('SALVAR TREINO',
+                      : Text(L.of(context).treino_salvarTreino,
                           style: AppTypography.labelMd.copyWith(
                               color: AppColors.onPrimary,
                               fontSize: 14,
@@ -1236,7 +1545,7 @@ class _ExerciseLibrarySheetState extends State<_ExerciseLibrarySheet> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('BIBLIOTECA DE EXERCÍCIOS',
+                Text(L.of(context).treino_bibliotecaExercicios,
                     style: AppTypography.headlineSm
                         .copyWith(fontWeight: FontWeight.w700)),
                 const SizedBox(height: 14),
@@ -1246,7 +1555,7 @@ class _ExerciseLibrarySheetState extends State<_ExerciseLibrarySheet> {
                   onChanged: _onSearch,
                   style: AppTypography.bodyMd,
                   decoration: InputDecoration(
-                    hintText: 'Buscar exercício...',
+                    hintText: L.of(context).treino_buscarExercicioHint,
                     hintStyle: AppTypography.bodyMd
                         .copyWith(color: AppColors.onSurfaceVariant),
                     prefixIcon: const Icon(Icons.search,
@@ -1290,7 +1599,7 @@ class _ExerciseLibrarySheetState extends State<_ExerciseLibrarySheet> {
                                     : AppColors.surfaceContainerHigh,
                               ),
                             ),
-                            child: Text(g,
+                            child: Text(_grupoLabel(g, L.of(context)),
                                 style: AppTypography.labelSm.copyWith(
                                   color: sel
                                       ? AppColors.primary
@@ -1314,7 +1623,7 @@ class _ExerciseLibrarySheetState extends State<_ExerciseLibrarySheet> {
                     child: Text(
                       _selectedGroup == null && !showSearch
                           ? 'Selecione um grupo muscular'
-                          : 'Nenhum exercício encontrado',
+                          : L.of(context).treino_nenhumExercicioEncontrado,
                       style: AppTypography.bodyMd
                           .copyWith(color: AppColors.onSurfaceVariant),
                     ),
@@ -1363,6 +1672,10 @@ class _ExerciseInputRow extends StatefulWidget {
   final Map<String, dynamic> data;
   final ValueChanged<Map<String, dynamic>> onChange;
   final VoidCallback onRemove;
+  final bool podeSubir;
+  final bool podeDescer;
+  final VoidCallback onSubir;
+  final VoidCallback onDescer;
 
   const _ExerciseInputRow({
     super.key,
@@ -1370,6 +1683,10 @@ class _ExerciseInputRow extends StatefulWidget {
     required this.data,
     required this.onChange,
     required this.onRemove,
+    required this.podeSubir,
+    required this.podeDescer,
+    required this.onSubir,
+    required this.onDescer,
   });
 
   @override
@@ -1427,11 +1744,38 @@ class _ExerciseInputRowState extends State<_ExerciseInputRow> {
         children: [
           Row(
             children: [
-              Text('Exercício ${widget.index + 1}',
+              Text(L.of(context).treino_exercicioNumero(widget.index + 1),
                   style: AppTypography.labelSm.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.w700)),
               const Spacer(),
+              // Setas de ordenação. Desabilitadas nas pontas em vez de
+              // sumirem, para os ícones não dançarem de posição.
+              GestureDetector(
+                onTap: widget.podeSubir ? widget.onSubir : null,
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                  child: Icon(Icons.keyboard_arrow_up,
+                      size: 20,
+                      color: widget.podeSubir
+                          ? AppColors.onSurface
+                          : AppColors.surfaceContainerHigh),
+                ),
+              ),
+              GestureDetector(
+                onTap: widget.podeDescer ? widget.onDescer : null,
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                  child: Icon(Icons.keyboard_arrow_down,
+                      size: 20,
+                      color: widget.podeDescer
+                          ? AppColors.onSurface
+                          : AppColors.surfaceContainerHigh),
+                ),
+              ),
+              const SizedBox(width: 6),
               GestureDetector(
                 onTap: widget.onRemove,
                 child: const Icon(Icons.close,
@@ -1445,7 +1789,7 @@ class _ExerciseInputRowState extends State<_ExerciseInputRow> {
             style: AppTypography.bodyMd,
             textCapitalization: TextCapitalization.sentences,
             onChanged: (_) => _emit(),
-            decoration: _dec('Nome do exercício'),
+            decoration: _dec(L.of(context).treino_nomeDoExercicio),
           ),
           const SizedBox(height: 8),
           Row(
@@ -1456,7 +1800,7 @@ class _ExerciseInputRowState extends State<_ExerciseInputRow> {
                   style: AppTypography.bodyMd,
                   keyboardType: TextInputType.number,
                   onChanged: (_) => _emit(),
-                  decoration: _dec('Séries'),
+                  decoration: _dec(L.of(context).treino_seriesLabel),
                 ),
               ),
               const SizedBox(width: 8),
@@ -1519,6 +1863,21 @@ class _DoWorkoutSheetState extends ConsumerState<_DoWorkoutSheet> {
   List<TemplateExerciseModel> _exercises = [];
   bool _saving = false;
 
+  /// Ids dos exercícios já concluídos nesta sessão.
+  Set<String> _feitos = {};
+
+  /// Chave do progresso: por usuário, template e dia.
+  ///
+  /// Persistir em SharedPreferences (e não só em memória) porque durante o
+  /// treino o app sai de foco o tempo todo — tela bloqueia, chega mensagem,
+  /// troca de música. Perder os checks nessas horas seria pior que não ter.
+  /// A data no meio da chave faz o progresso de ontem não reaparecer hoje.
+  String get _chaveProgresso {
+    final uid = Supabase.instance.client.auth.currentUser?.id ?? 'anon';
+    final hoje = DateTime.now().toIso8601String().substring(0, 10);
+    return 'workout_progress_${widget.template.id}_${hoje}_$uid';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1529,7 +1888,39 @@ class _DoWorkoutSheetState extends ConsumerState<_DoWorkoutSheet> {
     final list = await ref
         .read(workoutTemplateRepositoryProvider)
         .getExercises(widget.template.id);
-    if (mounted) setState(() => _exercises = list);
+
+    Set<String> feitos = {};
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      feitos = (prefs.getStringList(_chaveProgresso) ?? []).toSet();
+    } catch (_) {
+      // Progresso é conveniência; não pode impedir o treino de abrir.
+    }
+
+    if (mounted) {
+      setState(() {
+        _exercises = list;
+        // Descarta ids que não existem mais (exercício removido do template).
+        _feitos = feitos.where((id) => list.any((e) => e.id == id)).toSet();
+      });
+    }
+  }
+
+  Future<void> _alternarFeito(String id) async {
+    setState(() {
+      _feitos.contains(id) ? _feitos.remove(id) : _feitos.add(id);
+    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_chaveProgresso, _feitos.toList());
+    } catch (_) {/* silencioso: o check na tela já valeu */}
+  }
+
+  Future<void> _limparProgresso() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_chaveProgresso);
+    } catch (_) {}
   }
 
   @override
@@ -1577,7 +1968,7 @@ class _DoWorkoutSheetState extends ConsumerState<_DoWorkoutSheet> {
                       Text(widget.template.name.toUpperCase(),
                           style: AppTypography.headlineSm
                               .copyWith(fontWeight: FontWeight.w700)),
-                      Text('Atualize as cargas se necessário',
+                      Text(L.of(context).treino_atualizeCargas,
                           style: AppTypography.bodySm.copyWith(
                               color: AppColors.onSurfaceVariant)),
                     ],
@@ -1599,26 +1990,62 @@ class _DoWorkoutSheetState extends ConsumerState<_DoWorkoutSheet> {
                     child: CircularProgressIndicator(color: AppColors.primary),
                   ),
                 )
-              else
+              else ...[
+                // Progresso da sessão
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: _exercises.isEmpty
+                                ? 0
+                                : _feitos.length / _exercises.length,
+                            minHeight: 6,
+                            backgroundColor: AppColors.surfaceContainerHigh,
+                            valueColor: const AlwaysStoppedAnimation(
+                                AppColors.primary),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text('${_feitos.length}/${_exercises.length}',
+                          style: AppTypography.labelSm.copyWith(
+                            color: _feitos.length == _exercises.length
+                                ? AppColors.primary
+                                : AppColors.onSurfaceVariant,
+                          )),
+                    ],
+                  ),
+                ),
                 ..._exercises.asMap().entries.map((entry) {
                   final i = entry.key;
                   return _DoExerciseRow(
                     key: ValueKey(_exercises[i].id),
                     exercise: _exercises[i],
+                    feito: _feitos.contains(_exercises[i].id),
+                    onToggleFeito: () => _alternarFeito(_exercises[i].id),
                     onChange: (updated) =>
                         setState(() => _exercises[i] = updated),
                   );
                 }),
+              ],
 
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton.icon(
+                  // Continua liberado mesmo com exercícios em aberto: pular um
+                  // por dor, equipamento ocupado ou falta de tempo é rotina, e
+                  // travar a conclusão puniria o usuário por treinar.
                   onPressed: (_saving || _exercises.isEmpty)
                       ? null
                       : () async {
                           setState(() => _saving = true);
+                          await _limparProgresso();
                           await widget.onComplete(_exercises);
                         },
                   icon: _saving
@@ -1813,9 +2240,16 @@ class _WorkoutTimerState extends State<_WorkoutTimer> {
 class _DoExerciseRow extends StatefulWidget {
   final TemplateExerciseModel exercise;
   final ValueChanged<TemplateExerciseModel> onChange;
+  final bool feito;
+  final VoidCallback onToggleFeito;
 
-  const _DoExerciseRow(
-      {super.key, required this.exercise, required this.onChange});
+  const _DoExerciseRow({
+    super.key,
+    required this.exercise,
+    required this.onChange,
+    required this.feito,
+    required this.onToggleFeito,
+  });
 
   @override
   State<_DoExerciseRow> createState() => _DoExerciseRowState();
@@ -1858,20 +2292,59 @@ class _DoExerciseRowState extends State<_DoExerciseRow> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLow,
+        color: widget.feito
+            ? AppColors.primary.withOpacity(0.06)
+            : AppColors.surfaceContainerLow,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.surfaceContainerHigh),
+        border: Border.all(
+          color: widget.feito
+              ? AppColors.primary.withOpacity(0.45)
+              : AppColors.surfaceContainerHigh,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(widget.exercise.name.toUpperCase(),
-              style:
-                  AppTypography.labelMd.copyWith(fontWeight: FontWeight.w700)),
+          Row(
+            children: [
+              // Alvo de toque generoso: é usado com a mão suada, no meio da
+              // série, muitas vezes sem olhar direito.
+              GestureDetector(
+                onTap: widget.onToggleFeito,
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 10, top: 2, bottom: 2),
+                  child: Icon(
+                    widget.feito
+                        ? Icons.check_circle
+                        : Icons.radio_button_unchecked,
+                    size: 22,
+                    color: widget.feito
+                        ? AppColors.primary
+                        : AppColors.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  widget.exercise.name.toUpperCase(),
+                  style: AppTypography.labelMd.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: widget.feito
+                        ? AppColors.onSurfaceVariant
+                        : AppColors.onSurface,
+                    decoration: widget.feito
+                        ? TextDecoration.lineThrough
+                        : null,
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(child: _field(_sets, 'Séries')),
+              Expanded(child: _field(_sets, L.of(context).treino_seriesLabel)),
               const SizedBox(width: 8),
               Expanded(child: _field(_reps, 'Reps')),
               const SizedBox(width: 8),
@@ -1909,4 +2382,17 @@ class _DoExerciseRowState extends State<_DoExerciseRow> {
               const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         ),
       );
+}
+
+/// Selo de cota do gerador de treino.
+class _SeloDeCotaTreino extends ConsumerWidget {
+  const _SeloDeCotaTreino();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ref.watch(saldoDeCotaProvider(RecursoIa.gerarTreino)).maybeWhen(
+          data: (s) => SeloDeCota(saldo: s),
+          orElse: () => const SizedBox.shrink(),
+        );
+  }
 }

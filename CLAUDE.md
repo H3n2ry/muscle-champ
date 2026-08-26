@@ -29,17 +29,66 @@ flutter pub get                      # Install dependencies
 flutter analyze                      # Static analysis (pre-existing errors in doh_http_overrides.dart are known/ignored)
 ```
 
-### Web deploy to Vercel
+### Web deploy — Cloudflare Pages (destino final)
+
 ```bash
-cd build/web
-npx vercel --prod --yes --scope "af-dev"   # → https://muscle-champ.vercel.app
+npx wrangler pages deploy build/web --project-name=muscle-champ --branch=main
 ```
+
+First time only — `wrangler login` opens a browser OAuth flow, so a human has to
+do it:
+
+```bash
+npx wrangler login
+```
+
+**Why Cloudflare and not Vercel.** The app is 48 static files; Vercel executes
+nothing for it (the `groq-proxy` runs on Supabase). But Vercel's Hobby plan
+**forbids commercial use** — their fair-use policy counts "advertising the sale
+of a product or service", so merely announcing the subscription violates it.
+Staying would mean Pro at US$20/month ≈ R$1.296/year, which at the projected
+Year-1 volume eats the entire revenue. Cloudflare Pages free has no such clause
+and no documented bandwidth cap.
+
+Free-tier limits vs this app: 25 MiB per file (largest is `canvaskit.wasm` at
+6.9 MB), 20,000 files (we ship 48), 500 builds/month. Comfortable.
+
+No `_redirects` file is needed: the app uses **hash routing** (`/#/register`)
+because `usePathUrlStrategy` is not called, so every route resolves through
+`index.html` on its own. If someone ever switches to path URLs, a SPA fallback
+becomes mandatory or deep links will 404.
+
+### Vercel — RETIRED (2026-08-26)
+
+**Do not deploy the app there.** `muscle-champ.vercel.app` now serves nothing
+but a `307` redirect to `muscle-champ.pages.dev`.
+
+Redirecting rather than just abandoning the project was deliberate: stopping
+deploys would have left the last build frozen there forever, and anyone with
+the URL bookmarked would keep testing a stale app while believing it was
+current. The redirect is **temporary (307), not permanent (308)** — a 308 gets
+cached by browsers indefinitely and would be painful to undo if Vercel is ever
+needed again.
+
+The project still exists in the `af-dev` scope, serving only the redirect.
+Deleting it is a dashboard action and is yours to take whenever you want.
 
 ### Build + deploy completo
 ```bash
 flutter pub get
 flutter build web --release
-cd build/web && npx vercel --prod --yes --scope "af-dev"
+npx wrangler pages deploy build/web --project-name=muscle-champ --branch=main
+```
+
+⚠️ **Never deploy without confirming the build succeeded.** `flutter build web`
+fails intermittently on Windows with `Unable to determine engine version`
+(a lock on `bin/cache/engine.realm`, usually a leftover `dart`/`flutter run`
+process). The deploy command happily ships whatever is already in `build/web`,
+so a failed build silently republishes the previous version. Check for
+`✓ Built build\web` first, or compare hashes afterwards:
+
+```bash
+curl -s -o /tmp/served.js https://muscle-champ.pages.dev/main.dart.js && sha256sum /tmp/served.js build/web/main.dart.js
 ```
 
 ### If build fails with path errors
@@ -238,7 +287,206 @@ Known foods use the **official kcal from the table, not Atwater**: the 4/4/9 for
 
 **Image optimization** (`_optimizeImage()`): detects PNG via magic bytes; resizes to max 768px; encodes as JPEG 80%. Returns `(String b64, String mime)`. Never reduce `_maxImagePx` below 768.
 
-**Models**: text → `llama-3.3-70b-versatile`, vision → `qwen/qwen3.6-27b`
+### Model selection lives in the proxy, not the app
+
+**The app never names a model.** It sends `"task": "text"` or `"task": "vision"`; the
+Edge Function resolves that to the current model id via `MODEL_CHAINS`.
+
+This is deliberate. Groq retires models with little notice (twice in 30 days) and the app
+breaks instantly with *"The model X does not exist or you do not have access to it"*.
+With the id compiled into the client, an installed APK would stay broken until every user
+updated through the Play Store — days to weeks. Now a model swap is a function redeploy.
+
+**To change models**: edit `MODEL_CHAINS` in `supabase/functions/groq-proxy/index.ts` and
+redeploy. Nothing in Dart changes. Retirements so far:
+`meta-llama/llama-4-scout-17b-16e-instruct` (vision, 2026-07-17) and
+`llama-3.3-70b-versatile` (text, 2026-08-16).
+
+**Fallback**: each task has an ordered chain. If the primary answers "model does not
+exist", the proxy retries the next one and logs `ATUALIZAR MODEL_CHAINS`. Only that error
+triggers a retry — a rate limit or bad payload would fail identically on any model. The
+response carries `x-model-used`, and `x-model-fallback` when a retry happened.
+⚠️ `vision` has a chain of one: qwen3.6-27b is the only multimodal model in use, so the
+FOTO mode has no automatic recovery.
+
+**Reasoning models need per-model tuning.** `gpt-oss-120b` spends output tokens *thinking*
+before emitting content. Left alone it consumed the entire `max_tokens` budget on
+reasoning and returned **empty `content` with `finish_reason: "length"`** — a silent
+failure, not an error. The proxy fixes this per model via `ModelSpec`:
+`reasoningEffort: "low"` and `tokenHeadroom: 2.5`. Measured: ~65% of output is reasoning
+on short JSON prompts, and reasoning tokens are billed as output.
+Note `reasoning_effort` accepts only `low|medium|high` on gpt-oss — the `"none"` that
+`calibrateHand` sends is valid on qwen, and the proxy only injects when the caller
+did not set it.
+
+Determinism survives the swap: `temperature: 0, top_p: 1, seed: 42` still yields identical
+output for identical input (verified).
+
+The nutrition calibration below was tuned on Llama 3.3. After a text-model swap, the
+parsing half ("2 ovos cozidos" → food + qty + unit) may drift — the arithmetic half is
+in Dart and is unaffected. Re-validate before trusting the numbers.
+
+### Nutrition validation battery
+
+`test/nutricao_casos.dart` holds 32 real-world Portuguese food descriptions with
+reference kcal bands. Two files consume it:
+
+```bash
+GRAVAR_NUTRICAO=1 flutter test test/nutricao_gravar_test.dart   # grava a fixture (rede + tokens)
+flutter test test/nutricao_test.dart                            # valida offline
+```
+
+The recorder hits the proxy with `GroqService.corpoDaRequisicaoDeMacros` — the
+**same body the app sends**, never a copy of the prompt — and writes
+`test/fixtures/nutricao_modelo.json`. The validator replays that fixture through
+`GroqService.normalizarNutricao` with no network, so it runs in CI. **Re-record
+and re-run after every model change**: that is the re-validation ritual.
+
+⚠️ **The recorder must run through PowerShell, not the Bash tool** — the Bash
+sandbox blocks the Dart VM's DNS (`Failed host lookup`) while `curl` still works,
+which looks like an outage and isn't.
+
+⚠️ **A battery can come out split across two models.** On 429 the proxy advances
+to the next model in the chain and answers normally, and `x-model-fallback` is
+**not** set (that header only means *retired*). So under rate pressure the text
+task silently alternates between `gpt-oss-120b` and `qwen3.6-27b`. The fixture
+records the model **per case** and the recorder warns when they differ. The two
+disagree on units — for "1 pote de açaí" qwen said `pote`, gpt-oss said
+`unidade` — so both have to pass.
+
+**What the first run caught (2026-08-25), all fixed:**
+
+| Sintoma | Causa |
+|---|---|
+| Pote de açaí registrava **1 kcal** | Unidade fora de `_kMedidas` → item descartado → `clamp(1.0, …)` |
+| 3 castanhas do pará = **1701 kcal** | Default `'unidade': 100` aplicado a alimento de 5g |
+| `name_pt` faltando em 3 casos | O exemplo JSON do prompt não mostrava o campo — o modelo segue o exemplo |
+| Couve refogada 25 kcal (real: 90) | Matcher TACO recusa; caiu na categoria "verdura" crua, sem o óleo |
+| Açaí com granola a 58 kcal/100g | Substring casava `'acai'` (polpa pura) |
+| Big Mac 100g / 250 kcal | `unidade` sem entrada para sanduíche |
+
+O default `'unidade': 100` é a maior fonte de erro do conversor. Mitigado com
+entradas por alimento em `_kMedidas` e, para o que não estiver lá,
+`_kUnidadeDaCategoria` (oleaginosa 5g, sanduíche 180g, ovo 50g…). Unidade
+desconhecida agora assume `_kPorcaoPadrao` (100g) em vez de zerar o item.
+
+**Limitação conhecida**: dentro de um prato composto ("uma marmita de frango com
+arroz, feijão e salada") o modelo manda cada componente como `1 unidade`. O peso
+total sai certo (~400g) mas a divisão fica uniforme e o total cai ~15%. Insistir
+no prompt não resolveu, e a incerteza do próprio pedido é maior que isso.
+
+## Subscription — DEMO ONLY (`features/subscription/`)
+
+Paywall + fake checkout, landed 2026-08-25. Prices come from `VALORES.md`.
+
+```
+/assinatura            → PaywallPage        (escolha de plano)
+/assinatura/pagamento  → PagamentoPage      (checkout falso, plano via extra)
+/assinatura/sucesso    → AssinaturaSucessoPage
+```
+
+Entry point: the ASSINATURA card in the profile.
+
+⚠️ **Nothing here charges anything.** `AssinaturaRepository` writes to
+SharedPreferences (`assinatura_demo_v1_<uid>`) so the flow can be walked
+end-to-end. A `DemoBanner` sits on all three screens on purpose: a convincing
+payment screen that doesn't charge is exactly what leaks to production unnoticed.
+
+### Free-tier AI quota (`cota_ia.dart`)
+
+The free plan gets a **daily quota**, not a block: 1 photo · 3 text macros ·
+1 workout · 1 diet plan. Pro is unlimited. Limits live on the `RecursoIa` enum
+and are pinned by `test/cota_ia_test.dart`.
+
+Quota is about conversion, not cost — a heavy user burns ~R$ 1,06/month in AI
+(`VALORES.md` §2). Someone who never saw a photo turn into macros doesn't know
+what they'd be buying. The photo cap is tightest because it alone is ~88% of AI
+spend.
+
+Call sites check `podeUsar()` **before** the call and `registrarUso()` **after
+success only** — charging the quota on a network failure would burn the day's
+single photo with nothing to show. The photo path also skips the charge when
+the model answers with `error` (didn't recognize the food).
+
+`_gerarPlanoComCota()` gates the diet plan **in the page, not in
+`AiDietPlanNotifier`** — the notifier generates diets and shouldn't know what a
+subscription is; otherwise testing the generator would need billing state.
+
+A `SeloDeCota` badge ("2 de 3 hoje") sits in the IA and FOTO mode headers.
+Showing the balance before it runs out is what separates a limit from a trap.
+The profile carries a **Zerar cota (demo)** shortcut so the limit can be tested
+without waiting for midnight; it goes away with the demo mode.
+
+### Subscription and quota live in Postgres, not on the device
+
+Migration `20260825_assinatura_e_cota_no_servidor.sql`. Both started in
+SharedPreferences and that was wrong for the same reason: they are **account**
+state, not device state. Subscribing on the phone and opening on the PC showed
+the free plan again, and the daily photo could be spent once per device.
+
+| Tabela | RLS | Quem escreve |
+|---|---|---|
+| `assinaturas` | dono lê/escreve — **políticas DEMO** | o cliente, por enquanto |
+| `cota_ia_diaria` | dono **só lê** | apenas as RPC `SECURITY DEFINER` |
+
+`cota_ia_diaria` has **no write policy on purpose**: without one, not even the
+owner can zero their own counter from outside. Writes go through
+`consumir_cota_ia(recurso)`, which is atomic (`on conflict do update`) and takes
+the day from `app_today()` — the server's date, closing the "adiantar o relógio"
+hole the local counter had. `get_cota_ia()` reads today's map;
+`zerar_cota_ia()` exists only for the demo reset button.
+
+⚠️ The resource keys `('foto','texto','treino','dieta')` are a **contract with
+the database** — `consumir_cota_ia` rejects anything else. `RecursoIa.chave`
+renaming without touching the migration breaks every AI call in the app;
+`test/cota_ia_test.dart` pins the exact set.
+
+The subscription providers are `autoDispose` for a reason: cached at the root
+they would survive a logout and show the previous account's plan.
+
+**The client cannot write entitlement at all.** Migration
+`20260825b_fecha_bypass_de_cota_e_assinatura.sql` dropped every write policy on
+`assinaturas`; both tables are now read-only over PostgREST. Writes go through:
+
+| RPC | Quem pode | Teto |
+|---|---|---|
+| `assinar_demo(plano, valor)` | qualquer autenticado | servidor força trial de 14 dias |
+| `cancelar_assinatura()` | qualquer autenticado | só a própria linha |
+| `consumir_cota_ia(recurso)` | qualquer autenticado | +1, dia de `app_today()` |
+| `zerar_cota_ia()` | **só `contas_de_teste`** | — |
+
+`assinar_demo` stays open because the paywall has to be walkable by whoever is
+testing, but the server picks the dates and forces `em_trial` — the abuse
+ceiling dropped from "Pro até 2099" to the same 14-day trial the screen already
+offers. Plan id is validated against a closed list and the price is clamped.
+
+`contas_de_teste` has **no RLS policy at all**, so PostgREST returns nothing to
+anyone — who is on the list can't be discovered from outside. `zerar_cota_ia`
+was a full quota bypass before this (any authenticated user could call
+`/rest/v1/rpc/zerar_cota_ia`); the profile button now only renders when
+`sou_conta_de_teste()` says yes, because a button that always errors is worse
+than no button.
+
+⚠️ **`assinar_demo` must be dropped when billing is real** — the name carries
+the reminder. Entitlement then comes from the gateway webhook with the service
+role, and no client-facing grant function should exist.
+
+**Money is `int` centavos, never `double`.** Twelve `19.90` doubles sum to
+238.79999999999998. `formatarBRL()` renders it.
+
+**Price copy has a legal constraint.** `R$ 149,90` is never charged on entry, so
+"de R$ 149,90 por R$ 119,90" is an artificial reference price — CDC treats that
+as misleading advertising. The screen never strikes through a price; it says
+*"primeiro ano por X, renova por Y"* (`Plano.precisaAvisarRenovacao` drives it).
+See `VALORES.md` §3.
+
+**The ladder check from `VALORES.md` §1 is a test** — `test/planos_test.dart`.
+Higher commitment must always be cheaper per month. Change a price, run it.
+
+Three things change when this goes real, detailed in `VALORES.md` §5: on Android
+the screen doesn't exist (Play Billing opens its own sheet), the price comes from
+Billing per region rather than from `Planos`, and entitlement moves to Supabase
+confirmed by gateway webhook — the client never decides it paid.
 
 ## Interactive Tutorial (`tutorial_overlay.dart`)
 
@@ -277,8 +525,63 @@ UI mockups: `../dashboard_de_progresso_v3/` and `../perfil_e_evolu_o_v3/` (HTML 
 |---------|---------|--------|
 | Supabase | Auth + PostgreSQL + Storage + Edge Functions + Vault | `supabase_config.dart` / `secrets.dart` (project `jryetjysjiyuuoznaejc`) |
 | Groq | LLM inference (via `groq-proxy` Edge Function) | key in Supabase Vault, never in client |
-| Vercel | Web hosting | Project: `muscle-champ`, scope: `af-dev` |
-| GitHub Actions | Keepalive (anti free-tier pause) | `.github/workflows/supabase-keepalive.yml` |
+| Cloudflare Pages | Web hosting (destino) | Project: `muscle-champ` → `muscle-champ.pages.dev` |
+| Vercel | Web hosting (legado, sair antes de vender) | Project: `muscle-champ`, scope: `af-dev` |
+| GitHub Actions | Keepalive, backup, AI healthcheck | `.github/workflows/` |
+
+**Workflows** (all run on GitHub's infra, only once pushed):
+
+| File | What it does |
+|------|--------------|
+| `supabase-keepalive.yml` | Daily RPC ping so the free tier doesn't pause after ~7 idle days |
+| `supabase-backup.yml` | Database backup |
+| `ai-healthcheck.yml` | Daily probe of both model chains — fails the run (→ email) if a model died |
+
+`ai-healthcheck.yml` checks five things per task, and the second one is the reason it
+exists: HTTP 200 · **`content` non-empty** · `finish_reason == "stop"` · no
+`x-model-fallback` header · `x-model-used == x-model-primary`. A retired reasoning
+model returns *200 with empty content*, so status-code-only monitoring would report
+everything healthy while the app is broken. A present `x-model-fallback` means the
+chain already fell to the reserve — working, but `MODEL_CHAINS` needs updating.
+
+**The fifth check catches the silent swap.** On 429 the proxy advances down the chain
+and answers normally, and `x-model-fallback` stays absent — that header only means
+*retired*. So under load the text task quietly alternates between models, and the two
+do not answer identically (the nutrition battery caught them disagreeing on units).
+The proxy now sends `x-model-primary` with the chain head and the workflow warns when
+`x-model-used` differs. It is a **warning, not a failure**: the fallback doing its job
+during a spike is healthy, and failing there would cry wolf — a genuinely dead primary
+still fails via `x-model-fallback`. Sending the primary from the proxy avoids the
+workflow keeping its own copy of `MODEL_CHAINS`, which would drift on the first swap.
+
+## ⚠️ Signup is capped at ~2 accounts/hour (blocker)
+
+Auth still uses Supabase's **built-in email service** (`noreply@mail.app.supabase.io`),
+which Supabase documents as test-only and rate-limits hard. Confirmed in the auth
+logs on 2026-08-24:
+
+```
+error_code: "over_email_send_rate_limit"   path: /signup   status: 429
+```
+
+Two signups went through (17:51, 18:09), then 18:36 / 18:39 / 18:39 / 18:41 all
+429'd. **No amount of app-side work raises this** — it is a server-side sending
+cap, and it means the app currently cannot onboard more than a couple of users
+per hour.
+
+**Fix**: configure custom SMTP in Authentication → Emails → SMTP Settings
+(Resend, Brevo, SES…), then raise the limit in Auth → Rate Limits. Needs
+dashboard access and provider credentials.
+
+Good news, verified by querying `auth.users`: the 429 rolls the signup back
+cleanly — **no orphaned unconfirmed rows**. Without that, a retry would hit
+"email já cadastrado" and lock the person out permanently.
+
+The client distinguishes this from a user-caused rate limit
+(`cad_limiteEmails` / `conf_limiteEmails`). The old copy said "Muitas
+tentativas… espere alguns minutos", which blamed a user who did nothing — the
+quota was spent by someone else's signup — and named the wrong window (it is
+hourly). Copy is a bandage; custom SMTP is the fix.
 
 ## Security (hardened 2026-06)
 
@@ -290,7 +593,48 @@ UI mockups: `../dashboard_de_progresso_v3/` and `../perfil_e_evolu_o_v3/` (HTML 
 
 **Keepalive**: the Supabase free tier pauses after ~7 idle days. `.github/workflows/supabase-keepalive.yml` pings a light RPC daily (runs on GitHub's infra) to keep the project active. It only runs once pushed to GitHub.
 
-**Known/accepted advisor warnings** (not real issues): the 8 `authenticated_security_definer` warnings (ranking/workout RPCs must be `SECURITY DEFINER` and are guarded internally), `check_email_exists` being anon-callable (intentional), and leaked-password protection being off (Pro-only; compensated with Auth → Email password requirements: min length 8 + lowercase/uppercase/digits/symbols).
+**Known/accepted advisor warnings** (not real issues): the 12 `authenticated_security_definer` warnings — ranking/workout RPCs plus the four privacy RPCs (`export_my_data`, `delete_my_account`, `grant_consent`, `revoke_consent`); all must be `SECURITY DEFINER` and all enforce `auth.uid()` internally. Also `check_email_exists` being anon-callable (intentional), and leaked-password protection being off (Pro-only; compensated with Auth → Email password requirements: min length 8 + lowercase/uppercase/digits/symbols).
+
+⚠️ **`delete_my_account()` must not touch `storage.objects`.** Postgres blocks direct
+`DELETE` there (`storage.protect_delete`), and since the function is one transaction,
+attempting it aborts the whole deletion and nothing is removed. The avatar is deleted
+client-side via the Storage API in `PrivacyRepository.deleteMyAccount()` before the RPC.
+
+## Banco de dados — `schema.sql` é a fonte da verdade
+
+`supabase/migrations/` **nunca foi um registro completo**: on 2026-08-26 the
+database had 27 applied migrations and the repo held 8 files, and the missing
+ones included the fixes for the `date - bigint` cast in `get_streak` and the
+`storage.objects` guard in `delete_my_account`. Rebuilding from that folder
+would have reintroduced solved bugs.
+
+Split from now on:
+
+| Arquivo | O que é |
+|---|---|
+| `supabase/schema.sql` | como o banco **é** hoje — é o que reproduz produção |
+| `supabase/gerar_schema.sql` | a consulta que **regenera** o arquivo acima |
+| `supabase/migrations/` | registro do que **mudou**, daqui para frente |
+
+To regenerate after any schema change: run `gerar_schema.sql` in the SQL Editor
+and paste the single `script` column over everything below the header in
+`schema.sql`.
+
+Two things the generator gets right that are easy to miss:
+
+- **Function grants.** Postgres gives `PUBLIC` EXECUTE on every new function,
+  so a rebuild without the `revoke`/`grant` block would leave every RPC
+  callable by `anon`. The block is generated from the live ACLs.
+- **`create policy %I`, not `%L`.** A policy name is an identifier. The first
+  version used `%L` and produced `create policy 'nome'` with single quotes,
+  which would have failed on all 29 policies. The comment in `gerar_schema.sql`
+  says so, because it is an easy mistake to repeat.
+
+Verification is real, not assumed: the table + RLS + policy portion was applied
+to a throwaway `_verif` schema inside a transaction (63 statements, no errors)
+and rolled back. What is **not** verified is the whole file applying to an empty
+database in one pass — that needs a spare database (Supabase branching would
+do it).
 
 ## Supabase Tables
 
@@ -336,13 +680,52 @@ Files in `../` (parent of `app/`):
 
 **Rule**: before implementing any feature with legal implications (payments, health data, minors, geolocation, data sharing), check `docs/juridico/LEGAL.md` and update it if needed.
 
+## Legal & Compliance (`lib/core/legal/`)
+
+LGPD + GDPR implementation landed 2026-08-17. Migration:
+`supabase/migrations/20260817_lgpd_gdpr_compliance.sql`.
+
+**`LegalTexts`** (`legal_texts.dart`) is the single source of truth: document version,
+minimum age, public URLs, disclaimers, and the list of signup consents. Bump
+`documentVersion` whenever a legal text changes materially — it is written into
+`user_consents.document_version`, and the privacy screen flags stale consents.
+
+**`PrivacyRepository`** (`privacy_repository.dart`) wraps four RPCs:
+
+| RPC | Right |
+|-----|-------|
+| `export_my_data()` | LGPD 18 II/V · GDPR 15 e 20 — full JSON dump |
+| `delete_my_account()` | LGPD 18 VI · GDPR 17 — deletes table by table, avatar in Storage, then the `auth` user |
+| `grant_consent()` / `revoke_consent()` | GDPR 7(3) — revoking is as easy as granting |
+
+`user_consents` is **append-only** (no UPDATE/DELETE policy) — revoking writes a new
+row. That trail is the accountability evidence (LGPD 6 X / GDPR 5(2)).
+
+**Age gate**: 16 (`LegalTexts.minimumAge`), enforced in `register_page._goNext()` and
+re-validated in `AuthRepository.register()`. Covers GDPR Art. 8 and LGPD Art. 14 with
+one rule, avoiding a verifiable parental-consent flow.
+
+**Disclaimers** are mandatory (Play health-apps policy + CFN): nutrition shows on every
+AI result via `_NutritionPreview(isAi: true)`; workout shows in the AI generation sheet.
+
+**Public legal pages** live in `web/` and ship with the web build:
+`privacidade.html`, `termos.html`, `excluir-conta.html`. Play requires the deletion URL
+to be reachable without login. Keep them in sync with `docs/juridico/`.
+
+⚠️ Consent flags travel through `signUp()` metadata and are persisted by the
+`handle_new_user` trigger. Changing the consent list means changing **both**
+`LegalTexts.signupConsents` and that trigger.
+
 ## Pre-Play Store Checklist
 
 From `docs/juridico/LEGAL.md` — pending before publishing:
+- [ ] **Apply the compliance migration to the Supabase project** (not yet applied)
 - [ ] Change `applicationId` from `com.example.muscle_camp` (in `android/app/build.gradle.kts`)
 - [ ] Generate release keystore (currently debug-signed)
-- [ ] Host `docs/juridico/PRIVACY.md` at `https://musclechamp.com.br/privacidade`
-- [ ] Add consent checkbox for health data in registration screen
-- [ ] Add "Excluir minha conta" button in profile
-- [ ] Add Privacy Policy link inside the app
+- [ ] Point the legal URLs at the owned domain once `musclechamp.com.br` exists
 - [ ] Fill Play Console Data Safety form (declares health data + Groq photo sharing)
+- [ ] Decide on EU distribution — GDPR Art. 27 requires an EU representative, or
+      restrict the EEA in Play Console
+- [x] Consent checkbox for health data in registration
+- [x] "Excluir minha conta" in profile + public deletion URL
+- [x] Privacy Policy link inside the app

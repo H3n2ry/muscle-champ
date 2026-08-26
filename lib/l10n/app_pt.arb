@@ -1,0 +1,1073 @@
+{
+  "@@locale": "pt",
+  "navInicio": "INÍCIO",
+  "navTreino": "TREINO",
+  "navDieta": "DIETA",
+  "navRanking": "RANKING",
+  "navPerfil": "PERFIL",
+  "comum_salvar": "SALVAR",
+  "comum_cancelar": "Cancelar",
+  "comum_excluir": "Excluir",
+  "comum_fechar": "Fechar",
+  "comum_copiar": "Copiar",
+  "comum_proximo": "PRÓXIMO",
+  "comum_tentarNovamente": "Tentar novamente",
+  "comum_carregando": "Carregando...",
+  "comum_semConexao": "Sem conexão com a internet.",
+  "comum_algoDeuErrado": "Algo deu errado. Tente novamente.",
+  "idioma_titulo": "IDIOMA",
+  "idioma_portugues": "Português",
+  "idioma_ingles": "Inglês",
+  "idioma_espanhol": "Espanhol",
+  "dash_bemVindo": "BEM-VINDO,",
+  "dash_missaoDiaria": "MISSÃO DIÁRIA",
+  "dash_comeceAgora": "Começe agora",
+  "dash_completo": "completo",
+  "dash_global": "Global",
+  "dash_pts": "{pontos} pts",
+  "@dash_pts": {
+    "placeholders": {
+      "pontos": {
+        "type": "int"
+      }
+    }
+  },
+  "dash_treinosSemana": "TREINOS\nSEMANA",
+  "dash_pesoAtual": "PESO\nATUAL",
+  "dash_metaPeso": "META\nPESO",
+  "dash_protocolosDiarios": "PROTOCOLOS DIÁRIOS",
+  "dash_proximoMarco": "PRÓXIMO MARCO",
+  "dash_pontosParaNivel": "{faltam} pontos para o nível {nivel}",
+  "@dash_pontosParaNivel": {
+    "placeholders": {
+      "faltam": {
+        "type": "int"
+      },
+      "nivel": {
+        "type": "int"
+      }
+    }
+  },
+  "dash_nivelMaximo": "Nível máximo alcançado.",
+  "nivel_lvl": "LVL {nivel}",
+  "@nivel_lvl": {
+    "placeholders": {
+      "nivel": {
+        "type": "int"
+      }
+    }
+  },
+  "nivel_nivelN": "NÍVEL {nivel}",
+  "@nivel_nivelN": {
+    "placeholders": {
+      "nivel": {
+        "type": "int"
+      }
+    }
+  },
+  "nivel_pontoParaNivel": "{faltam} ponto para o nível {nivel}",
+  "@nivel_pontoParaNivel": {
+    "placeholders": {
+      "faltam": {
+        "type": "int"
+      },
+      "nivel": {
+        "type": "int"
+      }
+    }
+  },
+  "nivel_pontosParaNivel": "{faltam} pontos para o nível {nivel}",
+  "@nivel_pontosParaNivel": {
+    "placeholders": {
+      "faltam": {
+        "type": "int"
+      },
+      "nivel": {
+        "type": "int"
+      }
+    }
+  },
+  "perfil_pontos": "PONTOS",
+  "perfil_treinos": "TREINOS",
+  "perfil_sequencia": "SEQUÊNCIA",
+  "perfil_diasConsecutivos": "{dias} dias consecutivos",
+  "@perfil_diasConsecutivos": {
+    "placeholders": {
+      "dias": {
+        "type": "int"
+      }
+    }
+  },
+  "perfil_imc": "ÍNDICE DE MASSA CORPORAL",
+  "perfil_imcAtual": "IMC ATUAL",
+  "perfil_altura": "ALTURA",
+  "perfil_peso": "PESO",
+  "perfil_desde": "DESDE {ano}",
+  "@perfil_desde": {
+    "placeholders": {
+      "ano": {
+        "type": "String"
+      }
+    }
+  },
+  "perfil_evolucaoPontos": "EVOLUÇÃO DE PONTOS",
+  "perfil_editarPerfil": "Editar perfil",
+  "perfil_privacidadeDados": "Privacidade e dados",
+  "perfil_sair": "Sair",
+  "perfil_semanaNaoCarregou": "Não foi possível carregar a semana",
+  "objetivo_perderPeso": "PERDA DE PESO",
+  "objetivo_ganharMassa": "GANHO DE MASSA",
+  "objetivo_manutencao": "MANUTENÇÃO",
+  "treino_missoes": "MISSÕES",
+  "treino_titulo": "TREINO",
+  "treino_meusTreinos": "MEUS TREINOS",
+  "treino_fazerHoje": "FAZER HOJE",
+  "treino_feitoHoje": "FEITO HOJE",
+  "treino_novoTreino": "NOVO TREINO",
+  "treino_editarTreino": "EDITAR TREINO",
+  "treino_nomeDoTreino": "Nome do treino",
+  "treino_exercicios": "EXERCÍCIOS",
+  "treino_exercicioN": "Exercício {n}",
+  "@treino_exercicioN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "treino_nomeExercicio": "Nome do exercício",
+  "treino_series": "Séries",
+  "treino_reps": "Reps",
+  "treino_pesoKg": "Peso (kg)",
+  "treino_biblioteca": "BIBLIOTECA",
+  "treino_manual": "MANUAL",
+  "treino_salvarTreino": "SALVAR TREINO",
+  "treino_salvando": "SALVANDO...",
+  "treino_concluirTreino": "CONCLUIR TREINO",
+  "treino_gerarComIa": "GERAR COM IA",
+  "treino_arrasteParaReordenar": "Arraste para reordenar. Toque em ✓ para concluir.",
+  "treino_jaRegistradoHoje": "Treino já registrado hoje!",
+  "treino_naoFoiPossivelExcluir": "Não foi possível excluir o treino. Tente novamente.",
+  "treino_naoFoiPossivelCarregarExercicios": "Não foi possível carregar os exercícios do treino.",
+  "treino_naoFoiPossivelSalvarOrdem": "Não foi possível salvar a ordem.",
+  "treino_exerciciosCount": "{n} exercícios",
+  "@treino_exerciciosCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "treino_exercicioCount": "{n} exercício",
+  "@treino_exercicioCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "dieta_registrarRefeicao": "REGISTRAR REFEIÇÃO",
+  "dieta_banco": "BANCO",
+  "dieta_ia": "IA",
+  "dieta_foto": "FOTO",
+  "dieta_descrevaAlimento": "DESCREVA O ALIMENTO",
+  "dieta_calcularMacros": "CALCULAR MACROS",
+  "dieta_calculando": "CALCULANDO...",
+  "dieta_adicionarRefeicao": "ADICIONAR REFEIÇÃO",
+  "dieta_macrosDoDia": "MACROS DO DIA",
+  "dieta_calorias": "CALORIAS",
+  "dieta_proteina": "PROTEÍNA",
+  "dieta_carbo": "CARBO",
+  "dieta_gordura": "GORDURA",
+  "dieta_agua": "ÁGUA",
+  "dieta_planoDoDia": "PLANO DO DIA",
+  "dieta_exemploDescricao": "Ex: \"200g de frango grelhado\"\n\"arroz integral com feijão\"",
+  "cadastro_conta": "CONTA",
+  "cadastro_corpo": "CORPO",
+  "cadastro_missao": "MISSÃO",
+  "cadastro_criarConta": "CRIAR CONTA",
+  "cadastro_privacidade": "PRIVACIDADE",
+  "cadastro_tratamosDadosSaude": "O app trata dados de saúde. Precisamos da sua autorização explícita para isso.",
+  "cadastro_marqueObrigatorios": "Marque os itens obrigatórios (*) para continuar.",
+  "cadastro_liAceitoTodos": "Li e aceito todos os termos",
+  "cadastro_emailJaCadastrado": "Este email já está cadastrado. Faça login.",
+  "cadastro_senhaRequisitos": "A senha precisa ter no mínimo 8 caracteres, com letra minúscula, maiúscula, número e símbolo.",
+  "cadastro_muitasTentativas": "Muitas tentativas. Espere alguns minutos e tente de novo.",
+  "senha_minimo8": "Mínimo 8 caracteres",
+  "senha_minuscula": "Letra minúscula (a-z)",
+  "senha_maiuscula": "Letra maiúscula (A-Z)",
+  "senha_numero": "Número (0-9)",
+  "senha_simbolo": "Símbolo (!@#$%...)",
+  "privacidade_titulo": "Privacidade e dados",
+  "privacidade_documentos": "DOCUMENTOS",
+  "privacidade_seusConsentimentos": "SEUS CONSENTIMENTOS",
+  "privacidade_seusDireitos": "SEUS DIREITOS",
+  "privacidade_contato": "CONTATO",
+  "privacidade_baixarDados": "Baixar meus dados",
+  "privacidade_excluirConta": "Excluir minha conta",
+  "privacidade_politicaPrivacidade": "Política de Privacidade",
+  "privacidade_termosUso": "Termos de Uso",
+  "privacidade_verNoNavegador": "Ver no navegador",
+  "privacidade_liEAceito": "LI E ACEITO",
+  "privacidade_roleAteOFim": "Role até o fim para aceitar",
+  "privacidade_versaoDocumentos": "Versão {versao}",
+  "@privacidade_versaoDocumentos": {
+    "placeholders": {
+      "versao": {
+        "type": "String"
+      }
+    }
+  },
+  "ranking_titulo": "RANKING",
+  "ranking_global": "GLOBAL",
+  "ranking_amigos": "AMIGOS",
+  "dash_atualizacaoSemanal": "ATUALIZAÇÃO\nSEMANAL",
+  "dash_registreSeuPeso": "Registre seu peso desta semana\npara acompanhar sua evolução.",
+  "dash_pular": "PULAR",
+  "dash_pesoInvalido": "Peso inválido",
+  "dash_pesoAtualizado": "Peso atualizado!",
+  "treino_novoExercicio": "NOVO EXERCÍCIO",
+  "treino_grupoMuscular": "GRUPO MUSCULAR",
+  "treino_exerciciosGerados": "EXERCÍCIOS GERADOS",
+  "treino_gerar": "GERAR",
+  "treino_gerando": "GERANDO...",
+  "treino_semTreinos": "Nenhum treino ainda",
+  "treino_crieOuGere": "Crie manualmente ou gere com IA",
+  "treino_criarManual": "CRIAR MANUAL",
+  "treino_buscarExercicio": "Buscar exercício",
+  "treino_descanso": "DESCANSO",
+  "ranking_semAmigos": "Você ainda não tem amigos",
+  "ranking_buscarUsuarios": "Buscar usuários",
+  "ranking_adicionar": "ADICIONAR",
+  "ranking_pendente": "PENDENTE",
+  "ranking_aceitar": "ACEITAR",
+  "ranking_recusar": "RECUSAR",
+  "perfil_conquistas": "CONQUISTAS CHAMP",
+  "perfil_bioimpedancia": "BIOIMPEDÂNCIA",
+  "perfil_semDados": "Sem dados ainda",
+  "login_slogan": "Compete. Evolua. Domine.",
+  "login_email": "EMAIL",
+  "login_senha": "SENHA",
+  "login_emailHint": "seu@email.com",
+  "login_entrar": "ENTRAR",
+  "login_criarConta": "CRIAR CONTA",
+  "login_pillTreinos": "Treinos",
+  "login_pillDieta": "Dieta",
+  "login_pillRanking": "Ranking",
+  "login_pillPontos": "Pontos",
+  "dieta_adicionarAlimento": "ADICIONAR ALIMENTO",
+  "dieta_adicionarARefeicao": "ADICIONAR À REFEIÇÃO",
+  "dieta_ajustarPeso": "AJUSTAR PESO",
+  "dieta_alimento": "ALIMENTO",
+  "dieta_alterar": "ALTERAR",
+  "dieta_alterarAlimento": "ALTERAR ALIMENTO",
+  "dieta_adicioneRefeicoes": "Adicione refeições e escolha os alimentos do banco",
+  "dieta_analisando": "Analisando...",
+  "dieta_buscarAlternativa": "Buscar alternativa...",
+  "dieta_buscarNoBanco": "Buscar no banco de alimentos",
+  "dieta_caloriasDoDia": "CALORIAS DO DIA",
+  "dieta_carboidrato": "CARBOIDRATO",
+  "dieta_confirmar": "CONFIRMAR",
+  "dieta_carbAbrev": "Carb",
+  "dieta_configureMeta": "Configure sua meta calórica no perfil",
+  "dieta_camera": "CÂMERA",
+  "dieta_titulo": "DIETA",
+  "dieta_definaPeso": "Defina seu peso no perfil para calcular a meta",
+  "dieta_exBusca": "Ex: frango, arroz, aveia...",
+  "dieta_fotoDoAlimento": "FOTO DO ALIMENTO",
+  "dieta_galeria": "GALERIA",
+  "dieta_gerarPlano": "GERAR PLANO DO DIA",
+  "dieta_gerandoPlano": "Gerando seu plano personalizado...",
+  "dieta_gordAbrev": "Gord",
+  "dieta_hidratacao": "HIDRATAÇÃO",
+  "dieta_iaAtiva": "IA ATIVA",
+  "dieta_iaAtivaGroq": "IA ATIVA · GROQ",
+  "dieta_iaCalibrada": "IA calibrada pela sua mão",
+  "dieta_metaPts": "META +10 PTS",
+  "dieta_metaOk": "META ✓",
+  "dieta_monteSuaDieta": "Monte sua própria dieta",
+  "dieta_novaRefeicao": "NOVA REFEIÇÃO",
+  "dieta_nutricao": "NUTRIÇÃO",
+  "dieta_nenhumAlimento": "Nenhum alimento ainda",
+  "dieta_nenhumEncontrado": "Nenhum alimento encontrado",
+  "dieta_nenhumaRefeicao": "Nenhuma refeição registrada hoje",
+  "dieta_nomeDaRefeicao": "Nome da refeição",
+  "dieta_erroHidratacao": "Não foi possível carregar a hidratação.",
+  "dieta_erroDieta": "Não foi possível carregar sua dieta.",
+  "dieta_ouPersonalize": "OU PERSONALIZE",
+  "dieta_pesoGramas": "PESO (gramas)",
+  "dieta_refeicoesDoDia": "REFEIÇÕES DO DIA",
+  "dieta_regenerar": "REGENERAR",
+  "dieta_resultadoCalculado": "RESULTADO CALCULADO",
+  "dieta_tamanhoPorcao": "TAMANHO DA PORÇÃO (opcional)",
+  "dieta_trocarAlimento": "TROCAR ALIMENTO",
+  "dieta_protAbrev": "Prot",
+  "dieta_pesoLabel": "Peso",
+  "comum_tentar": "Tentar",
+  "comum_limpar": "limpar",
+  "dieta_recalibrar": "recalibrar",
+  "dieta_resetar": "resetar",
+  "rank_titulo": "RANKINGS",
+  "rank_adicionar": "ADICIONAR",
+  "rank_adicionarAmigo": "ADICIONAR AMIGO",
+  "rank_aguardando": "AGUARDANDO",
+  "rank_amigo": "AMIGO",
+  "rank_amigos": "AMIGOS",
+  "rank_buscarAtleta": "Buscar atleta...",
+  "rank_buscarPorNome": "Buscar por nome...",
+  "rank_cancelar": "CANCELAR",
+  "rank_elite": "ELITE",
+  "rank_erroCarregar": "Erro ao carregar",
+  "rank_global": "GLOBAL",
+  "rank_remover": "REMOVER",
+  "rank_removerAmigo": "Remover amigo?",
+  "rank_voce": "VOCÊ",
+  "cad_compromisso": "COMPROMISSO",
+  "cad_comoTeChamam": "Como te chamam?",
+  "cad_crieIdentidade": "Crie sua identidade de competidor",
+  "cad_imcCalculado": "IMC CALCULADO",
+  "cad_jaTenhoConta": "Já tenho conta →",
+  "cad_medidas": "MEDIDAS",
+  "cad_objetivoDetectado": "OBJETIVO DETECTADO",
+  "cad_quem": "QUEM",
+  "cad_quantosDias": "Quantos dias por semana você vai treinar?",
+  "cad_requisitosSenha": "REQUISITOS DA SENHA",
+  "cad_seu": "SEU",
+  "cad_suas": "SUAS",
+  "cad_usadasPara": "Usadas para IMC, meta calórica e hidratação",
+  "cad_eVoce": "É VOCÊ?",
+  "edit_altura": "ALTURA",
+  "edit_dadosPessoais": "DADOS PESSOAIS",
+  "edit_dataNascimento": "DATA DE NASCIMENTO",
+  "edit_editar": "EDITAR",
+  "edit_imc": "IMC",
+  "edit_medidasCorporais": "MEDIDAS CORPORAIS",
+  "edit_nome": "NOME",
+  "edit_objetivo": "OBJETIVO",
+  "edit_perfil": "PERFIL",
+  "edit_pesoAlvo": "PESO ALVO",
+  "edit_pesoAtual": "PESO ATUAL",
+  "edit_perfilAtualizado": "Perfil atualizado com sucesso!",
+  "edit_salvarAlteracoes": "SALVAR ALTERAÇÕES",
+  "objetivo_perdaPesoDesc": "Queimar gordura e definir o corpo",
+  "objetivo_manutencaoDesc": "Manter composição corporal atual",
+  "objetivo_ganhoMassaDesc": "Aumentar músculo e força",
+  "objetivo_perdaPeso": "PERDA DE PESO",
+  "objetivo_manutencaoUp": "MANUTENÇÃO",
+  "objetivo_ganhoMassa": "GANHO DE MASSA",
+  "objetivo_perderPesoCap": "Perder Peso",
+  "objetivo_ganharMassaCap": "Ganhar Massa",
+  "objetivo_manutencaoCap": "Manutenção",
+  "imc_abaixoPeso": "Abaixo do peso",
+  "imc_normalOk": "Normal ✓",
+  "imc_pesoNormal": "Peso normal",
+  "imc_sobrepeso": "Sobrepeso",
+  "imc_obesidade1": "Obesidade I",
+  "imc_obesidade2": "Obesidade II+",
+  "imc_obesidadeGrau1": "Obesidade grau I",
+  "imc_obesidadeGrau2": "Obesidade grau II+",
+  "comum_obrigatorio": "Obrigatório",
+  "comum_emailInvalido": "Email inválido",
+  "comum_erro": "Erro",
+  "edit_seuNomeCompleto": "Seu nome completo",
+  "edit_erroSalvar": "Erro ao salvar. Tente novamente.",
+  "rank_nenhumCompetidor": "Nenhum competidor ainda",
+  "rank_adicioneAmigos": "Adicione amigos para competir!",
+  "rank_digite2Letras": "Digite pelo menos 2 letras",
+  "rank_nenhumUsuario": "Nenhum usuário encontrado",
+  "rank_pts": "pts",
+  "rank_maisAdicionar": "+ ADICIONAR",
+  "rank_seraRemovido": "{nome} será removido do seu ranking de amigos.",
+  "@rank_seraRemovido": {
+    "placeholders": {
+      "nome": {
+        "type": "String"
+      }
+    }
+  },
+  "cad_informeNascimento": "Informe sua data de nascimento",
+  "cad_nomeGuerreiro": "NOME DE GUERREIRO",
+  "cad_emailLabel": "EMAIL",
+  "cad_senhaLabel": "SENHA",
+  "cad_alturaLabel": "ALTURA",
+  "cad_pesoAtualLabel": "PESO ATUAL",
+  "cad_pesoAlvoLabel": "PESO ALVO",
+  "cad_dataNascimentoLabel": "DATA DE NASCIMENTO",
+  "cad_dias": "dias",
+  "cad_privacidadeLabel": "PRIVACIDADE",
+  "cad_stepConta": "CONTA",
+  "cad_stepCorpo": "CORPO",
+  "cad_stepMissao": "MISSÃO",
+  "cad_emailJaCadastradoHifen": "Este e-mail já está cadastrado. Faça login.",
+  "cad_senhaFraca": "A senha precisa ter no mínimo 8 caracteres, com letra minúscula, maiúscula, número e símbolo.",
+  "cad_necessarioAceitar": "É necessário aceitar todos os itens obrigatórios para criar a conta.",
+  "cad_muitasTentativasEspere": "Muitas tentativas. Espere alguns minutos e tente de novo.",
+  "senha_errMin8": "Mínimo 8 caracteres",
+  "senha_errMinuscula": "Precisa de letra minúscula (a-z)",
+  "senha_errMaiuscula": "Precisa de letra maiúscula (A-Z)",
+  "senha_errNumero": "Precisa de número (0-9)",
+  "senha_errSimbolo": "Precisa de símbolo (!@#$%...)",
+  "req_min8": "Mínimo 8 caracteres",
+  "req_minuscula": "Letra minúscula (a-z)",
+  "req_maiuscula": "Letra maiúscula (A-Z)",
+  "req_numero": "Número (0-9)",
+  "req_simbolo": "Símbolo (!@#$%...)",
+  "freq_iniciante": "Iniciante",
+  "freq_regular": "Regular",
+  "freq_dedicado": "Dedicado",
+  "freq_avancado": "Avançado",
+  "freq_elite": "Elite",
+  "dieta_digiteQualquerAlimento": "Digite qualquer alimento ou tire uma foto",
+  "dieta_calculeMacros": "Calcule macros de qualquer alimento ou tire uma foto",
+  "dieta_faltamMl": "Faltam {ml} ml para a meta de hoje",
+  "@dieta_faltamMl": {
+    "placeholders": {
+      "ml": {
+        "type": "int"
+      }
+    }
+  },
+  "dieta_copo": "Copo",
+  "dieta_caneca": "Caneca",
+  "dieta_garrafa": "Garrafa",
+  "dieta_manual": "MANUAL",
+  "dieta_ok": "OK",
+  "dieta_log": "+LOG",
+  "dieta_refCafeManha": "Café da Manhã",
+  "dieta_refLancheManha": "Lanche da Manhã",
+  "dieta_refAlmoco": "Almoço",
+  "dieta_refLancheTarde": "Lanche da Tarde",
+  "dieta_refJantar": "Jantar",
+  "dieta_refCeia": "Ceia",
+  "dieta_refPreTreino": "Pré-treino",
+  "dieta_refPosTreino": "Pós-treino",
+  "dieta_iaCriaDieta": "A IA cria uma dieta personalizada para {kcal} kcal",
+  "@dieta_iaCriaDieta": {
+    "placeholders": {
+      "kcal": {
+        "type": "int"
+      }
+    }
+  },
+  "dieta_metaKcal": "META {kcal} kcal",
+  "@dieta_metaKcal": {
+    "placeholders": {
+      "kcal": {
+        "type": "int"
+      }
+    }
+  },
+  "dieta_pesoRecalculado": "Peso recalculado para manter ~{kcal} kcal do alimento original",
+  "@dieta_pesoRecalculado": {
+    "placeholders": {
+      "kcal": {
+        "type": "int"
+      }
+    }
+  },
+  "dieta_sessaoExpirada": "Sessão expirada. Faça login novamente.",
+  "dieta_naoFoiPossivelCalcular": "Não foi possível calcular. Tente novamente.",
+  "dieta_calibrarMoeda": "Calibrar a IA com uma moeda deixa a análise mais precisa",
+  "dieta_alimentoGenerico": "Alimento",
+  "dieta_alimentoFoto": "Alimento (foto)",
+  "dieta_adicionarKcal": "ADICIONAR  •  {kcal} kcal",
+  "@dieta_adicionarKcal": {
+    "placeholders": {
+      "kcal": {
+        "type": "Object"
+      }
+    }
+  },
+  "dieta_por100g": "Por 100g:",
+  "dieta_porcaoPequena": "PEQUENA",
+  "dieta_porcaoMedia": "MÉDIA",
+  "dieta_porcaoGrande": "GRANDE",
+  "dieta_porcaoPrato": "PRATO",
+  "dieta_dicaGarfo": "Dica: coloque um garfo, colher ou a mão perto do alimento para melhor estimativa de peso.",
+  "dieta_visaoIa": "VISÃO IA",
+  "perfil_erroCarregar": "Erro ao carregar perfil",
+  "perfil_erroFoto": "Erro ao carregar foto",
+  "perfil_sequenciaAtiva": "SEQUÊNCIA ATIVA",
+  "perfil_metaComposicao": "META DE COMPOSIÇÃO",
+  "perfil_bioimpedanciaCorporal": "BIOIMPEDÂNCIA CORPORAL",
+  "perfil_sistemaPontuacao": "SISTEMA DE PONTUAÇÃO",
+  "perfil_registreComposicao": "Registre sua composição corporal",
+  "perfil_composicaoCorporal": "COMPOSIÇÃO CORPORAL",
+  "perfil_musculo": "MÚSCULO",
+  "perfil_hidratacao": "HIDRATAÇÃO",
+  "perfil_ossea": "ÓSSEA",
+  "perfil_massaOssea": "MASSA ÓSSEA",
+  "perfil_bioimpedanciaUp": "BIOIMPEDÂNCIA",
+  "perfil_preenchaValores": "Preencha os valores gerados pelo aparelho de bioimpedância. Todos os campos são opcionais.",
+  "perfil_nivelMinusculo": "nível",
+  "perfil_nivelN2": "Nível {n}",
+  "@perfil_nivelN2": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "perfil_salvarBioimpedancia": "SALVAR BIOIMPEDÂNCIA",
+  "perfil_pontosTreino": "Treino concluído",
+  "perfil_pontosDieta": "Meta de dieta atingida",
+  "perfil_pontosProgressao": "Progressão de carga (por exercício)",
+  "perfil_pontosEvolucao": "Evolução de peso na direção da meta",
+  "perfil_comKg": "com {kg} kg",
+  "@perfil_comKg": {
+    "placeholders": {
+      "kg": {
+        "type": "String"
+      }
+    }
+  },
+  "perfil_nivelMaximoAlcancado": "Nível máximo alcançado.",
+  "perfil_percentualObjetivo": "{pct}% do objetivo",
+  "@perfil_percentualObjetivo": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "perfil_sequencia7Dias": "SEQUÊNCIA\nDE 7 DIAS",
+  "treino_arrasteEConclua": "Arraste para reordenar. Toque em ✓ para concluir.",
+  "treino_naoFoiPossivelExcluirTreino": "Não foi possível excluir o treino. Tente novamente.",
+  "treino_ptsComProgressao": "+10 pts  +{extra} pts por progressão!",
+  "@treino_ptsComProgressao": {
+    "placeholders": {
+      "extra": {
+        "type": "int"
+      }
+    }
+  },
+  "treino_concluidoPts": "Treino concluído! +10 pts",
+  "treino_sessaoExpirada": "Sessão expirada. Faça login novamente.",
+  "treino_erroGerar": "Erro ao gerar treino. Tente novamente.",
+  "treino_ouDescreva": "Ou descreva: \"Peito e Tríceps pesado\"",
+  "treino_cargasNaHora": "As cargas serão preenchidas na hora do treino.",
+  "treino_excluirTreino": "Excluir treino?",
+  "treino_seraRemovido": "O treino \"{nome}\" será removido.",
+  "@treino_seraRemovido": {
+    "placeholders": {
+      "nome": {
+        "type": "String"
+      }
+    }
+  },
+  "treino_nenhumCriado": "Nenhum treino criado",
+  "treino_crieOuIa": "Crie manualmente ou deixe a IA montar um treino pra você",
+  "treino_exNome": "Ex: Peito e Tríceps",
+  "treino_toqueBiblioteca": "Toque para escolher da biblioteca",
+  "treino_bibliotecaExercicios": "BIBLIOTECA DE EXERCÍCIOS",
+  "treino_buscarExercicioHint": "Buscar exercício...",
+  "treino_nenhumExercicioEncontrado": "Nenhum exercício encontrado",
+  "treino_exercicioNumero": "Exercício {n}",
+  "@treino_exercicioNumero": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "treino_nomeDoExercicio": "Nome do exercício",
+  "treino_seriesLabel": "Séries",
+  "treino_atualizeCargas": "Atualize as cargas se necessário",
+  "treino_exerciciosParen": "{n} exercício(s)",
+  "@treino_exerciciosParen": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "treino_treinoUp": "TREINO",
+  "treino_treinoComIa": "TREINO COM IA",
+  "dash_atualizacaoSemanalQuebra": "ATUALIZAÇÃO\nSEMANAL",
+  "dash_registrePesoSemana": "Registre seu peso desta semana\npara acompanhar sua evolução.",
+  "dash_pesoInvalidoMsg": "Peso inválido",
+  "dash_concluida": "Concluída!",
+  "dash_historicoPontos": "HISTÓRICO DE PONTOS",
+  "dash_pesoAtualQuebra": "PESO\nATUAL",
+  "dash_erroCarregar": "Erro ao carregar",
+  "conf_digite8": "Digite todos os 8 dígitos",
+  "conf_codigoInvalido": "Código inválido ou expirado. Verifique e tente novamente.",
+  "conf_codigoReenviado": "Código reenviado para {email}",
+  "@conf_codigoReenviado": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "conf_erroReenviar": "Erro ao reenviar o código. Tente novamente.",
+  "conf_enviamosCodigo": "Enviamos um código de 8 dígitos para:",
+  "conf_reenviarEm": "Reenviar código em {seg}s",
+  "@conf_reenviarEm": {
+    "placeholders": {
+      "seg": {
+        "type": "int"
+      }
+    }
+  },
+  "conf_naoRecebeu": "Não recebeu o código? Reenviar",
+  "login_credenciaisInvalidas": "Email ou senha incorretos. Verifique e tente novamente.",
+  "login_confirmeEmail": "Confirme seu email antes de entrar. Verifique sua caixa de entrada.",
+  "login_contaNaoEncontrada": "Nenhuma conta encontrada com este email.",
+  "login_semInternet": "Sem conexão com a internet. Verifique sua rede.",
+  "login_muitasTentativas": "Muitas tentativas. Aguarde alguns minutos e tente novamente.",
+  "login_minimo6": "Mínimo 6 caracteres",
+  "cad_emailPlaceholder": "seu@email.com",
+  "calib_sessaoExpirada": "Sessão expirada. Faça login novamente.",
+  "calib_naoViMoeda": "Não consegui ver a moeda e a mão claramente. Tente de novo com boa luz, moeda bem no centro da palma.",
+  "calib_naoFoiPossivel": "Não foi possível calibrar. Tente novamente.",
+  "calib_sucesso": "IA calibrada! As análises de foto ficarão mais precisas.",
+  "calib_naoFoiPossivelSalvar": "Não foi possível salvar. Tente novamente.",
+  "calib_explicacao": "A IA aprende o tamanho da sua mão usando uma moeda como régua. Depois, ela usa sua mão como referência para estimar as porções com mais precisão. É só uma vez.",
+  "calib_abraPalma": "Abra a palma e coloque a moeda no centro. Boa luz, foto de cima.",
+  "calib_camera": "CÂMERA",
+  "calib_medindo": "Medindo sua mão...",
+  "calib_maoMedida": "Mão medida",
+  "calib_larguraPalma": "LARGURA DA PALMA",
+  "calib_confira": "Confira se faz sentido. Se estiver estranho, refaça a foto.",
+  "calib_salvar": "SALVAR CALIBRAÇÃO",
+  "notif_solicitacoes": "SOLICITAÇÕES DE AMIZADE",
+  "notif_erroCarregar": "Erro ao carregar",
+  "notif_nenhumaPendente": "Nenhuma solicitação pendente",
+  "notif_querSerAmigo": "quer ser seu amigo",
+  "notif_noti": "NOTIFI",
+  "notif_cacoes": "CAÇÕES",
+  "priv_naoFoiPossivelAbrir": "Não foi possível abrir {url}",
+  "@priv_naoFoiPossivelAbrir": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "priv_contaExcluida": "Conta e dados excluídos.",
+  "priv_naoFoiPossivelAtualizar": "Não foi possível atualizar",
+  "priv_naoFoiPossivelCarregar": "Não foi possível carregar",
+  "priv_exportaTudo": "Exporta tudo que guardamos sobre você em JSON — perfil, treinos, dieta, peso, pontos e consentimentos.",
+  "priv_apagaConta": "Apaga a conta e todos os dados permanentemente. Não há como desfazer.",
+  "priv_faleComEncarregado": "Para dúvidas ou pedidos sobre seus dados, fale com o encarregado de proteção de dados:",
+  "priv_versaoDocs": "Versão dos documentos: {v}",
+  "@priv_versaoDocs": {
+    "placeholders": {
+      "v": {
+        "type": "String"
+      }
+    }
+  },
+  "priv_excluirConta": "Excluir conta",
+  "priv_itemPesoBio": "• Histórico de peso e bioimpedância\n",
+  "priv_itemTreinos": "• Treinos, modelos e conclusões\n",
+  "priv_itemDieta": "• Registros de dieta e água\n",
+  "priv_semBackup": "Não há backup e não há como desfazer.",
+  "priv_digiteParaConfirmar": "Digite {frase} para confirmar:",
+  "@priv_digiteParaConfirmar": {
+    "placeholders": {
+      "frase": {
+        "type": "String"
+      }
+    }
+  },
+  "priv_excluir": "Excluir",
+  "priv_exportacaoGerada": "Exportação gerada — {kb} KB de JSON.",
+  "@priv_exportacaoGerada": {
+    "placeholders": {
+      "kb": {
+        "type": "String"
+      }
+    }
+  },
+  "priv_obrigatorioParaUsar": "Obrigatório para usar o app — para retirar, exclua a conta.",
+  "priv_aceitoNaVersao": "Aceito na versão {v} — os documentos mudaram desde então.",
+  "@priv_aceitoNaVersao": {
+    "placeholders": {
+      "v": {
+        "type": "String"
+      }
+    }
+  },
+  "doc_versao": "Versão {v}",
+  "@doc_versao": {
+    "placeholders": {
+      "v": {
+        "type": "String"
+      }
+    }
+  },
+  "doc_roleAteOFim": "Role até o fim para aceitar",
+  "erro_verifiqueConexao": "Verifique sua conexão e tente novamente.",
+  "tut_bemVindoTitulo": "Bem-vindo ao Muscle Champ!",
+  "tut_bemVindoCorpo": "Seu hub de fitness gamificado. Ganhe pontos treinando e comendo bem, e suba no ranking superando seus amigos.",
+  "tut_pontosTitulo": "Pontos, Rank e Streak",
+  "tut_pontosCorpo": "Veja aqui seus pontos acumulados, posição no ranking global e entre amigos, e sua sequência de dias ativos.",
+  "tut_treinosIaTitulo": "Treinos com IA",
+  "tut_treinosIaCorpo": "Gere treinos personalizados com inteligência artificial ou registre treinos livres com séries, repetições e cargas.",
+  "tut_gerarTreinoTitulo": "Gerar Treino com IA",
+  "tut_gerarTreinoCorpo": "Toque em \"Gerar Treino\", escolha o grupo muscular e a IA monta o plano completo com exercícios, séries e descanso.",
+  "tut_dietaTitulo": "Dieta e Nutrição",
+  "tut_dietaCorpo": "Registre tudo que você come — por texto ou foto — e a IA calcula calorias, proteínas, carboidratos e gorduras.",
+  "tut_refeicaoTextoTitulo": "Registrar Refeição por Texto",
+  "tut_refeicaoTextoCorpo": "Descreva o que comeu (\"100g frango grelhado + arroz branco\") e a IA calcula os macros na hora.",
+  "tut_fotoTitulo": "Foto do Prato — Análise por IA",
+  "tut_fotoCorpo": "Tire uma foto do seu prato e a IA identifica os alimentos e estima automaticamente os macros e calorias.",
+  "tut_planoTitulo": "Plano de Dieta com IA",
+  "tut_planoCorpo": "Gere um cardápio completo para o dia baseado nas suas metas. Troque alimentos com um toque — a IA recalcula os macros para manter as calorias.",
+  "tut_rankingTitulo": "Ranking e Competição",
+  "tut_rankingCorpo": "Dispute posições com todos os usuários do app. Cada treino registrado e meta de dieta atingida vale pontos!",
+  "tut_amigosTitulo": "Ranking Global e Amigos",
+  "tut_amigosCorpo": "Alterne entre o ranking global e o ranking só com seus amigos. Busque usuários pelo nome e mande solicitação de amizade.",
+  "tut_perfilTitulo": "Seu Perfil",
+  "tut_perfilCorpo": "Configure seus dados físicos, defina metas e personalize sua foto de perfil para aparecer no ranking.",
+  "tut_metasTitulo": "Metas e Bioimpedância",
+  "tut_metasCorpo": "Defina peso alvo, calorias diárias e objetivo (ganhar massa / perder peso / manter). Registre medidas de bioimpedância para acompanhar sua evolução corporal.",
+  "tut_comecar": "COMEÇAR!",
+  "tut_proximo": "PRÓXIMO  →",
+  "priv_apagaPermanentemente": "Isto apaga permanentemente:\n\n",
+  "priv_itemPerfil": "• Perfil, foto e metas\n",
+  "priv_itemPontos": "• Pontos, ranking e amizades\n\n",
+  "perfil_metaImc": "Meta: IMC",
+  "nivel_pontoParaNivelResto": "ponto para o nível {nivel}",
+  "@nivel_pontoParaNivelResto": {
+    "placeholders": {
+      "nivel": {
+        "type": "int"
+      }
+    }
+  },
+  "nivel_pontosParaNivelResto": "pontos para o nível {nivel}",
+  "@nivel_pontosParaNivelResto": {
+    "placeholders": {
+      "nivel": {
+        "type": "int"
+      }
+    }
+  },
+  "grupo_peito": "Peito",
+  "grupo_costas": "Costas",
+  "grupo_ombros": "Ombros",
+  "grupo_biceps": "Bíceps",
+  "grupo_triceps": "Tríceps",
+  "grupo_pernas": "Pernas",
+  "grupo_gluteos": "Glúteos",
+  "grupo_core": "Core",
+  "grupo_fullBody": "Full Body",
+  "perfil_semanaAbrev": "S",
+  "perfil_evolucaoNaoCarregou": "Não foi possível carregar a evolução",
+  "perfil_tooltipSemana": "{total} pts\n+{ganhos} nesta semana",
+  "@perfil_tooltipSemana": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "ganhos": {
+        "type": "int"
+      }
+    }
+  },
+  "perfil_semanaDe": "Semana de {data}",
+  "@perfil_semanaDe": {
+    "placeholders": {
+      "data": {
+        "type": "String"
+      }
+    }
+  },
+  "pro_titulo": "MUSCLE CHAMP",
+  "pro_pro": "PRO",
+  "pro_subtitulo": "Treino, dieta e evolução com IA — sem limite.",
+  "pro_escolhaPlano": "ESCOLHA SEU PLANO",
+  "pro_oQueLibera": "O QUE O PRO LIBERA",
+  "pro_maisPopular": "MAIS ESCOLHIDO",
+  "pro_porMes": "{valor}/mês",
+  "@pro_porMes": {
+    "placeholders": {
+      "valor": {
+        "type": "String"
+      }
+    }
+  },
+  "pro_economia": "economiza {valor} por ano",
+  "@pro_economia": {
+    "placeholders": {
+      "valor": {
+        "type": "String"
+      }
+    }
+  },
+  "pro_periodoMensal": "Mensal",
+  "pro_periodoTrimestral": "Trimestral",
+  "pro_periodoAnual": "Anual",
+  "pro_comecarTrial": "COMEÇAR {dias} DIAS GRÁTIS",
+  "@pro_comecarTrial": {
+    "placeholders": {
+      "dias": {
+        "type": "int"
+      }
+    }
+  },
+  "pro_agoraNao": "Agora não",
+  "pro_restaurar": "Restaurar compra",
+  "pro_benefFoto": "Foto do prato vira macros",
+  "pro_benefFotoDesc": "A IA identifica o alimento e estima o peso",
+  "pro_benefDieta": "Plano de dieta gerado por IA",
+  "pro_benefDietaDesc": "Cardápio do dia nas suas metas, com troca de alimento",
+  "pro_benefTreino": "Treinos montados por IA",
+  "pro_benefTreinoDesc": "Escolha o grupo muscular e receba o treino pronto",
+  "pro_benefHistorico": "Histórico sem limite",
+  "pro_benefHistoricoDesc": "Toda a sua evolução de peso, pontos e medidas",
+  "pro_avisoTrial": "{dias} dias grátis. Cobramos {valor} só em {data}. Cancele antes e não paga nada.",
+  "@pro_avisoTrial": {
+    "placeholders": {
+      "dias": {
+        "type": "int"
+      },
+      "valor": {
+        "type": "String"
+      },
+      "data": {
+        "type": "String"
+      }
+    }
+  },
+  "pro_avisoRenovacao": "Primeiro ano por {entrada}. Renova automaticamente por {renovacao} por ano.",
+  "@pro_avisoRenovacao": {
+    "placeholders": {
+      "entrada": {
+        "type": "String"
+      },
+      "renovacao": {
+        "type": "String"
+      }
+    }
+  },
+  "pro_avisoRenovacaoSimples": "Renova automaticamente por {valor}. Cancele quando quiser.",
+  "@pro_avisoRenovacaoSimples": {
+    "placeholders": {
+      "valor": {
+        "type": "String"
+      }
+    }
+  },
+  "pro_avisoCancelar": "Você cancela pela loja de aplicativos, sem falar com ninguém.",
+  "pro_aoAssinarAceita": "Ao assinar você aceita os {termos} e a {privacidade}.",
+  "@pro_aoAssinarAceita": {
+    "placeholders": {
+      "termos": {
+        "type": "String"
+      },
+      "privacidade": {
+        "type": "String"
+      }
+    }
+  },
+  "demo_faixa": "MODO DEMONSTRAÇÃO",
+  "demo_explicacao": "Nenhuma cobrança é feita e nenhum dado sai deste aparelho.",
+  "pag_titulo": "PAGAMENTO",
+  "pag_resumo": "RESUMO",
+  "pag_hoje": "Hoje você paga",
+  "pag_gratis": "R$ 0,00",
+  "pag_depoisDoTrial": "Depois de {data}",
+  "@pag_depoisDoTrial": {
+    "placeholders": {
+      "data": {
+        "type": "String"
+      }
+    }
+  },
+  "pag_forma": "FORMA DE PAGAMENTO",
+  "pag_cartao": "Cartão",
+  "pag_pix": "Pix",
+  "pag_numeroCartao": "NÚMERO DO CARTÃO",
+  "pag_nomeNoCartao": "NOME NO CARTÃO",
+  "pag_validade": "VALIDADE",
+  "pag_cvv": "CVV",
+  "pag_pixInstrucao": "Na versão real aparece aqui um QR Code com validade de 30 minutos.",
+  "pag_confirmar": "CONFIRMAR ASSINATURA",
+  "pag_processando": "Processando...",
+  "pag_seguro": "Simulação local — nada é transmitido",
+  "suc_titulo": "ASSINATURA ATIVA",
+  "suc_bemVindo": "Bem-vindo ao Pro.",
+  "suc_trialAte": "Avaliação gratuita até {data}",
+  "@suc_trialAte": {
+    "placeholders": {
+      "data": {
+        "type": "String"
+      }
+    }
+  },
+  "suc_primeiraCobranca": "Primeira cobrança de {valor} em {data}",
+  "@suc_primeiraCobranca": {
+    "placeholders": {
+      "valor": {
+        "type": "String"
+      },
+      "data": {
+        "type": "String"
+      }
+    }
+  },
+  "suc_comecar": "COMEÇAR A TREINAR",
+  "perfil_assinatura": "ASSINATURA",
+  "perfil_planoGratuito": "Plano gratuito",
+  "perfil_verPlanos": "Ver planos",
+  "perfil_proAtivo": "Pro ativo",
+  "perfil_trialRestante": "{dias} dias de avaliação restantes",
+  "@perfil_trialRestante": {
+    "placeholders": {
+      "dias": {
+        "type": "int"
+      }
+    }
+  },
+  "perfil_renovaEm": "Renova em {data}",
+  "@perfil_renovaEm": {
+    "placeholders": {
+      "data": {
+        "type": "String"
+      }
+    }
+  },
+  "perfil_cancelarAssinatura": "Cancelar assinatura",
+  "perfil_cancelarConfirma": "Cancelar a assinatura? Você mantém o Pro até o fim do período já pago.",
+  "perfil_assinaturaCancelada": "Assinatura cancelada.",
+  "cota_restantesHoje": "{n} de {total} hoje",
+  "@cota_restantesHoje": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "cota_ilimitado": "Ilimitado",
+  "cota_limiteTitulo": "Você usou sua IA de hoje",
+  "cota_limiteFoto": "O plano gratuito analisa {n} foto por dia. Volta amanhã ou libere o uso sem limite.",
+  "@cota_limiteFoto": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "cota_limiteTexto": "O plano gratuito calcula {n} alimentos por texto por dia. Volta amanhã ou libere o uso sem limite.",
+  "@cota_limiteTexto": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "cota_limiteTreino": "O plano gratuito gera {n} treino por dia. Volta amanhã ou libere o uso sem limite.",
+  "@cota_limiteTreino": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "cota_limiteDieta": "O plano gratuito gera {n} plano de dieta por dia. Volta amanhã ou libere o uso sem limite.",
+  "@cota_limiteDieta": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "cota_semLimitePro": "Sem limite no Pro",
+  "cota_verPlanos": "VER PLANOS",
+  "cota_esperarAmanha": "Espero até amanhã",
+  "cota_zerarDemo": "Zerar cota (demo)",
+  "cota_zerada": "Cota do dia zerada.",
+  "pop_titulo": "Sua conta está pronta",
+  "pop_tituloRecorrente": "Desbloqueie a IA sem limite",
+  "pop_subtitulo": "{dias} dias grátis para usar tudo sem limite.",
+  "@pop_subtitulo": {
+    "placeholders": {
+      "dias": {
+        "type": "int"
+      }
+    }
+  },
+  "pop_noGratisVoceTem": "NO PLANO GRATUITO VOCÊ TEM, POR DIA",
+  "pop_linhaFoto": "{n} foto do prato analisada",
+  "@pop_linhaFoto": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "pop_linhaTexto": "{n} alimentos calculados por texto",
+  "@pop_linhaTexto": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "pop_linhaTreino": "{n} treino gerado por IA",
+  "@pop_linhaTreino": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "pop_linhaDieta": "{n} plano de dieta",
+  "@pop_linhaDieta": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "pop_comPro": "Com o Pro, tudo isso fica ilimitado.",
+  "pop_continuarGratis": "Continuar no plano gratuito",
+  "priv_palavraConfirmacao": "EXCLUIR",
+  "priv_falhaExcluir": "Falha ao excluir",
+  "priv_falhaExportar": "Falha ao exportar",
+  "priv_seusDados": "Seus dados",
+  "perfil_zonaPerigo": "ZONA DE PERIGO",
+  "perfil_excluirMinhaConta": "Excluir minha conta",
+  "perfil_excluindo": "Excluindo...",
+  "cad_limiteEmails": "O servidor de e-mail atingiu o limite de envios. Sua conta NÃO foi criada — tente de novo daqui a uma hora.",
+  "conf_limiteEmails": "O servidor de e-mail atingiu o limite de envios. Tente reenviar daqui a uma hora.",
+  "conq_primeiroTreino": "PRIMEIRO\nTREINO",
+  "conq_100pontos": "100\nPONTOS",
+  "conq_10treinos": "10\nTREINOS",
+  "conq_500pontos": "500\nPONTOS",
+  "conq_muscleChamp": "MUSCLE\nCHAMP",
+  "atleta_planoDeTreino": "PLANO DE TREINO",
+  "atleta_semTreinos": "Ainda não montou nenhum treino",
+  "atleta_naoCarregou": "Não foi possível carregar este perfil",
+  "atleta_metaSemanal": "Meta de {n} treinos por semana",
+  "@atleta_metaSemanal": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "atleta_competidor": "COMPETIDOR",
+  "atleta_copiar": "COPIAR",
+  "atleta_copiando": "Copiando...",
+  "atleta_nomeDaCopia": "{treino} · de {nome}",
+  "@atleta_nomeDaCopia": {
+    "placeholders": {
+      "treino": {
+        "type": "String"
+      },
+      "nome": {
+        "type": "String"
+      }
+    }
+  },
+  "atleta_treinoCopiado": "Treino copiado para os seus. As cargas começam zeradas.",
+  "atleta_falhaCopiar": "Não foi possível copiar o treino"
+}

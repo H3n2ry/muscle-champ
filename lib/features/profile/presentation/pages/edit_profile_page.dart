@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/mk_date_field.dart';
@@ -100,13 +101,13 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
       if (mounted) {
         context.pop();
-        MkSnack.success(context, 'Perfil atualizado com sucesso!');
+        MkSnack.success(context, L.of(context).edit_perfilAtualizado);
       }
     } catch (e) {
       if (mounted) {
         final msg = e.toString().replaceFirst('Exception: ', '');
         MkSnack.error(context,
-            msg.length > 100 ? 'Erro ao salvar. Tente novamente.' : msg);
+            msg.length > 100 ? L.of(context).edit_erroSalvar : msg);
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -155,12 +156,12 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('EDITAR',
+                          Text(L.of(context).edit_editar,
                               style: AppTypography.headlineLg.copyWith(
                                 fontSize: 26,
                                 fontWeight: FontWeight.w700,
                               )),
-                          Text('PERFIL',
+                          Text(L.of(context).edit_perfil,
                               style: AppTypography.headlineLg.copyWith(
                                 fontSize: 26,
                                 fontWeight: FontWeight.w700,
@@ -186,21 +187,21 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                           // ── Dados Pessoais ──────────────────────
                           _SectionHeader(
                               icon: Icons.person_outline,
-                              title: 'DADOS PESSOAIS'),
+                              title: L.of(context).edit_dadosPessoais),
                           const SizedBox(height: 14),
                           _EditField(
-                            label: 'NOME',
+                            label: L.of(context).edit_nome,
                             controller: _nameCtrl,
-                            hint: 'Seu nome completo',
+                            hint: L.of(context).edit_seuNomeCompleto,
                             validator: (v) =>
                                 v == null || v.trim().isEmpty
-                                    ? 'Obrigatório'
+                                    ? L.of(context).comum_obrigatorio
                                     : null,
                           ),
 
                           const SizedBox(height: 16),
 
-                          Text('DATA DE NASCIMENTO',
+                          Text(L.of(context).edit_dataNascimento,
                               style: AppTypography.labelSm.copyWith(
                                   letterSpacing: 1.5,
                                   color: AppColors.onSurfaceVariant,
@@ -217,14 +218,14 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                           // ── Medidas Corporais ───────────────────
                           _SectionHeader(
                               icon: Icons.monitor_weight_outlined,
-                              title: 'MEDIDAS CORPORAIS'),
+                              title: L.of(context).edit_medidasCorporais),
                           const SizedBox(height: 14),
 
                           Row(
                             children: [
                               Expanded(
                                 child: _EditField(
-                                  label: 'ALTURA',
+                                  label: L.of(context).edit_altura,
                                   controller: _heightCtrl,
                                   hint: '175',
                                   suffix: 'cm',
@@ -235,7 +236,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: _EditField(
-                                  label: 'PESO ATUAL',
+                                  label: L.of(context).edit_pesoAtual,
                                   controller: _currentWeightCtrl,
                                   hint: '80.0',
                                   suffix: 'kg',
@@ -251,7 +252,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                           const SizedBox(height: 12),
 
                           _EditField(
-                            label: 'PESO ALVO',
+                            label: L.of(context).edit_pesoAlvo,
                             controller: _targetWeightCtrl,
                             hint: '75.0',
                             suffix: 'kg',
@@ -278,7 +279,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                           // ── Objetivo ────────────────────────────
                           _SectionHeader(
                               icon: Icons.flag_outlined,
-                              title: 'OBJETIVO'),
+                              title: L.of(context).edit_objetivo),
                           const SizedBox(height: 14),
 
                           ..._goalOptions.map((opt) {
@@ -329,7 +330,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                               child: CircularProgressIndicator(
                                   strokeWidth: 2.5,
                                   color: AppColors.onPrimary))
-                          : Text('SALVAR ALTERAÇÕES',
+                          : Text(L.of(context).edit_salvarAlteracoes,
                               style: AppTypography.labelMd.copyWith(
                                 color: AppColors.onPrimary,
                                 fontSize: 15,
@@ -350,21 +351,30 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
 // ── Goal options ──────────────────────────────────────────────────────────────
 
+// A lista continua const (o `key` e o ícone não mudam de idioma); o texto sai
+// do L no momento de desenhar, senão a troca de idioma não chegaria aqui.
 class _GoalOption {
   final String key;
-  final String label;
-  final String description;
   final IconData icon;
-  const _GoalOption(this.key, this.label, this.description, this.icon);
+  const _GoalOption(this.key, this.icon);
+
+  String label(L l) => switch (key) {
+        'lose_weight' => l.objetivo_perdaPeso,
+        'gain_weight' => l.objetivo_ganhoMassa,
+        _ => l.objetivo_manutencaoUp,
+      };
+
+  String description(L l) => switch (key) {
+        'lose_weight' => l.objetivo_perdaPesoDesc,
+        'gain_weight' => l.objetivo_ganhoMassaDesc,
+        _ => l.objetivo_manutencaoDesc,
+      };
 }
 
 const _goalOptions = [
-  _GoalOption('lose_weight', 'PERDA DE PESO', 'Queimar gordura e definir o corpo',
-      Icons.trending_down),
-  _GoalOption('maintain', 'MANUTENÇÃO', 'Manter composição corporal atual',
-      Icons.balance),
-  _GoalOption('gain_weight', 'GANHO DE MASSA', 'Aumentar músculo e força',
-      Icons.trending_up),
+  _GoalOption('lose_weight', Icons.trending_down),
+  _GoalOption('maintain', Icons.balance),
+  _GoalOption('gain_weight', Icons.trending_up),
 ];
 
 class _GoalCard extends StatelessWidget {
@@ -415,7 +425,7 @@ class _GoalCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(option.label,
+                  Text(option.label(L.of(context)),
                       style: AppTypography.labelMd.copyWith(
                         color: selected
                             ? AppColors.primary
@@ -423,7 +433,7 @@ class _GoalCard extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       )),
                   const SizedBox(height: 2),
-                  Text(option.description,
+                  Text(option.description(L.of(context)),
                       style: AppTypography.bodySm
                           .copyWith(color: AppColors.onSurfaceVariant)),
                 ],
@@ -556,12 +566,12 @@ class _LiveBmiBar extends StatelessWidget {
   final double bmi;
   const _LiveBmiBar({required this.bmi});
 
-  String get _label {
-    if (bmi < 18.5) return 'Abaixo do peso';
-    if (bmi < 25.0) return 'Normal ✓';
-    if (bmi < 30.0) return 'Sobrepeso';
-    if (bmi < 35.0) return 'Obesidade I';
-    return 'Obesidade II+';
+  String _label(L l) {
+    if (bmi < 18.5) return l.imc_abaixoPeso;
+    if (bmi < 25.0) return l.imc_normalOk;
+    if (bmi < 30.0) return l.imc_sobrepeso;
+    if (bmi < 35.0) return l.imc_obesidade1;
+    return l.imc_obesidade2;
   }
 
   Color get _color {
@@ -591,11 +601,11 @@ class _LiveBmiBar extends StatelessWidget {
                 const Icon(Icons.monitor_weight_outlined,
                     size: 14, color: AppColors.onSurfaceVariant),
                 const SizedBox(width: 6),
-                Text('IMC',
+                Text(L.of(context).edit_imc,
                     style: AppTypography.labelSm.copyWith(letterSpacing: 2)),
               ]),
               Text(
-                '${bmi.toStringAsFixed(1)}  ·  $_label',
+                '${bmi.toStringAsFixed(1)}  ·  ${_label(L.of(context))}',
                 style: AppTypography.labelMd.copyWith(
                   color: _color,
                   fontWeight: FontWeight.w700,
