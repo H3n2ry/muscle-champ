@@ -308,35 +308,75 @@ class _Avatar extends ConsumerStatefulWidget {
 }
 
 class _AvatarState extends ConsumerState<_Avatar> {
-  bool _enviando = false;
+  bool _ocupado = false;
 
-  /// Guarda local para o selo sumir NA HORA do toque.
+  /// Vínculo como esta tela enxerga AGORA.
   ///
-  /// Recarregar o perfil inteiro pelo servidor também esconderia o selo, mas
-  /// piscaria a tela inteira em loading por causa de um toque num cantinho.
-  bool _pedido = false;
-
-  bool get _podeAdicionar =>
-      widget.amizade == 'nenhum' && !_pedido;
+  /// Espelha `widget.amizade` e é atualizado no toque, para o selo trocar na
+  /// hora. Recarregar o perfil pelo servidor também funcionaria, mas piscaria
+  /// a tela inteira em loading por causa de um toque num cantinho.
+  late String _estado = widget.amizade;
 
   Future<void> _pedirAmizade() async {
     final l = L.of(context);
-    setState(() => _enviando = true);
+    setState(() => _ocupado = true);
     try {
       await ref
           .read(rankingRepositoryProvider)
           .sendFriendRequest(widget.userId);
-      // O ranking de amigos precisa reler; sem isto o pedido só apareceria
+      // O ranking de amigos precisa reler; sem isto a mudança só apareceria
       // lá na próxima abertura do app.
       ref.invalidate(friendsRankingProvider);
       if (mounted) {
-        setState(() => _pedido = true);
+        setState(() => _estado = 'pendente');
         MkSnack.success(context, l.atleta_pedidoEnviado);
       }
     } catch (_) {
       if (mounted) MkSnack.error(context, l.atleta_falhaPedido);
     } finally {
-      if (mounted) setState(() => _enviando = false);
+      if (mounted) setState(() => _ocupado = false);
+    }
+  }
+
+  Future<void> _desfazerAmizade() async {
+    final l = L.of(context);
+
+    // Confirma antes: o selo é pequeno e fica colado na foto — um toque
+    // errado apagaria a amizade sem aviso. Mesmo diálogo do ranking.
+    final confirmou = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceContainerLow,
+        title: Text(l.rank_removerAmigo, style: AppTypography.headlineSm),
+        content: Text(l.rank_seraRemovido(widget.nome),
+            style: AppTypography.bodySm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l.comum_cancelar),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l.atleta_removerAmigo,
+                style: const TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+    if (confirmou != true || !mounted) return;
+
+    setState(() => _ocupado = true);
+    try {
+      await ref.read(rankingRepositoryProvider).removeFriend(widget.userId);
+      ref.invalidate(friendsRankingProvider);
+      if (mounted) {
+        setState(() => _estado = 'nenhum');
+        MkSnack.success(context, l.atleta_amizadeDesfeita);
+      }
+    } catch (_) {
+      if (mounted) MkSnack.error(context, l.atleta_falhaRemover);
+    } finally {
+      if (mounted) setState(() => _ocupado = false);
     }
   }
 
@@ -366,7 +406,11 @@ class _AvatarState extends ConsumerState<_Avatar> {
           : null,
     );
 
-    if (!_podeAdicionar) return foto;
+    final adicionar = _estado == 'nenhum';
+    final remover = _estado == 'amigos';
+    // pendente e proprio nao ganham selo: no primeiro o pedido ja foi feito,
+    // no segundo a pessoa e voce mesmo.
+    if (!adicionar && !remover) return foto;
 
     // `clipBehavior: none` porque o selo encosta na borda do círculo e seria
     // cortado pelo Stack padrão.
@@ -378,25 +422,30 @@ class _AvatarState extends ConsumerState<_Avatar> {
           right: -2,
           bottom: -2,
           child: GestureDetector(
-            onTap: _enviando ? null : _pedirAmizade,
+            onTap: _ocupado
+                ? null
+                : (adicionar ? _pedirAmizade : _desfazerAmizade),
             child: Container(
               width: 30,
               height: 30,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary,
+                color: adicionar ? AppColors.primary : AppColors.error,
                 // A borda na cor do fundo separa o selo da foto; sem ela, um
-                // avatar claro faz o círculo verde desaparecer na borda.
+                // avatar claro faz o círculo desaparecer na borda.
                 border: Border.all(color: AppColors.background, width: 2.5),
               ),
-              child: _enviando
+              child: _ocupado
                   ? const Padding(
                       padding: EdgeInsets.all(7),
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: AppColors.onPrimary),
                     )
-                  : const Icon(Icons.add,
-                      size: 18, color: AppColors.onPrimary),
+                  : Icon(adicionar ? Icons.add : Icons.remove,
+                      size: 18,
+                      color: adicionar
+                          ? AppColors.onPrimary
+                          : AppColors.onSurface),
             ),
           ),
         ),

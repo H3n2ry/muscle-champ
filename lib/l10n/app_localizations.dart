@@ -3776,6 +3776,24 @@ abstract class L {
   /// In pt, this message translates to:
   /// **'Adicionar amigo'**
   String get atleta_adicionarAmigo;
+
+  /// No description provided for @atleta_amizadeDesfeita.
+  ///
+  /// In pt, this message translates to:
+  /// **'Amizade desfeita'**
+  String get atleta_amizadeDesfeita;
+
+  /// No description provided for @atleta_falhaRemover.
+  ///
+  /// In pt, this message translates to:
+  /// **'Não foi possível desfazer a amizade'**
+  String get atleta_falhaRemover;
+
+  /// No description provided for @atleta_removerAmigo.
+  ///
+  /// In pt, this message translates to:
+  /// **'Remover amigo'**
+  String get atleta_removerAmigo;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

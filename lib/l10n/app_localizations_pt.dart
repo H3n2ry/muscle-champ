@@ -2037,4 +2037,13 @@ class LPt extends L {
 
   @override
   String get atleta_adicionarAmigo => 'Adicionar amigo';
+
+  @override
+  String get atleta_amizadeDesfeita => 'Amizade desfeita';
+
+  @override
+  String get atleta_falhaRemover => 'Não foi possível desfazer a amizade';
+
+  @override
+  String get atleta_removerAmigo => 'Remover amigo';
 }

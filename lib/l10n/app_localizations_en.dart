@@ -2027,4 +2027,13 @@ class LEn extends L {
 
   @override
   String get atleta_adicionarAmigo => 'Add friend';
+
+  @override
+  String get atleta_amizadeDesfeita => 'Friendship removed';
+
+  @override
+  String get atleta_falhaRemover => 'Could not remove the friendship';
+
+  @override
+  String get atleta_removerAmigo => 'Remove friend';
 }

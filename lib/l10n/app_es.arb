@@ -705,5 +705,8 @@
   "atleta_falhaCopiar": "No se pudo copiar el entrenamiento",
   "atleta_pedidoEnviado": "Solicitud de amistad enviada",
   "atleta_falhaPedido": "No se pudo enviar la solicitud",
-  "atleta_adicionarAmigo": "Añadir amigo"
+  "atleta_adicionarAmigo": "Añadir amigo",
+  "atleta_amizadeDesfeita": "Amistad eliminada",
+  "atleta_falhaRemover": "No se pudo eliminar la amistad",
+  "atleta_removerAmigo": "Eliminar amigo"
 }

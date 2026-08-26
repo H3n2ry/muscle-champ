@@ -2043,4 +2043,13 @@ class LEs extends L {
 
   @override
   String get atleta_adicionarAmigo => 'Añadir amigo';
+
+  @override
+  String get atleta_amizadeDesfeita => 'Amistad eliminada';
+
+  @override
+  String get atleta_falhaRemover => 'No se pudo eliminar la amistad';
+
+  @override
+  String get atleta_removerAmigo => 'Eliminar amigo';
 }

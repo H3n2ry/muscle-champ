@@ -705,5 +705,8 @@
   "atleta_falhaCopiar": "Could not copy the workout",
   "atleta_pedidoEnviado": "Friend request sent",
   "atleta_falhaPedido": "Could not send the request",
-  "atleta_adicionarAmigo": "Add friend"
+  "atleta_adicionarAmigo": "Add friend",
+  "atleta_amizadeDesfeita": "Friendship removed",
+  "atleta_falhaRemover": "Could not remove the friendship",
+  "atleta_removerAmigo": "Remove friend"
 }

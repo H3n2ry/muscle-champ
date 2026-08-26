@@ -1072,5 +1072,8 @@
   "atleta_falhaCopiar": "Não foi possível copiar o treino",
   "atleta_pedidoEnviado": "Pedido de amizade enviado",
   "atleta_falhaPedido": "Não foi possível enviar o pedido",
-  "atleta_adicionarAmigo": "Adicionar amigo"
+  "atleta_adicionarAmigo": "Adicionar amigo",
+  "atleta_amizadeDesfeita": "Amizade desfeita",
+  "atleta_falhaRemover": "Não foi possível desfazer a amizade",
+  "atleta_removerAmigo": "Remover amigo"
 }
