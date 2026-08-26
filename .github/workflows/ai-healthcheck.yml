@@ -55,6 +55,7 @@ jobs:
 
             model=$(grep -i '^x-model-used:'     /tmp/h_$task.txt | tr -d '\r' | cut -d' ' -f2-)
             fb=$(   grep -i '^x-model-fallback:' /tmp/h_$task.txt | tr -d '\r' | cut -d' ' -f2-)
+            primary=$(grep -i '^x-model-primary:' /tmp/h_$task.txt | tr -d '\r' | cut -d' ' -f2-)
 
             echo "HTTP        : $code"
             echo "modelo usado: ${model:-<ausente>}"
@@ -92,7 +93,16 @@ jobs:
               return
             fi
 
-            echo "ok (finish=$finish)"
+            # 5) Trocou de modelo sem ser por aposentadoria = 429 empurrou
+            #    para o reserva. Nao e falha: o fallback fez o trabalho dele,
+            #    e falhar aqui viraria alarme falso num pico de uso. Mas o
+            #    aviso importa, porque os dois modelos nao respondem igual —
+            #    na bateria nutricional eles discordaram de unidade.
+            if [ -n "$primary" ] && [ "$model" != "$primary" ]; then
+              echo "::warning::[$task] respondeu '$model' e nao o primario '$primary' — provavelmente 429 empurrando para o reserva. Se repetir todo dia, o primario esta com problema."
+            fi
+
+            echo "ok (finish=$finish, modelo=$model)"
           }
 
           check_task text

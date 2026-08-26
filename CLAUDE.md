@@ -58,16 +58,20 @@ because `usePathUrlStrategy` is not called, so every route resolves through
 `index.html` on its own. If someone ever switches to path URLs, a SPA fallback
 becomes mandatory or deep links will 404.
 
-### Web deploy — Vercel (legado, em transição)
+### Vercel — RETIRED (2026-08-26)
 
-```bash
-cd build/web && npx vercel --prod --yes --scope "af-dev"
-```
+**Do not deploy the app there.** `muscle-champ.vercel.app` now serves nothing
+but a `307` redirect to `muscle-champ.pages.dev`.
 
-Kept alive during the migration so testing can continue on
-`muscle-champ.vercel.app`. Both hosts serve the same build and hit the same
-Supabase, so accounts and data are shared. Retire this once the domain points
-at Cloudflare.
+Redirecting rather than just abandoning the project was deliberate: stopping
+deploys would have left the last build frozen there forever, and anyone with
+the URL bookmarked would keep testing a stale app while believing it was
+current. The redirect is **temporary (307), not permanent (308)** — a 308 gets
+cached by browsers indefinitely and would be painful to undo if Vercel is ever
+needed again.
+
+The project still exists in the `af-dev` scope, serving only the redirect.
+Deleting it is a dashboard action and is yours to take whenever you want.
 
 ### Build + deploy completo
 ```bash
@@ -533,12 +537,22 @@ UI mockups: `../dashboard_de_progresso_v3/` and `../perfil_e_evolu_o_v3/` (HTML 
 | `supabase-backup.yml` | Database backup |
 | `ai-healthcheck.yml` | Daily probe of both model chains — fails the run (→ email) if a model died |
 
-`ai-healthcheck.yml` checks four things per task, and the second one is the reason it
+`ai-healthcheck.yml` checks five things per task, and the second one is the reason it
 exists: HTTP 200 · **`content` non-empty** · `finish_reason == "stop"` · no
-`x-model-fallback` header. A retired reasoning model returns *200 with empty content*, so
-status-code-only monitoring would report everything healthy while the app is broken. A
-present `x-model-fallback` means the chain already fell to the reserve — working, but
-`MODEL_CHAINS` needs updating.
+`x-model-fallback` header · `x-model-used == x-model-primary`. A retired reasoning
+model returns *200 with empty content*, so status-code-only monitoring would report
+everything healthy while the app is broken. A present `x-model-fallback` means the
+chain already fell to the reserve — working, but `MODEL_CHAINS` needs updating.
+
+**The fifth check catches the silent swap.** On 429 the proxy advances down the chain
+and answers normally, and `x-model-fallback` stays absent — that header only means
+*retired*. So under load the text task quietly alternates between models, and the two
+do not answer identically (the nutrition battery caught them disagreeing on units).
+The proxy now sends `x-model-primary` with the chain head and the workflow warns when
+`x-model-used` differs. It is a **warning, not a failure**: the fallback doing its job
+during a spike is healthy, and failing there would cry wolf — a genuinely dead primary
+still fails via `x-model-fallback`. Sending the primary from the proxy avoids the
+workflow keeping its own copy of `MODEL_CHAINS`, which would drift on the first swap.
 
 ## ⚠️ Signup is capped at ~2 accounts/hour (blocker)
 
@@ -585,6 +599,42 @@ hourly). Copy is a bandage; custom SMTP is the fix.
 `DELETE` there (`storage.protect_delete`), and since the function is one transaction,
 attempting it aborts the whole deletion and nothing is removed. The avatar is deleted
 client-side via the Storage API in `PrivacyRepository.deleteMyAccount()` before the RPC.
+
+## Banco de dados — `schema.sql` é a fonte da verdade
+
+`supabase/migrations/` **nunca foi um registro completo**: on 2026-08-26 the
+database had 27 applied migrations and the repo held 8 files, and the missing
+ones included the fixes for the `date - bigint` cast in `get_streak` and the
+`storage.objects` guard in `delete_my_account`. Rebuilding from that folder
+would have reintroduced solved bugs.
+
+Split from now on:
+
+| Arquivo | O que é |
+|---|---|
+| `supabase/schema.sql` | como o banco **é** hoje — é o que reproduz produção |
+| `supabase/gerar_schema.sql` | a consulta que **regenera** o arquivo acima |
+| `supabase/migrations/` | registro do que **mudou**, daqui para frente |
+
+To regenerate after any schema change: run `gerar_schema.sql` in the SQL Editor
+and paste the single `script` column over everything below the header in
+`schema.sql`.
+
+Two things the generator gets right that are easy to miss:
+
+- **Function grants.** Postgres gives `PUBLIC` EXECUTE on every new function,
+  so a rebuild without the `revoke`/`grant` block would leave every RPC
+  callable by `anon`. The block is generated from the live ACLs.
+- **`create policy %I`, not `%L`.** A policy name is an identifier. The first
+  version used `%L` and produced `create policy 'nome'` with single quotes,
+  which would have failed on all 29 policies. The comment in `gerar_schema.sql`
+  says so, because it is an easy mistake to repeat.
+
+Verification is real, not assumed: the table + RLS + policy portion was applied
+to a throwaway `_verif` schema inside a transaction (63 statements, no errors)
+and rolled back. What is **not** verified is the whole file applying to an empty
+database in one pass — that needs a spare database (Supabase branching would
+do it).
 
 ## Supabase Tables
 

@@ -65,7 +65,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Expose-Headers": "x-model-used, x-model-fallback",
+  "Access-Control-Expose-Headers":
+    "x-model-used, x-model-fallback, x-model-primary",
 };
 
 function json(status: number, body: unknown): Response {
@@ -267,6 +268,12 @@ Deno.serve(async (req: Request) => {
           ...corsHeaders,
           "Content-Type": "application/json",
           "x-model-used": model,
+          // Qual DEVERIA ter respondido. Sem isto o monitoramento nao enxerga
+          // troca por 429: o proxy avanca na cadeia e responde normal, e
+          // x-model-fallback so marca modelo APOSENTADO. Mandar o primario
+          // daqui evita o healthcheck manter uma copia de MODEL_CHAINS que
+          // ia divergir na primeira troca.
+          "x-model-primary": chain[0].id,
           ...(retired.length ? { "x-model-fallback": retired.join(",") } : {}),
         },
       });
