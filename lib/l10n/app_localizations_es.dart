@@ -2034,4 +2034,13 @@ class LEs extends L {
 
   @override
   String get atleta_falhaCopiar => 'No se pudo copiar el entrenamiento';
+
+  @override
+  String get atleta_pedidoEnviado => 'Solicitud de amistad enviada';
+
+  @override
+  String get atleta_falhaPedido => 'No se pudo enviar la solicitud';
+
+  @override
+  String get atleta_adicionarAmigo => 'Añadir amigo';
 }

@@ -2018,4 +2018,13 @@ class LEn extends L {
 
   @override
   String get atleta_falhaCopiar => 'Could not copy the workout';
+
+  @override
+  String get atleta_pedidoEnviado => 'Friend request sent';
+
+  @override
+  String get atleta_falhaPedido => 'Could not send the request';
+
+  @override
+  String get atleta_adicionarAmigo => 'Add friend';
 }

@@ -3758,6 +3758,24 @@ abstract class L {
   /// In pt, this message translates to:
   /// **'Não foi possível copiar o treino'**
   String get atleta_falhaCopiar;
+
+  /// No description provided for @atleta_pedidoEnviado.
+  ///
+  /// In pt, this message translates to:
+  /// **'Pedido de amizade enviado'**
+  String get atleta_pedidoEnviado;
+
+  /// No description provided for @atleta_falhaPedido.
+  ///
+  /// In pt, this message translates to:
+  /// **'Não foi possível enviar o pedido'**
+  String get atleta_falhaPedido;
+
+  /// No description provided for @atleta_adicionarAmigo.
+  ///
+  /// In pt, this message translates to:
+  /// **'Adicionar amigo'**
+  String get atleta_adicionarAmigo;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {

@@ -702,5 +702,8 @@
   "atleta_copiando": "Copiando...",
   "atleta_nomeDaCopia": "{treino} · de {nome}",
   "atleta_treinoCopiado": "Entrenamiento copiado a los tuyos. Las cargas empiezan en cero.",
-  "atleta_falhaCopiar": "No se pudo copiar el entrenamiento"
+  "atleta_falhaCopiar": "No se pudo copiar el entrenamiento",
+  "atleta_pedidoEnviado": "Solicitud de amistad enviada",
+  "atleta_falhaPedido": "No se pudo enviar la solicitud",
+  "atleta_adicionarAmigo": "Añadir amigo"
 }

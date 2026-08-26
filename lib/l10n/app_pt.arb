@@ -1069,5 +1069,8 @@
     }
   },
   "atleta_treinoCopiado": "Treino copiado para os seus. As cargas começam zeradas.",
-  "atleta_falhaCopiar": "Não foi possível copiar o treino"
+  "atleta_falhaCopiar": "Não foi possível copiar o treino",
+  "atleta_pedidoEnviado": "Pedido de amizade enviado",
+  "atleta_falhaPedido": "Não foi possível enviar o pedido",
+  "atleta_adicionarAmigo": "Adicionar amigo"
 }

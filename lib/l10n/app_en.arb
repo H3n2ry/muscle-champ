@@ -702,5 +702,8 @@
   "atleta_copiando": "Copying...",
   "atleta_nomeDaCopia": "{treino} · from {nome}",
   "atleta_treinoCopiado": "Workout copied to yours. Loads start at zero.",
-  "atleta_falhaCopiar": "Could not copy the workout"
+  "atleta_falhaCopiar": "Could not copy the workout",
+  "atleta_pedidoEnviado": "Friend request sent",
+  "atleta_falhaPedido": "Could not send the request",
+  "atleta_adicionarAmigo": "Add friend"
 }

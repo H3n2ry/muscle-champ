@@ -65,6 +65,11 @@ class PerfilPublico {
   final int totalTreinos;
   final int streak;
 
+  /// Vinculo com quem esta olhando: proprio | amigos | pendente | nenhum.
+  /// So 'nenhum' mostra o selo de adicionar — nos outros casos ele seria
+  /// um botao que nao faz nada ou que refaz um pedido ja feito.
+  final String amizade;
+
   final List<TreinoPublico> treinos;
 
   const PerfilPublico({
@@ -77,6 +82,7 @@ class PerfilPublico {
     required this.totalPontos,
     required this.totalTreinos,
     required this.streak,
+    required this.amizade,
     required this.treinos,
   });
 
@@ -90,6 +96,7 @@ class PerfilPublico {
         totalPontos: (j['total_pontos'] as num?)?.toInt() ?? 0,
         totalTreinos: (j['total_treinos'] as num?)?.toInt() ?? 0,
         streak: (j['streak'] as num?)?.toInt() ?? 0,
+        amizade: j['amizade'] as String? ?? 'nenhum',
         treinos: ((j['treinos'] as List?) ?? const [])
             .map((t) => TreinoPublico.doJson(Map<String, dynamic>.from(t)))
             .toList(),

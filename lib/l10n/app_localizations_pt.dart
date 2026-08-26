@@ -2028,4 +2028,13 @@ class LPt extends L {
 
   @override
   String get atleta_falhaCopiar => 'Não foi possível copiar o treino';
+
+  @override
+  String get atleta_pedidoEnviado => 'Pedido de amizade enviado';
+
+  @override
+  String get atleta_falhaPedido => 'Não foi possível enviar o pedido';
+
+  @override
+  String get atleta_adicionarAmigo => 'Adicionar amigo';
 }

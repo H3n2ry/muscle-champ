@@ -70,8 +70,18 @@ current. The redirect is **temporary (307), not permanent (308)** — a 308 gets
 cached by browsers indefinitely and would be painful to undo if Vercel is ever
 needed again.
 
-The project still exists in the `af-dev` scope, serving only the redirect.
-Deleting it is a dashboard action and is yours to take whenever you want.
+The project still exists in the `af-dev` scope, serving only the redirect. The
+files live in `tools/vercel-retirado/` — versioned because the redirect has
+already been clobbered once and nobody remembers its contents from memory.
+
+⚠️ **The Vercel project was connected to GitHub.** A `git push` to `master`
+triggered an automatic deploy of the repo root — which is not a static site —
+and the resulting 404 replaced the redirect fifteen minutes after it was
+verified working. Retiring a host without cutting its Git integration is a time
+bomb: every future push breaks it again. Turned off with
+`npx vercel git disconnect`. If anyone reconnects it, this comes back.
+
+Deleting the project outright is a dashboard action and is yours to take.
 
 ### Build + deploy completo
 ```bash

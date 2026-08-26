@@ -17,7 +17,9 @@ import '../../../../shared/widgets/badge_gallery.dart';
 import '../../../../shared/widgets/mk_snack.dart';
 import '../../../workout/presentation/providers/workout_template_provider.dart';
 import '../../data/models/perfil_publico.dart';
+import '../../data/repositories/ranking_repository.dart';
 import '../providers/perfil_publico_provider.dart';
+import '../providers/ranking_provider.dart';
 
 class PerfilPublicoPage extends ConsumerWidget {
   final String userId;
@@ -123,7 +125,12 @@ class _Conteudo extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SizedBox(height: 16),
-                    _Avatar(url: perfil.avatarUrl, nome: perfil.nome),
+                    _Avatar(
+                      url: perfil.avatarUrl,
+                      nome: perfil.nome,
+                      userId: perfil.id,
+                      amizade: perfil.amizade,
+                    ),
                     const SizedBox(height: 12),
                     Text(perfil.nome,
                         style: AppTypography.headlineMd
@@ -283,32 +290,117 @@ class _Conteudo extends StatelessWidget {
 
 // ── Peças ────────────────────────────────────────────────────────────────────
 
-class _Avatar extends StatelessWidget {
+class _Avatar extends ConsumerStatefulWidget {
   final String? url;
   final String nome;
-  const _Avatar({required this.url, required this.nome});
+  final String userId;
+  final String amizade;
+
+  const _Avatar({
+    required this.url,
+    required this.nome,
+    required this.userId,
+    required this.amizade,
+  });
+
+  @override
+  ConsumerState<_Avatar> createState() => _AvatarState();
+}
+
+class _AvatarState extends ConsumerState<_Avatar> {
+  bool _enviando = false;
+
+  /// Guarda local para o selo sumir NA HORA do toque.
+  ///
+  /// Recarregar o perfil inteiro pelo servidor também esconderia o selo, mas
+  /// piscaria a tela inteira em loading por causa de um toque num cantinho.
+  bool _pedido = false;
+
+  bool get _podeAdicionar =>
+      widget.amizade == 'nenhum' && !_pedido;
+
+  Future<void> _pedirAmizade() async {
+    final l = L.of(context);
+    setState(() => _enviando = true);
+    try {
+      await ref
+          .read(rankingRepositoryProvider)
+          .sendFriendRequest(widget.userId);
+      // O ranking de amigos precisa reler; sem isto o pedido só apareceria
+      // lá na próxima abertura do app.
+      ref.invalidate(friendsRankingProvider);
+      if (mounted) {
+        setState(() => _pedido = true);
+        MkSnack.success(context, l.atleta_pedidoEnviado);
+      }
+    } catch (_) {
+      if (mounted) MkSnack.error(context, l.atleta_falhaPedido);
+    } finally {
+      if (mounted) setState(() => _enviando = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final nome = widget.nome;
+    final url = widget.url;
     final inicial = nome.trim().isEmpty ? '?' : nome.trim()[0].toUpperCase();
-    return Container(
+
+    final foto = Container(
       width: 88,
       height: 88,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: AppColors.surfaceContainerLow,
         border: Border.all(color: AppColors.primary, width: 2),
-        image: (url != null && url!.isNotEmpty)
-            ? DecorationImage(image: NetworkImage(url!), fit: BoxFit.cover)
+        image: (url != null && url.isNotEmpty)
+            ? DecorationImage(image: NetworkImage(url), fit: BoxFit.cover)
             : null,
       ),
-      child: (url == null || url!.isEmpty)
+      child: (url == null || url.isEmpty)
           ? Center(
               child: Text(inicial,
                   style: AppTypography.display
                       .copyWith(fontSize: 34, color: AppColors.primary)),
             )
           : null,
+    );
+
+    if (!_podeAdicionar) return foto;
+
+    // `clipBehavior: none` porque o selo encosta na borda do círculo e seria
+    // cortado pelo Stack padrão.
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        foto,
+        Positioned(
+          right: -2,
+          bottom: -2,
+          child: GestureDetector(
+            onTap: _enviando ? null : _pedirAmizade,
+            child: Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primary,
+                // A borda na cor do fundo separa o selo da foto; sem ela, um
+                // avatar claro faz o círculo verde desaparecer na borda.
+                border: Border.all(color: AppColors.background, width: 2.5),
+              ),
+              child: _enviando
+                  ? const Padding(
+                      padding: EdgeInsets.all(7),
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: AppColors.onPrimary),
+                    )
+                  : const Icon(Icons.add,
+                      size: 18, color: AppColors.onPrimary),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
