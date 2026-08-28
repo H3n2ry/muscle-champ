@@ -47,7 +47,7 @@
 >
 > Tudo num app Android gratuito.
 >
-> 📲 muscle-champ.vercel.app
+> 📲 muscle-champ.pages.dev
 >
 > #fitness #musculação #IA #academia
 
@@ -87,7 +87,7 @@
 > • max_tokens muito baixo corta respostas JSON no meio — aprendido na prática
 > • Supabase RLS + RPCs substituem um backend inteiro para apps deste porte
 >
-> App gratuito: muscle-champ.vercel.app
+> App gratuito: muscle-champ.pages.dev
 >
 > #Flutter #AI #Groq #Supabase #MobileApp
 
@@ -100,7 +100,7 @@
 >
 > Só tirar a foto, a IA faz o resto ✨
 >
-> Disponível agora 👉 muscle-champ.vercel.app
+> Disponível agora 👉 muscle-champ.pages.dev
 > (link na bio)
 >
 > #musclechamp #fitness #IA #dieta #academia #treino #nutrição #saude

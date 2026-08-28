@@ -2,7 +2,7 @@
 
 App fitness gamificado para Android e Web. Registre treinos, acompanhe sua dieta com IA e dispute rankings com amigos.
 
-**Live:** https://muscle-champ.vercel.app
+**Live:** https://muscle-champ.pages.dev
 
 ## Funcionalidades
 

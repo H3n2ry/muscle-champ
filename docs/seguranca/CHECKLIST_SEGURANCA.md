@@ -54,7 +54,7 @@
 - [ ] `flutter build web --release`
 - [ ] Verificar que `build/web/` contém `index.html` e assets
 - [ ] `vercel --prod --yes --scope "af-dev"` dentro de `build/web/`
-- [ ] Acessar https://muscle-champ.vercel.app e testar login + funcionalidade principal
+- [ ] Acessar https://muscle-champ.pages.dev e testar login + funcionalidade principal
 - [ ] Verificar console do browser — sem erros de CORS ou recursos faltando
 
 ---

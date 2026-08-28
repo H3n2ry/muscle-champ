@@ -12,7 +12,7 @@ Verifique a pasta de spam. Se não encontrar, tente se cadastrar novamente com o
 Na tela de login, toque em "Esqueci minha senha" (a implementar). Um link de redefinição será enviado para o seu e-mail.
 
 **3. Posso usar o mesmo login no celular e no navegador?**
-Sim. O Muscle Champ funciona no app Android e em qualquer navegador via https://muscle-champ.vercel.app. Seus dados são sincronizados automaticamente.
+Sim. O Muscle Champ funciona no app Android e em qualquer navegador via https://muscle-champ.pages.dev. Seus dados são sincronizados automaticamente.
 
 ---
 

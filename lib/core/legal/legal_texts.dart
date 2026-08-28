@@ -14,9 +14,15 @@ class LegalTexts {
   // TODO(legal): trocar pelo domínio próprio quando musclechamp.com.br existir.
   // O Google Play exige que a Política de Privacidade esteja numa URL pública
   // e estável, e que exista uma URL de exclusão de conta acessível sem login.
-  static const String privacyUrl  = 'https://muscle-champ.vercel.app/privacidade.html';
-  static const String termsUrl    = 'https://muscle-champ.vercel.app/termos.html';
-  static const String deletionUrl = 'https://muscle-champ.vercel.app/excluir-conta.html';
+  //
+  // ⚠️ Apontavam para `muscle-champ.vercel.app` — o host APOSENTADO, que hoje
+  // só devolve um 307 para cá. Funcionava, mas por acidente: apagar o projeto
+  // na Vercel (ação pendente do dono) mataria os três links de dentro do app,
+  // incluindo o de exclusão de conta, cuja indisponibilidade é violação de
+  // política do Play. Corrigido em 2026-08-28; os três respondem 200 aqui.
+  static const String privacyUrl  = 'https://muscle-champ.pages.dev/privacidade.html';
+  static const String termsUrl    = 'https://muscle-champ.pages.dev/termos.html';
+  static const String deletionUrl = 'https://muscle-champ.pages.dev/excluir-conta.html';
 
   /// Canal para exercício de direitos do titular (LGPD Art. 18 / GDPR Art. 15-22).
   /// Precisa bater com o e-mail publicado em docs/juridico/PRIVACY.md.

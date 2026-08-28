@@ -12,7 +12,7 @@
 - **Objetivo principal:** App fitness gamificado para Android e Web — treinos com IA, dieta por foto e ranking entre amigos
 - **Stack:** Flutter 3.44 · Dart 3.12 · Riverpod · GoRouter · Supabase · Groq API · Vercel
 - **Repositório:** local (`C:\Users\Jean\Desktop\muscle camp\project\app`)
-- **Deploy atual:** https://muscle-champ.vercel.app (web) · APK distribuído via Google Drive
+- **Deploy atual:** https://muscle-champ.pages.dev (web) · APK distribuído via Google Drive
 
 ---
 

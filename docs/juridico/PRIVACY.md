@@ -3,7 +3,7 @@
 
 > **Status:** Rascunho finalizado. Revisar com advogado antes de publicar.
 > **Versão dos documentos:** `2026-08-17` — precisa bater com `LegalTexts.documentVersion`.
-> **Publicado em:** `web/privacidade.html` → `https://muscle-champ.vercel.app/privacidade.html`
+> **Publicado em:** `web/privacidade.html` → `https://muscle-champ.pages.dev/privacidade.html`
 > **URL futura:** `https://musclechamp.com.br/privacidade` (aguarda domínio próprio)
 >
 > ⚠️ **A versão canônica publicada é o HTML.** Ao alterar este arquivo, replicar em
