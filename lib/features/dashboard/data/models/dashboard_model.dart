@@ -10,6 +10,14 @@ class DashboardModel {
   final int weeklyWorkoutGoal;
   final List<PointHistoryEntry> pointHistory;
 
+  // Identidade do atleta — usada só pelo cartão do topo da home. Vem junto do
+  // resto para a home não precisar acordar o `profileProvider`, que dispara
+  // seis consultas e é `autoDispose` (refaria todas a cada troca de aba).
+  final String nome;
+  final String? avatarUrl;
+  final String objetivo;
+  final int streak;
+
   const DashboardModel({
     required this.totalPoints,
     required this.globalRank,
@@ -21,6 +29,10 @@ class DashboardModel {
     required this.weeklyWorkouts,
     required this.weeklyWorkoutGoal,
     required this.pointHistory,
+    this.nome = '',
+    this.avatarUrl,
+    this.objetivo = 'maintain',
+    this.streak = 0,
   });
 
   factory DashboardModel.fromJson(Map<String, dynamic> json) => DashboardModel(
@@ -36,6 +48,10 @@ class DashboardModel {
         pointHistory: (json['point_history'] as List)
             .map((e) => PointHistoryEntry.fromJson(e as Map<String, dynamic>))
             .toList(),
+        nome: (json['nome'] as String?) ?? '',
+        avatarUrl: json['avatar_url'] as String?,
+        objetivo: (json['objetivo'] as String?) ?? 'maintain',
+        streak: (json['streak'] as num?)?.toInt() ?? 0,
       );
 }
 

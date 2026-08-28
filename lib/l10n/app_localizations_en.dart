@@ -2036,4 +2036,78 @@ class LEn extends L {
 
   @override
   String get atleta_removerAmigo => 'Remove friend';
+
+  @override
+  String get cartao_pontuacaoGeral => 'OVERALL SCORE';
+
+  @override
+  String cartao_xp(int pts) {
+    return '$pts XP';
+  }
+
+  @override
+  String cartao_paraNivel(int pts, int n) {
+    return '$pts to Level $n';
+  }
+
+  @override
+  String cartao_diasSeguidos(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n day streak',
+      one: '1 day streak',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String cartao_frase1(String nome) {
+    return '$nome, today is a great day to respect your limits and listen to your body. Steady progress is built with patience.';
+  }
+
+  @override
+  String cartao_frase2(String nome) {
+    return '$nome, the set you do not skip is the one that builds the result. One step at a time.';
+  }
+
+  @override
+  String cartao_frase3(String nome) {
+    return '$nome, your body answers to whoever shows up every day. Keep your rhythm.';
+  }
+
+  @override
+  String cartao_frase4(String nome) {
+    return '$nome, comparing to yesterday is worth more than comparing to anyone else. Keep going.';
+  }
+
+  @override
+  String get cor_titulo => 'APP COLOR';
+
+  @override
+  String get cor_descricao => 'Pick the accent. It changes the whole app.';
+
+  @override
+  String get cor_segueAConta => 'The color follows your account on any device.';
+
+  @override
+  String get cor_limao => 'Lime';
+
+  @override
+  String get cor_roxo => 'Purple';
+
+  @override
+  String get cor_ciano => 'Cyan';
+
+  @override
+  String get cor_ambar => 'Amber';
+
+  @override
+  String get cor_coral => 'Coral';
+
+  @override
+  String get cor_azul => 'Blue';
+
+  @override
+  String get cor_rosa => 'Pink';
 }

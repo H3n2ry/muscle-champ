@@ -57,6 +57,19 @@ class DashboardRepository {
       defaultValue: [],
     );
 
+    // Nome e foto para o cartão do topo. `maybeSingle` e não `single`: conta
+    // recém-criada pode chegar aqui antes de o gatilho gravar o perfil.
+    final perfil = await _safe(
+      _client.from('profiles').select('name, avatar_url')
+          .eq('id', userId).maybeSingle(),
+      defaultValue: null,
+    );
+
+    final streak = await _safe(
+      _client.rpc('get_streak', params: {'p_user_id': userId}),
+      defaultValue: 0,
+    );
+
     final history = await _safe(
       _client.from('points').select('amount, created_at')
           .eq('user_id', userId).gte('created_at', sevenDaysAgo),
@@ -113,6 +126,10 @@ class DashboardRepository {
           .map((e) => PointHistoryEntry(date: e.key, points: e.value))
           .toList()
         ..sort((a, b) => a.date.compareTo(b.date)),
+      nome:      ((perfil as Map<String, dynamic>?)?['name'] as String?) ?? '',
+      avatarUrl: perfil?['avatar_url'] as String?,
+      objetivo:  (goalMap?['goal_type'] as String?) ?? 'maintain',
+      streak:    (streak as num?)?.toInt() ?? 0,
     );
   }
 

@@ -708,5 +708,75 @@
   "atleta_adicionarAmigo": "Añadir amigo",
   "atleta_amizadeDesfeita": "Amistad eliminada",
   "atleta_falhaRemover": "No se pudo eliminar la amistad",
-  "atleta_removerAmigo": "Eliminar amigo"
+  "atleta_removerAmigo": "Eliminar amigo",
+  "cartao_pontuacaoGeral": "PUNTUACIÓN GENERAL",
+  "cartao_xp": "{pts} XP",
+  "@cartao_xp": {
+    "placeholders": {
+      "pts": {
+        "type": "int"
+      }
+    }
+  },
+  "cartao_paraNivel": "{pts} para el Nivel {n}",
+  "@cartao_paraNivel": {
+    "placeholders": {
+      "pts": {
+        "type": "int"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "cartao_diasSeguidos": "{n, plural, =1{1 día seguido} other{{n} días seguidos}}",
+  "@cartao_diasSeguidos": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "cartao_frase1": "{nome}, hoy es un gran día para respetar tus límites y conectar con tu cuerpo. El progreso constante se construye con paciencia.",
+  "@cartao_frase1": {
+    "placeholders": {
+      "nome": {
+        "type": "String"
+      }
+    }
+  },
+  "cartao_frase2": "{nome}, la serie que no saltas es la que construye el resultado. Un paso a la vez.",
+  "@cartao_frase2": {
+    "placeholders": {
+      "nome": {
+        "type": "String"
+      }
+    }
+  },
+  "cartao_frase3": "{nome}, el cuerpo responde a quien aparece todos los días. Sigue a tu ritmo.",
+  "@cartao_frase3": {
+    "placeholders": {
+      "nome": {
+        "type": "String"
+      }
+    }
+  },
+  "cartao_frase4": "{nome}, compararte con ayer vale más que compararte con cualquier otra persona. Sigue adelante.",
+  "@cartao_frase4": {
+    "placeholders": {
+      "nome": {
+        "type": "String"
+      }
+    }
+  },
+  "cor_titulo": "COLOR DE LA APP",
+  "cor_descricao": "Elige el acento. Cambia toda la pantalla.",
+  "cor_segueAConta": "El color sigue a tu cuenta en cualquier dispositivo.",
+  "cor_limao": "Verde lima",
+  "cor_roxo": "Morado",
+  "cor_ciano": "Cian",
+  "cor_ambar": "Ámbar",
+  "cor_coral": "Coral",
+  "cor_azul": "Azul",
+  "cor_rosa": "Rosa"
 }

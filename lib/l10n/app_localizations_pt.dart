@@ -2046,4 +2046,78 @@ class LPt extends L {
 
   @override
   String get atleta_removerAmigo => 'Remover amigo';
+
+  @override
+  String get cartao_pontuacaoGeral => 'PONTUAÇÃO GERAL';
+
+  @override
+  String cartao_xp(int pts) {
+    return '$pts XP';
+  }
+
+  @override
+  String cartao_paraNivel(int pts, int n) {
+    return '$pts para o Nível $n';
+  }
+
+  @override
+  String cartao_diasSeguidos(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n dias seguidos',
+      one: '1 dia seguido',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String cartao_frase1(String nome) {
+    return '$nome, hoje é um ótimo dia para respeitar seus limites e se conectar com o seu corpo. Progresso constante se constrói com paciência.';
+  }
+
+  @override
+  String cartao_frase2(String nome) {
+    return '$nome, a série que você não pula é a que constrói o resultado. Um passo de cada vez.';
+  }
+
+  @override
+  String cartao_frase3(String nome) {
+    return '$nome, o corpo responde a quem aparece todos os dias. Siga no seu ritmo.';
+  }
+
+  @override
+  String cartao_frase4(String nome) {
+    return '$nome, comparar com ontem vale mais do que comparar com qualquer outra pessoa. Continue.';
+  }
+
+  @override
+  String get cor_titulo => 'COR DO APP';
+
+  @override
+  String get cor_descricao => 'Escolha o acento. Muda a tela inteira.';
+
+  @override
+  String get cor_segueAConta => 'A cor segue a sua conta em qualquer aparelho.';
+
+  @override
+  String get cor_limao => 'Verde-limão';
+
+  @override
+  String get cor_roxo => 'Roxo';
+
+  @override
+  String get cor_ciano => 'Ciano';
+
+  @override
+  String get cor_ambar => 'Âmbar';
+
+  @override
+  String get cor_coral => 'Coral';
+
+  @override
+  String get cor_azul => 'Azul';
+
+  @override
+  String get cor_rosa => 'Rosa';
 }

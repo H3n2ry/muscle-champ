@@ -708,5 +708,75 @@
   "atleta_adicionarAmigo": "Add friend",
   "atleta_amizadeDesfeita": "Friendship removed",
   "atleta_falhaRemover": "Could not remove the friendship",
-  "atleta_removerAmigo": "Remove friend"
+  "atleta_removerAmigo": "Remove friend",
+  "cartao_pontuacaoGeral": "OVERALL SCORE",
+  "cartao_xp": "{pts} XP",
+  "@cartao_xp": {
+    "placeholders": {
+      "pts": {
+        "type": "int"
+      }
+    }
+  },
+  "cartao_paraNivel": "{pts} to Level {n}",
+  "@cartao_paraNivel": {
+    "placeholders": {
+      "pts": {
+        "type": "int"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "cartao_diasSeguidos": "{n, plural, =1{1 day streak} other{{n} day streak}}",
+  "@cartao_diasSeguidos": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "cartao_frase1": "{nome}, today is a great day to respect your limits and listen to your body. Steady progress is built with patience.",
+  "@cartao_frase1": {
+    "placeholders": {
+      "nome": {
+        "type": "String"
+      }
+    }
+  },
+  "cartao_frase2": "{nome}, the set you do not skip is the one that builds the result. One step at a time.",
+  "@cartao_frase2": {
+    "placeholders": {
+      "nome": {
+        "type": "String"
+      }
+    }
+  },
+  "cartao_frase3": "{nome}, your body answers to whoever shows up every day. Keep your rhythm.",
+  "@cartao_frase3": {
+    "placeholders": {
+      "nome": {
+        "type": "String"
+      }
+    }
+  },
+  "cartao_frase4": "{nome}, comparing to yesterday is worth more than comparing to anyone else. Keep going.",
+  "@cartao_frase4": {
+    "placeholders": {
+      "nome": {
+        "type": "String"
+      }
+    }
+  },
+  "cor_titulo": "APP COLOR",
+  "cor_descricao": "Pick the accent. It changes the whole app.",
+  "cor_segueAConta": "The color follows your account on any device.",
+  "cor_limao": "Lime",
+  "cor_roxo": "Purple",
+  "cor_ciano": "Cyan",
+  "cor_ambar": "Amber",
+  "cor_coral": "Coral",
+  "cor_azul": "Blue",
+  "cor_rosa": "Pink"
 }

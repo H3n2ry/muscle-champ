@@ -12,6 +12,7 @@ import '../../../notifications/presentation/providers/notifications_provider.dar
 import '../../../profile/data/repositories/profile_repository.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../providers/dashboard_provider.dart';
+import '../widgets/cartao_do_atleta.dart';
 import '../../../../features/dashboard/data/models/dashboard_model.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
@@ -77,7 +78,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                         color: AppColors.primary.withOpacity(0.12),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.monitor_weight_outlined,
+                      child: Icon(Icons.monitor_weight_outlined,
                           color: AppColors.primary, size: 32),
                     ),
                     const SizedBox(height: 16),
@@ -127,7 +128,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
-                          borderSide: const BorderSide(
+                          borderSide: BorderSide(
                               color: AppColors.primary, width: 1.5),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
@@ -201,7 +202,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                               elevation: 0,
                             ),
                             child: saving
-                                ? const SizedBox(
+                                ? SizedBox(
                                     width: 20,
                                     height: 20,
                                     child: CircularProgressIndicator(
@@ -248,21 +249,16 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
               child: Row(
                 children: [
-                  // Nome
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(L.of(context).dash_bemVindo,
-                          style: AppTypography.labelSm
-                              .copyWith(letterSpacing: 2)),
-                      Text(
-                        user?.name.toUpperCase() ?? '---',
-                        style: AppTypography.headlineLg.copyWith(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
+                  // Marca. O nome do usuário saiu daqui: quem mostra é o
+                  // cartão logo abaixo, e os dois juntos repetiam o nome duas
+                  // vezes na mesma tela.
+                  Text(
+                    'MUSCLE CHAMP',
+                    style: AppTypography.headlineLg.copyWith(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1,
+                    ),
                   ),
                   const Spacer(),
                   // Sino de notificações
@@ -300,7 +296,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                             child: Container(
                               width: 18,
                               height: 18,
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 color: AppColors.primary,
                                 shape: BoxShape.circle,
                               ),
@@ -337,7 +333,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                             ? ClipOval(
                                 child: Image.network(user!.avatarUrl!,
                                     fit: BoxFit.cover))
-                            : const Icon(Icons.person,
+                            : Icon(Icons.person,
                                 color: AppColors.primary, size: 24),
                       ),
                       Positioned(
@@ -420,6 +416,13 @@ class _DashboardContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ── Cartão do atleta ───────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: CartaoDoAtleta(dados: data),
+        ),
+        const SizedBox(height: 20),
+
         // ── Hero: Big circular progress ────────────────────────────
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -427,7 +430,7 @@ class _DashboardContent extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(28),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
+              gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
@@ -601,7 +604,7 @@ class _DashboardContent extends StatelessWidget {
                             .clamp(0.0, 1.0)
                         : 0,
                     backgroundColor: AppColors.surfaceContainerHigh,
-                    valueColor: const AlwaysStoppedAnimation(
+                    valueColor: AlwaysStoppedAnimation(
                         AppColors.primary),
                     minHeight: 8,
                   ),
@@ -621,7 +624,7 @@ class _DashboardContent extends StatelessWidget {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: i < data.weeklyWorkouts
-                          ? const Icon(Icons.check,
+                          ? Icon(Icons.check,
                               color: AppColors.onPrimary, size: 16)
                           : null,
                     ),
@@ -696,7 +699,7 @@ class _BigCircle extends StatelessWidget {
               strokeWidth: 9,
               backgroundColor:
                   AppColors.surfaceContainerHigh,
-              valueColor: const AlwaysStoppedAnimation(
+              valueColor: AlwaysStoppedAnimation(
                   AppColors.primary),
               strokeCap: StrokeCap.round,
             ),
@@ -891,11 +894,11 @@ class _ProtocolCard extends StatelessWidget {
                   child: Container(
                     width: 16,
                     height: 16,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       color: AppColors.primary,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.check,
+                    child: Icon(Icons.check,
                         color: AppColors.onPrimary, size: 10),
                   ),
                 ),
@@ -908,7 +911,7 @@ class _ProtocolCard extends StatelessWidget {
           if (done)
             Row(
               children: [
-                const Icon(Icons.star_rounded,
+                Icon(Icons.star_rounded,
                     color: AppColors.primary, size: 12),
                 const SizedBox(width: 4),
                 Text(
@@ -1002,7 +1005,7 @@ class _PointHistoryChart extends StatelessWidget {
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
-          getDrawingHorizontalLine: (_) => FlLine(
+          getDrawingHorizontalLine: (_) => const FlLine(
             color: AppColors.surfaceContainerHigh,
             strokeWidth: 1,
           ),
@@ -1051,7 +1054,7 @@ class _NextMilestoneCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.military_tech,
+              Icon(Icons.military_tech,
                   color: AppColors.primary, size: 20),
               const SizedBox(width: 8),
               Text(L.of(context).dash_proximoMarco,
@@ -1079,7 +1082,7 @@ class _NextMilestoneCard extends StatelessWidget {
               value: progress.clamp(0.0, 1.0),
               backgroundColor: AppColors.surfaceContainerHigh,
               valueColor:
-                  const AlwaysStoppedAnimation(AppColors.primary),
+                  AlwaysStoppedAnimation(AppColors.primary),
               minHeight: 6,
             ),
           ),
@@ -1141,7 +1144,7 @@ class _ErrorState extends StatelessWidget {
       padding: const EdgeInsets.all(40),
       child: Column(
         children: [
-          const Icon(Icons.wifi_off,
+          Icon(Icons.wifi_off,
               color: AppColors.onSurfaceVariant, size: 48),
           const SizedBox(height: 16),
           Text(L.of(context).dash_erroCarregar,

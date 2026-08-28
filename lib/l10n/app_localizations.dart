@@ -3794,6 +3794,114 @@ abstract class L {
   /// In pt, this message translates to:
   /// **'Remover amigo'**
   String get atleta_removerAmigo;
+
+  /// No description provided for @cartao_pontuacaoGeral.
+  ///
+  /// In pt, this message translates to:
+  /// **'PONTUAÇÃO GERAL'**
+  String get cartao_pontuacaoGeral;
+
+  /// No description provided for @cartao_xp.
+  ///
+  /// In pt, this message translates to:
+  /// **'{pts} XP'**
+  String cartao_xp(int pts);
+
+  /// No description provided for @cartao_paraNivel.
+  ///
+  /// In pt, this message translates to:
+  /// **'{pts} para o Nível {n}'**
+  String cartao_paraNivel(int pts, int n);
+
+  /// No description provided for @cartao_diasSeguidos.
+  ///
+  /// In pt, this message translates to:
+  /// **'{n, plural, =1{1 dia seguido} other{{n} dias seguidos}}'**
+  String cartao_diasSeguidos(int n);
+
+  /// No description provided for @cartao_frase1.
+  ///
+  /// In pt, this message translates to:
+  /// **'{nome}, hoje é um ótimo dia para respeitar seus limites e se conectar com o seu corpo. Progresso constante se constrói com paciência.'**
+  String cartao_frase1(String nome);
+
+  /// No description provided for @cartao_frase2.
+  ///
+  /// In pt, this message translates to:
+  /// **'{nome}, a série que você não pula é a que constrói o resultado. Um passo de cada vez.'**
+  String cartao_frase2(String nome);
+
+  /// No description provided for @cartao_frase3.
+  ///
+  /// In pt, this message translates to:
+  /// **'{nome}, o corpo responde a quem aparece todos os dias. Siga no seu ritmo.'**
+  String cartao_frase3(String nome);
+
+  /// No description provided for @cartao_frase4.
+  ///
+  /// In pt, this message translates to:
+  /// **'{nome}, comparar com ontem vale mais do que comparar com qualquer outra pessoa. Continue.'**
+  String cartao_frase4(String nome);
+
+  /// No description provided for @cor_titulo.
+  ///
+  /// In pt, this message translates to:
+  /// **'COR DO APP'**
+  String get cor_titulo;
+
+  /// No description provided for @cor_descricao.
+  ///
+  /// In pt, this message translates to:
+  /// **'Escolha o acento. Muda a tela inteira.'**
+  String get cor_descricao;
+
+  /// No description provided for @cor_segueAConta.
+  ///
+  /// In pt, this message translates to:
+  /// **'A cor segue a sua conta em qualquer aparelho.'**
+  String get cor_segueAConta;
+
+  /// No description provided for @cor_limao.
+  ///
+  /// In pt, this message translates to:
+  /// **'Verde-limão'**
+  String get cor_limao;
+
+  /// No description provided for @cor_roxo.
+  ///
+  /// In pt, this message translates to:
+  /// **'Roxo'**
+  String get cor_roxo;
+
+  /// No description provided for @cor_ciano.
+  ///
+  /// In pt, this message translates to:
+  /// **'Ciano'**
+  String get cor_ciano;
+
+  /// No description provided for @cor_ambar.
+  ///
+  /// In pt, this message translates to:
+  /// **'Âmbar'**
+  String get cor_ambar;
+
+  /// No description provided for @cor_coral.
+  ///
+  /// In pt, this message translates to:
+  /// **'Coral'**
+  String get cor_coral;
+
+  /// No description provided for @cor_azul.
+  ///
+  /// In pt, this message translates to:
+  /// **'Azul'**
+  String get cor_azul;
+
+  /// No description provided for @cor_rosa.
+  ///
+  /// In pt, this message translates to:
+  /// **'Rosa'**
+  String get cor_rosa;
 }
 
 class _LDelegate extends LocalizationsDelegate<L> {
