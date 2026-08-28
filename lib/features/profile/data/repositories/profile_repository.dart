@@ -180,12 +180,41 @@ class ProfileRepository {
     }
   }
 
+  /// Linha do perfil, criando-a se o gatilho `handle_new_user` não tiver criado.
+  ///
+  /// Antes isto era um `.single()`, que estoura quando não há linha e, de
+  /// dentro do `Future.wait`, derrubava `getProfile()` inteiro: a pessoa ficava
+  /// sem conseguir ABRIR o app, vendo um erro cru do Postgres, e sem nenhuma
+  /// saída pela interface. Não é hipótese — houve uma conta órfã em 22/08 que
+  /// precisou ser apagada à mão no banco.
+  ///
+  /// Recriar em vez de só avisar é possível porque a política "Criar próprio
+  /// perfil" (`with check auth.uid() = id`) deixa o dono inserir a própria
+  /// linha. `created_at` e `tema` têm padrão no banco, então id e nome bastam.
+  ///
+  /// O nome vem dos metadados do cadastro; se nem isso houver, entra um rótulo
+  /// genérico — a pessoa troca no editar perfil, e um nome feio é muito melhor
+  /// que um app que não abre.
+  Future<Map<String, dynamic>> _perfilOuCria(String userId) async {
+    final existente =
+        await _client.from('profiles').select().eq('id', userId).maybeSingle();
+    if (existente != null) return existente;
+
+    final nome =
+        (_client.auth.currentUser?.userMetadata?['name'] as String?)?.trim();
+
+    return await _client.from('profiles').insert({
+      'id': userId,
+      'name': (nome == null || nome.isEmpty) ? 'Atleta' : nome,
+    }).select().single();
+  }
+
   Future<ProfileModel> getProfile() async {
     final userId = _client.auth.currentUser!.id;
 
     final results = await Future.wait<dynamic>([
       // Essencial: sem perfil não há tela.
-      _client.from('profiles').select().eq('id', userId).single(),
+      _perfilOuCria(userId),
 
       _opcional<Map<String, dynamic>?>(
           _client.from('goals').select().eq('user_id', userId).maybeSingle(), null),

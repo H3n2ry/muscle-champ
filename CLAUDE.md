@@ -4,19 +4,79 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build & Run Commands
 
-All commands run from `C:\Users\Jean\Desktop\muscle camp\project\app`.
+All commands run from the repo root (`C:\Users\Henry\Desktop\muscle-champ`).
 
-> **Note**: Flutter is installed at `C:\flutter\bin`. If `flutter` is not found in PowerShell, use Git Bash:
-> ```bash
-> export PATH="/c/flutter/bin:/c/Program Files/nodejs:/c/Users/Jean/AppData/Roaming/npm:$PATH"
-> ```
+> **Note**: Flutter is at `C:\Users\Henry\flutter\bin`.
 
 ### Environment setup (required for Android builds)
+
+Verified on this machine 2026-08-28 with `flutter doctor -v`. The SDK is **not**
+under `AppData\Local\Android` (the usual default) and there is no standalone
+JDK — the only Java is the one bundled with Android Studio:
+
 ```powershell
-$env:ANDROID_HOME = "C:\Users\Jean\AppData\Local\Android\Sdk"
+$env:ANDROID_HOME = "C:\Users\Henry\Android\Sdk"
 $env:JAVA_HOME    = "C:\Program Files\Android\Android Studio\jbr"
-$env:PATH         = "$env:JAVA_HOME\bin;$env:ANDROID_HOME\cmdline-tools\latest\bin;$env:ANDROID_HOME\platform-tools;$env:PATH"
+$env:PATH         = "$env:JAVA_HOME\bin;$env:ANDROID_HOME\platform-tools;$env:PATH"
 ```
+
+Without `JAVA_HOME` set, `flutter doctor` reports *"No Java Development Kit
+(JDK) found"* and every Gradle task fails. Android SDK 36 / build-tools 36.0.0 /
+JBR 25.0.2.
+
+⚠️ **From Git Bash, use Windows-style paths and do NOT put `$JAVA_HOME/bin` on
+`PATH`.** This works:
+
+```bash
+export JAVA_HOME="C:/Program Files/Android/Android Studio/jbr"
+export ANDROID_HOME="C:/Users/Henry/Android/Sdk"
+export PATH="/c/Users/Henry/flutter/bin:$PATH"
+flutter build apk --release
+```
+
+Exporting the POSIX form (`/c/Program Files/...`) and prepending `$JAVA_HOME/bin`
+to `PATH` corrupts `PATH` for the PowerShell that `flutter.bat` spawns, and the
+build dies at startup with a message that names none of this:
+
+```
+Set-Content : O fluxo não era legível.
+  update_engine_version.ps1:94  Set-Content -Path .../engine.realm -Value ""
+Error: Unable to determine engine version...
+```
+
+That message sent me hunting a file lock for six builds. The tells that it is
+**not** a lock: `flutter build web` succeeds in the same session seconds later,
+and writing `engine.realm` by hand works. Gradle reads `JAVA_HOME` directly and
+never needs `java` on `PATH`, so there is no reason to add it.
+
+⚠️ **No emulator is installed and no device is usually plugged in.** `flutter
+build apk` works; `flutter run` and any on-device verification need either a
+phone connected over USB with debugging enabled, or
+`sdkmanager "emulator" "system-images;android-36;google_apis;x86_64"` first.
+
+### Android-only paths — exercised on a real phone 2026-08-28
+
+These four exist only on Android (on web they are stubbed or absent), so they
+had never run until this date. All four passed on the owner's phone from the
+debug-signed release APK:
+
+| Path | Where | Code |
+|---|---|---|
+| Camera → macros | Dieta → refeição → FOTO | `diet_page.dart:3533` |
+| Camera → hand calibration | Dieta → FOTO → calibrar | `calibration_page.dart:223` |
+| Data export (LGPD) | Perfil → Privacidade → Exportar | `privacy_repository.dart:57` |
+| External legal links | Perfil → Privacidade | `privacy_page.dart:33` |
+
+The APK declares **no `CAMERA` permission**, and that is correct, not an
+oversight: `image_picker` hands off to the system camera through an intent, so
+declaring it would only add a runtime prompt for nothing. If a build ever starts
+asking for camera permission, something changed for the worse.
+
+⚠️ **Gradle warns that `image_picker_android`, `share_plus`,
+`shared_preferences_android` and `url_launcher_android` apply the Kotlin Gradle
+Plugin the old way, and that future Flutter versions will fail to build.**
+Nothing breaks today; it breaks the day the SDK is upgraded. The fix is bumping
+those four packages.
 
 ### Common commands
 ```powershell
@@ -90,12 +150,11 @@ flutter build web --release
 npx wrangler pages deploy build/web --project-name=muscle-champ --branch=main
 ```
 
-⚠️ **Never deploy without confirming the build succeeded.** `flutter build web`
-fails intermittently on Windows with `Unable to determine engine version`
-(a lock on `bin/cache/engine.realm`, usually a leftover `dart`/`flutter run`
-process). The deploy command happily ships whatever is already in `build/web`,
-so a failed build silently republishes the previous version. Check for
-`✓ Built build\web` first, or compare hashes afterwards:
+⚠️ **Never deploy without confirming the build succeeded.** `flutter build`
+fails on Windows with `Unable to determine engine version`. The deploy command
+happily ships whatever is already in `build/web`, so a failed build silently
+republishes the previous version. Check for `✓ Built build\web` first, or
+compare hashes afterwards:
 
 ```bash
 curl -s -o /tmp/served.js https://muscle-champ.pages.dev/main.dart.js && sha256sum /tmp/served.js build/web/main.dart.js
@@ -789,7 +848,6 @@ to be reachable without login. Keep them in sync with `docs/juridico/`.
 ## Pre-Play Store Checklist
 
 From `docs/juridico/LEGAL.md` — pending before publishing:
-- [ ] **Apply the compliance migration to the Supabase project** (not yet applied)
 - [ ] Change `applicationId` from `com.example.muscle_camp` (in `android/app/build.gradle.kts`)
 - [ ] Generate release keystore (currently debug-signed)
 - [ ] Point the legal URLs at the owned domain once `musclechamp.com.br` exists
@@ -799,3 +857,9 @@ From `docs/juridico/LEGAL.md` — pending before publishing:
 - [x] Consent checkbox for health data in registration
 - [x] "Excluir minha conta" in profile + public deletion URL
 - [x] Privacy Policy link inside the app
+- [x] Compliance migration applied — verified 2026-08-28 against the live
+      database: the four privacy RPCs exist as `SECURITY DEFINER`, and
+      `user_consents` has RLS with exactly the two append-only policies and
+      real rows in it. This line used to say "not yet applied" and was simply
+      wrong; a false "pending" here is worse than no line, because it invites
+      re-applying a migration that already ran.
