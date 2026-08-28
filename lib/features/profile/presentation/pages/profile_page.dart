@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../core/gamification/level_system.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/theme/seletor_de_cor.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/widgets/badge_gallery.dart';
 import '../../../../shared/widgets/language_selector.dart';
@@ -32,7 +33,7 @@ class ProfilePage extends ConsumerWidget {
       body: SafeArea(
         bottom: false,
         child: profile.when(
-          loading: () => const Center(
+          loading: () => Center(
               child: CircularProgressIndicator(color: AppColors.primary)),
           error: (e, _) => Center(
               child: Column(
@@ -221,8 +222,8 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                               color: AppColors.surfaceContainer,
                             ),
                             child: _isUploadingAvatar
-                                ? const Padding(
-                                    padding: EdgeInsets.all(20),
+                                ? Padding(
+                                    padding: const EdgeInsets.all(20),
                                     child: CircularProgressIndicator(
                                         strokeWidth: 2.5,
                                         color: AppColors.primary))
@@ -232,11 +233,11 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                                             p.avatarUrl as String,
                                             fit: BoxFit.cover,
                                             errorBuilder: (_, __, ___) =>
-                                                const Icon(Icons.person,
+                                                Icon(Icons.person,
                                                     color: AppColors.primary,
                                                     size: 42),
                                           )
-                                        : const Icon(Icons.person,
+                                        : Icon(Icons.person,
                                             color: AppColors.primary,
                                             size: 42),
                                   ),
@@ -256,7 +257,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                                   border: Border.all(
                                       color: AppColors.background, width: 2),
                                 ),
-                                child: const Icon(Icons.camera_alt,
+                                child: Icon(Icons.camera_alt,
                                     color: AppColors.onPrimary, size: 14),
                               ),
                             ),
@@ -386,7 +387,7 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
               // ── Pontuação ─────────────────────────────────────
               _SectionLabel(label: L.of(context).perfil_sistemaPontuacao),
               const SizedBox(height: 12),
-              _PointsGuideCard(),
+              const _PointsGuideCard(),
 
               const SizedBox(height: 24),
 
@@ -420,6 +421,22 @@ class _ProfileBodyState extends ConsumerState<_ProfileBody> {
                   border: Border.all(color: AppColors.surfaceContainerHigh),
                 ),
                 child: const LanguageListTile(),
+              ),
+
+              const SizedBox(height: 28),
+
+              // ── Cor do app ────────────────────────────────────
+              // Junto do idioma: as duas são preferência de aparência e não
+              // dado de treino.
+              _SectionLabel(label: L.of(context).cor_titulo),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.surfaceContainerHigh),
+                ),
+                child: const SeletorDeCor(),
               ),
 
               const SizedBox(height: 28),
@@ -473,7 +490,7 @@ class _BioimpedanceCard extends ConsumerWidget {
                   color: AppColors.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.electrical_services,
+                child: Icon(Icons.electrical_services,
                     color: AppColors.primary, size: 22),
               ),
               const SizedBox(width: 16),
@@ -492,7 +509,7 @@ class _BioimpedanceCard extends ConsumerWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.add_circle_outline,
+              Icon(Icons.add_circle_outline,
                   color: AppColors.primary, size: 22),
             ],
           ),
@@ -528,7 +545,7 @@ class _BioimpedanceCard extends ConsumerWidget {
                     color: AppColors.primary.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(9),
                   ),
-                  child: const Icon(Icons.electrical_services,
+                  child: Icon(Icons.electrical_services,
                       color: AppColors.primary, size: 16),
                 ),
                 const SizedBox(width: 10),
@@ -544,7 +561,7 @@ class _BioimpedanceCard extends ConsumerWidget {
                         .copyWith(color: AppColors.onSurfaceVariant, fontSize: 9),
                   ),
                 const SizedBox(width: 8),
-                const Icon(Icons.edit_outlined,
+                Icon(Icons.edit_outlined,
                     color: AppColors.onSurfaceVariant, size: 14),
               ],
             ),
@@ -766,7 +783,7 @@ class _BioimpedanceSheetState extends ConsumerState<_BioimpedanceSheet> {
                       color: AppColors.primary.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.electrical_services,
+                    child: Icon(Icons.electrical_services,
                         color: AppColors.primary, size: 18),
                   ),
                   const SizedBox(width: 12),
@@ -889,7 +906,7 @@ class _BioimpedanceSheetState extends ConsumerState<_BioimpedanceSheet> {
                     elevation: 0,
                   ),
                   child: _saving
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
@@ -1216,7 +1233,7 @@ class _ProfileBmiCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.flag_outlined,
+                  Icon(Icons.flag_outlined,
                       size: 14, color: AppColors.primary),
                   const SizedBox(width: 8),
                   Expanded(
@@ -1338,7 +1355,7 @@ class _LevelProgressCard extends StatelessWidget {
               minHeight: 8,
               backgroundColor: AppColors.surfaceContainerHigh,
               valueColor:
-                  const AlwaysStoppedAnimation(AppColors.primary),
+                  AlwaysStoppedAnimation(AppColors.primary),
             ),
           ),
           const SizedBox(height: 10),
@@ -1634,11 +1651,11 @@ class _GoalProgressCard extends StatelessWidget {
               Container(
                 width: 32,
                 height: 32,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppColors.surfaceContainerHigh,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.arrow_forward,
+                child: Icon(Icons.arrow_forward,
                     color: AppColors.onSurfaceVariant, size: 16),
               ),
               Expanded(
@@ -1663,7 +1680,7 @@ class _GoalProgressCard extends StatelessWidget {
               value: _progress.clamp(0.0, 1.0),
               backgroundColor: AppColors.surfaceContainerHigh,
               valueColor:
-                  const AlwaysStoppedAnimation(AppColors.primary),
+                  AlwaysStoppedAnimation(AppColors.primary),
               minHeight: 8,
             ),
           ),
@@ -1702,7 +1719,7 @@ class _EvolutionChart extends ConsumerWidget {
         border: Border.all(color: AppColors.surfaceContainerHigh),
       ),
       child: semanas.when(
-        loading: () => const Center(
+        loading: () => Center(
           child: SizedBox(
             width: 22,
             height: 22,
@@ -1797,7 +1814,7 @@ class _EvolutionChart extends ConsumerWidget {
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
-          getDrawingHorizontalLine: (_) => FlLine(
+          getDrawingHorizontalLine: (_) => const FlLine(
             color: AppColors.surfaceContainerHigh,
             strokeWidth: 1,
           ),
@@ -1835,7 +1852,7 @@ class _AssinaturaCard extends ConsumerWidget {
         border: Border.all(color: AppColors.surfaceContainerHigh),
       ),
       child: assinatura.when(
-        loading: () => const SizedBox(
+        loading: () => SizedBox(
           height: 44,
           child: Center(
             child: SizedBox(
@@ -1890,7 +1907,7 @@ class _AssinaturaCard extends ConsumerWidget {
 
   Widget _semAssinatura(BuildContext context, L l) => Row(
         children: [
-          const Icon(Icons.workspace_premium_outlined,
+          Icon(Icons.workspace_premium_outlined,
               size: 22, color: AppColors.onSurfaceVariant),
           const SizedBox(width: 12),
           Expanded(
@@ -1915,7 +1932,7 @@ class _AssinaturaCard extends ConsumerWidget {
       children: [
         Row(
           children: [
-            const Icon(Icons.workspace_premium,
+            Icon(Icons.workspace_premium,
                 size: 22, color: AppColors.primary),
             const SizedBox(width: 12),
             Expanded(

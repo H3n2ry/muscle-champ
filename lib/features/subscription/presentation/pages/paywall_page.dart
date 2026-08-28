@@ -86,7 +86,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
                                 color: AppColors.primary,
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(Icons.workspace_premium,
+                              child: Icon(Icons.workspace_premium,
                                   color: AppColors.onPrimary, size: 26),
                             ),
                             const SizedBox(width: 14),
@@ -463,7 +463,7 @@ class _Radio extends StatelessWidget {
               child: Container(
                 width: 10,
                 height: 10,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: AppColors.primary,
                 ),

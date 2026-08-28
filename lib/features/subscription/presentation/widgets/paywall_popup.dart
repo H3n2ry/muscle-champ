@@ -70,7 +70,7 @@ class PaywallPopup extends ConsumerWidget {
                 color: AppColors.primary.withOpacity(0.14),
                 border: Border.all(color: AppColors.primary, width: 1.5),
               ),
-              child: const Icon(Icons.workspace_premium,
+              child: Icon(Icons.workspace_premium,
                   size: 28, color: AppColors.primary),
             ),
             const SizedBox(height: 16),
@@ -134,7 +134,7 @@ class PaywallPopup extends ConsumerWidget {
             const SizedBox(height: 14),
             Row(
               children: [
-                const Icon(Icons.all_inclusive,
+                Icon(Icons.all_inclusive,
                     size: 15, color: AppColors.primary),
                 const SizedBox(width: 8),
                 Expanded(

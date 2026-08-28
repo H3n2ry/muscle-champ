@@ -88,7 +88,7 @@ class _RankingPageState extends ConsumerState<RankingPage> {
                               border: Border.all(
                                   color: AppColors.primary.withOpacity(0.4)),
                             ),
-                            child: const Icon(Icons.person_add_outlined,
+                            child: Icon(Icons.person_add_outlined,
                                 color: AppColors.primary, size: 20),
                           ),
                         ),
@@ -101,7 +101,7 @@ class _RankingPageState extends ConsumerState<RankingPage> {
                           border: Border.all(
                               color: AppColors.primary.withOpacity(0.4)),
                         ),
-                        child: const Icon(Icons.emoji_events,
+                        child: Icon(Icons.emoji_events,
                             color: AppColors.primary, size: 26),
                       ),
                     ],
@@ -161,7 +161,7 @@ class _RankingPageState extends ConsumerState<RankingPage> {
                         hintText: L.of(context).rank_buscarAtleta,
                         hintStyle: AppTypography.bodyMd
                             .copyWith(color: AppColors.onSurfaceVariant),
-                        prefixIcon: const Icon(Icons.search,
+                        prefixIcon: Icon(Icons.search,
                             color: AppColors.onSurfaceVariant, size: 18),
                         border: InputBorder.none,
                         contentPadding:
@@ -178,14 +178,14 @@ class _RankingPageState extends ConsumerState<RankingPage> {
             // ── List ─────────────────────────────────────────────
             Expanded(
               child: ranking.when(
-                loading: () => const Center(
+                loading: () => Center(
                     child: CircularProgressIndicator(
                         color: AppColors.primary)),
                 error: (e, _) => Center(
                     child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.wifi_off,
+                    Icon(Icons.wifi_off,
                         color: AppColors.onSurfaceVariant, size: 40),
                     const SizedBox(height: 12),
                     Text(L.of(context).rank_erroCarregar,
@@ -206,7 +206,7 @@ class _RankingPageState extends ConsumerState<RankingPage> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.people_outline,
+                          Icon(Icons.people_outline,
                               color: AppColors.onSurfaceVariant,
                               size: 48),
                           const SizedBox(height: 12),
@@ -391,7 +391,7 @@ class _AddFriendSheetState extends ConsumerState<_AddFriendSheet> {
                       color: AppColors.primary.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.person_add,
+                    child: Icon(Icons.person_add,
                         color: AppColors.primary, size: 18),
                   ),
                   const SizedBox(width: 12),
@@ -431,11 +431,11 @@ class _AddFriendSheetState extends ConsumerState<_AddFriendSheet> {
                     hintText: L.of(context).rank_buscarPorNome,
                     hintStyle: AppTypography.bodyMd
                         .copyWith(color: AppColors.onSurfaceVariant),
-                    prefixIcon: const Icon(Icons.search,
+                    prefixIcon: Icon(Icons.search,
                         color: AppColors.onSurfaceVariant, size: 20),
                     suffixIcon: _isSearching
-                        ? const Padding(
-                            padding: EdgeInsets.all(12),
+                        ? Padding(
+                            padding: const EdgeInsets.all(12),
                             child: SizedBox(
                               width: 18,
                               height: 18,
@@ -465,7 +465,7 @@ class _AddFriendSheetState extends ConsumerState<_AddFriendSheet> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.search,
+                          Icon(Icons.search,
                               color: AppColors.onSurfaceVariant, size: 40),
                           const SizedBox(height: 12),
                           Text(
@@ -520,7 +520,7 @@ class _AddFriendSheetState extends ConsumerState<_AddFriendSheet> {
                                     ? ClipOval(
                                         child: Image.network(user.avatarUrl!,
                                             fit: BoxFit.cover))
-                                    : const Icon(Icons.person,
+                                    : Icon(Icons.person,
                                         color: AppColors.onSurfaceVariant,
                                         size: 20),
                               ),
@@ -547,7 +547,7 @@ class _AddFriendSheetState extends ConsumerState<_AddFriendSheet> {
                               ),
                               // Action button
                               if (isLoading)
-                                const SizedBox(
+                                SizedBox(
                                   width: 20,
                                   height: 20,
                                   child: CircularProgressIndicator(
@@ -565,7 +565,7 @@ class _AddFriendSheetState extends ConsumerState<_AddFriendSheet> {
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.check,
+                                      Icon(Icons.check,
                                           size: 12,
                                           color: AppColors.primary),
                                       const SizedBox(width: 4),
@@ -591,7 +591,7 @@ class _AddFriendSheetState extends ConsumerState<_AddFriendSheet> {
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.schedule,
+                                      Icon(Icons.schedule,
                                           size: 12,
                                           color: AppColors.onSurfaceVariant),
                                       const SizedBox(width: 4),
@@ -769,11 +769,11 @@ class _PodiumColumn extends StatelessWidget {
                 child: Container(
                   width: 16,
                   height: 16,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: AppColors.primary,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.check,
+                  child: Icon(Icons.check,
                       color: AppColors.onPrimary, size: 10),
                 ),
               ),
@@ -955,7 +955,7 @@ class _AthleteRow extends StatelessWidget {
                         TextButton(
                           onPressed: () => Navigator.pop(dialogCtx, true),
                           child: Text(L.of(context).rank_remover,
-                              style: TextStyle(color: AppColors.error)),
+                              style: const TextStyle(color: AppColors.error)),
                         ),
                       ],
                     ),

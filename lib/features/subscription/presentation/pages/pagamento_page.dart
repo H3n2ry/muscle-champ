@@ -207,7 +207,7 @@ class _PagamentoPageState extends ConsumerState<PagamentoPage> {
                             ? Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const SizedBox(
+                                  SizedBox(
                                     width: 18,
                                     height: 18,
                                     child: CircularProgressIndicator(
@@ -240,7 +240,7 @@ class _PagamentoPageState extends ConsumerState<PagamentoPage> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.lock_outline,
+                          Icon(Icons.lock_outline,
                               size: 13, color: AppColors.onSurfaceVariant),
                           const SizedBox(width: 6),
                           Text(l.pag_seguro,
@@ -404,7 +404,7 @@ class _Campo extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primary),
+              borderSide: BorderSide(color: AppColors.primary),
             ),
           ),
         ),
@@ -482,7 +482,7 @@ class _PlaceholderPix extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Icon(Icons.qr_code_2,
+          Icon(Icons.qr_code_2,
               size: 60, color: AppColors.onSurfaceVariant),
           const SizedBox(height: 14),
           Text(texto,

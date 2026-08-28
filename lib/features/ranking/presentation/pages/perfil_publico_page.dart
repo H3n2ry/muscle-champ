@@ -33,7 +33,7 @@ class PerfilPublicoPage extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: perfil.when(
-        loading: () => const Center(
+        loading: () => Center(
           child: CircularProgressIndicator(color: AppColors.primary),
         ),
         error: (_, __) => _Erro(mensagem: l.atleta_naoCarregou),
@@ -436,8 +436,8 @@ class _AvatarState extends ConsumerState<_Avatar> {
                 border: Border.all(color: AppColors.background, width: 2.5),
               ),
               child: _ocupado
-                  ? const Padding(
-                      padding: EdgeInsets.all(7),
+                  ? Padding(
+                      padding: const EdgeInsets.all(7),
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: AppColors.onPrimary),
                     )
@@ -558,7 +558,7 @@ class _CardDeTreinoState extends ConsumerState<_CardDeTreino> {
         children: [
           Row(
             children: [
-              const Icon(Icons.fitness_center,
+              Icon(Icons.fitness_center,
                   size: 16, color: AppColors.primary),
               const SizedBox(width: 8),
               Expanded(
@@ -632,14 +632,14 @@ class _BotaoCopiar extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (copiando)
-              const SizedBox(
+              SizedBox(
                 width: 11,
                 height: 11,
                 child: CircularProgressIndicator(
                     strokeWidth: 1.8, color: AppColors.primary),
               )
             else
-              const Icon(Icons.copy_all_outlined,
+              Icon(Icons.copy_all_outlined,
                   size: 12, color: AppColors.primary),
             const SizedBox(width: 5),
             Text(copiando ? l.atleta_copiando : l.atleta_copiar,

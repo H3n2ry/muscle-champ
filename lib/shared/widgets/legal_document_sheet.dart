@@ -129,7 +129,7 @@ class _LegalDocumentSheetState extends State<LegalDocumentSheet> {
               ],
             ),
           ),
-          Divider(height: 1, color: AppColors.surfaceContainerHigh),
+          const Divider(height: 1, color: AppColors.surfaceContainerHigh),
 
           // Corpo
           Flexible(
@@ -159,7 +159,7 @@ class _LegalDocumentSheetState extends State<LegalDocumentSheet> {
           ),
 
           if (widget.showAcceptButton) ...[
-            Divider(height: 1, color: AppColors.surfaceContainerHigh),
+            const Divider(height: 1, color: AppColors.surfaceContainerHigh),
             Padding(
               padding: EdgeInsets.fromLTRB(
                   20, 14, 20, MediaQuery.of(context).padding.bottom + 16),
@@ -171,7 +171,7 @@ class _LegalDocumentSheetState extends State<LegalDocumentSheet> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.keyboard_double_arrow_down,
+                          Icon(Icons.keyboard_double_arrow_down,
                               size: 14, color: AppColors.onSurfaceVariant),
                           const SizedBox(width: 6),
                           Text(L.of(context).doc_roleAteOFim,

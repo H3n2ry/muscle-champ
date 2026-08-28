@@ -183,7 +183,7 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                         color: AppColors.primary,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.add,
+                      child: Icon(Icons.add,
                           color: AppColors.onPrimary, size: 24),
                     ),
                   ),
@@ -205,7 +205,7 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
             // ── Lista de templates ───────────────────────────────────
             Expanded(
               child: templates.when(
-                loading: () => const Center(
+                loading: () => Center(
                     child: CircularProgressIndicator(
                         color: AppColors.primary)),
                 error: (e, _) => MkErrorState(
@@ -227,7 +227,7 @@ class _WorkoutPageState extends ConsumerState<WorkoutPage> {
                               const EdgeInsets.fromLTRB(24, 0, 24, 12),
                           child: Row(
                             children: [
-                              const Icon(Icons.drag_indicator,
+                              Icon(Icons.drag_indicator,
                                   size: 15,
                                   color: AppColors.onSurfaceVariant),
                               const SizedBox(width: 6),
@@ -601,7 +601,7 @@ class _AiWorkoutSheetState extends ConsumerState<_AiWorkoutSheet> {
                       .copyWith(color: AppColors.onSurfaceVariant),
                   filled: true,
                   fillColor: AppColors.surfaceContainerLow,
-                  prefixIcon: const Icon(Icons.edit_outlined,
+                  prefixIcon: Icon(Icons.edit_outlined,
                       color: AppColors.onSurfaceVariant, size: 18),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -705,7 +705,7 @@ class _AiWorkoutSheetState extends ConsumerState<_AiWorkoutSheet> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline,
+                      Icon(Icons.info_outline,
                           color: AppColors.primary, size: 16),
                       const SizedBox(width: 8),
                       Expanded(
@@ -726,7 +726,7 @@ class _AiWorkoutSheetState extends ConsumerState<_AiWorkoutSheet> {
                   child: ElevatedButton.icon(
                     onPressed: _saving ? null : _save,
                     icon: _saving
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 18, height: 18,
                             child: CircularProgressIndicator(
                                 strokeWidth: 2,
@@ -860,7 +860,7 @@ class _ReorderTile extends StatelessWidget {
               child: Icon(Icons.check_circle,
                   size: 16, color: AppColors.primary),
             ),
-          const Icon(Icons.drag_handle,
+          Icon(Icons.drag_handle,
               color: AppColors.onSurfaceVariant, size: 22),
         ],
       ),
@@ -948,7 +948,7 @@ class _TemplateCard extends ConsumerWidget {
                       color: AppColors.surfaceContainerHigh,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.edit_outlined,
+                    child: Icon(Icons.edit_outlined,
                         size: 16, color: AppColors.onSurfaceVariant),
                   ),
                 ),
@@ -972,8 +972,8 @@ class _TemplateCard extends ConsumerWidget {
                           TextButton(
                               onPressed: () =>
                                   Navigator.pop(dialogCtx, true),
-                              child: Text('EXCLUIR',
-                                  style: TextStyle(
+                              child: const Text('EXCLUIR',
+                                  style: const TextStyle(
                                       color: AppColors.error))),
                         ],
                       ),
@@ -995,8 +995,8 @@ class _TemplateCard extends ConsumerWidget {
           ),
 
           exercises.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+            loading: () => Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: SizedBox(
                 height: 20, width: 20,
                 child: CircularProgressIndicator(
@@ -1058,7 +1058,7 @@ class _TemplateCard extends ConsumerWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.check_circle,
+                          Icon(Icons.check_circle,
                               color: AppColors.primary, size: 18),
                           const SizedBox(width: 8),
                           Text(L.of(context).treino_feitoHoje,
@@ -1113,7 +1113,7 @@ class _EmptyState extends StatelessWidget {
                 color: AppColors.primary.withOpacity(0.08),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.fitness_center,
+              child: Icon(Icons.fitness_center,
                   color: AppColors.primary, size: 40),
             ),
             const SizedBox(height: 20),
@@ -1343,7 +1343,7 @@ class _TemplateSheetState extends ConsumerState<_TemplateSheet> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
+                    borderSide: BorderSide(
                         color: AppColors.primary, width: 1.5),
                   ),
                 ),
@@ -1366,11 +1366,11 @@ class _TemplateSheetState extends ConsumerState<_TemplateSheet> {
                         color: Color(0xFF7C3AED), size: 16),
                     label: Text(L.of(context).treino_biblioteca,
                         style: AppTypography.labelSm
-                            .copyWith(color: Color(0xFF7C3AED))),
+                            .copyWith(color: const Color(0xFF7C3AED))),
                   ),
                   TextButton.icon(
                     onPressed: _addExercise,
-                    icon: const Icon(Icons.add,
+                    icon: Icon(Icons.add,
                         color: AppColors.primary, size: 16),
                     label: Text(L.of(context).treino_manual,
                         style: AppTypography.labelSm
@@ -1380,9 +1380,9 @@ class _TemplateSheetState extends ConsumerState<_TemplateSheet> {
               ),
 
               if (isEdit && !_loaded)
-                const Center(
+                Center(
                   child: Padding(
-                    padding: EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(20),
                     child: CircularProgressIndicator(color: AppColors.primary),
                   ),
                 )
@@ -1402,7 +1402,7 @@ class _TemplateSheetState extends ConsumerState<_TemplateSheet> {
                     ),
                     child: Column(
                       children: [
-                        const Icon(Icons.library_books_outlined,
+                        Icon(Icons.library_books_outlined,
                             color: AppColors.primary, size: 28),
                         const SizedBox(height: 8),
                         Text(L.of(context).treino_toqueBiblioteca,
@@ -1464,7 +1464,7 @@ class _TemplateSheetState extends ConsumerState<_TemplateSheet> {
                         borderRadius: BorderRadius.circular(14)),
                   ),
                   child: _saving
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 20, height: 20,
                           child: CircularProgressIndicator(
                               strokeWidth: 2,
@@ -1558,7 +1558,7 @@ class _ExerciseLibrarySheetState extends State<_ExerciseLibrarySheet> {
                     hintText: L.of(context).treino_buscarExercicioHint,
                     hintStyle: AppTypography.bodyMd
                         .copyWith(color: AppColors.onSurfaceVariant),
-                    prefixIcon: const Icon(Icons.search,
+                    prefixIcon: Icon(Icons.search,
                         color: AppColors.onSurfaceVariant, size: 20),
                     filled: true,
                     fillColor: AppColors.surfaceContainerLow,
@@ -1631,7 +1631,7 @@ class _ExerciseLibrarySheetState extends State<_ExerciseLibrarySheet> {
                 : ListView.separated(
                     padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
                     itemCount: exercises.length,
-                    separatorBuilder: (_, __) => Divider(
+                    separatorBuilder: (_, __) => const Divider(
                       height: 1,
                       color: AppColors.surfaceContainerHigh,
                     ),
@@ -1651,7 +1651,7 @@ class _ExerciseLibrarySheetState extends State<_ExerciseLibrarySheet> {
                                   style: AppTypography.bodyMd
                                       .copyWith(fontWeight: FontWeight.w500)),
                             ),
-                            const Icon(Icons.add_circle_outline,
+                            Icon(Icons.add_circle_outline,
                                 color: AppColors.primary, size: 20),
                           ],
                         ),
@@ -1778,7 +1778,7 @@ class _ExerciseInputRowState extends State<_ExerciseInputRow> {
               const SizedBox(width: 6),
               GestureDetector(
                 onTap: widget.onRemove,
-                child: const Icon(Icons.close,
+                child: Icon(Icons.close,
                     size: 18, color: AppColors.onSurfaceVariant),
               ),
             ],
@@ -1958,7 +1958,7 @@ class _DoWorkoutSheetState extends ConsumerState<_DoWorkoutSheet> {
                       color: AppColors.primary.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.fitness_center,
+                    child: Icon(Icons.fitness_center,
                         color: AppColors.primary, size: 18),
                   ),
                   const SizedBox(width: 12),
@@ -1984,9 +1984,9 @@ class _DoWorkoutSheetState extends ConsumerState<_DoWorkoutSheet> {
               const SizedBox(height: 16),
 
               if (_exercises.isEmpty)
-                const Center(
+                Center(
                   child: Padding(
-                    padding: EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(20),
                     child: CircularProgressIndicator(color: AppColors.primary),
                   ),
                 )
@@ -2005,7 +2005,7 @@ class _DoWorkoutSheetState extends ConsumerState<_DoWorkoutSheet> {
                                 : _feitos.length / _exercises.length,
                             minHeight: 6,
                             backgroundColor: AppColors.surfaceContainerHigh,
-                            valueColor: const AlwaysStoppedAnimation(
+                            valueColor: AlwaysStoppedAnimation(
                                 AppColors.primary),
                           ),
                         ),
@@ -2049,7 +2049,7 @@ class _DoWorkoutSheetState extends ConsumerState<_DoWorkoutSheet> {
                           await widget.onComplete(_exercises);
                         },
                   icon: _saving
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 18, height: 18,
                           child: CircularProgressIndicator(
                               strokeWidth: 2,
@@ -2150,7 +2150,7 @@ class _WorkoutTimerState extends State<_WorkoutTimer> {
         children: [
           Row(
             children: [
-              const Icon(Icons.timer_outlined,
+              Icon(Icons.timer_outlined,
                   color: AppColors.onSurfaceVariant, size: 16),
               const SizedBox(width: 6),
               Expanded(
@@ -2223,7 +2223,7 @@ class _WorkoutTimerState extends State<_WorkoutTimer> {
                     color: AppColors.surfaceContainerHigh,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.refresh,
+                  child: Icon(Icons.refresh,
                       color: AppColors.onSurfaceVariant, size: 20),
                 ),
               ),

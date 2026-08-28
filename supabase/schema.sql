@@ -1083,7 +1083,8 @@ create table if not exists public.profiles (
   id uuid not null,
   name text not null,
   avatar_url text,
-  created_at timestamp with time zone default now()
+  created_at timestamp with time zone default now(),
+  tema text not null default 'limao'::text
 );
 
 create table if not exists public.template_exercises (
@@ -1178,6 +1179,7 @@ alter table public.points add constraint points_user_id_fkey FOREIGN KEY (user_i
 alter table public.points add constraint points_reason_check CHECK ((reason = ANY (ARRAY['workout_completed'::text, 'diet_goal_met'::text, 'load_progression'::text, 'weight_progression'::text])));
 alter table public.profiles add constraint profiles_pkey PRIMARY KEY (id);
 alter table public.profiles add constraint profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE;
+alter table public.profiles add constraint profiles_tema_valido CHECK ((tema = ANY (ARRAY['limao'::text, 'roxo'::text, 'ciano'::text, 'ambar'::text, 'coral'::text, 'azul'::text, 'rosa'::text])));
 alter table public.template_exercises add constraint template_exercises_pkey PRIMARY KEY (id);
 alter table public.template_exercises add constraint template_exercises_template_id_fkey FOREIGN KEY (template_id) REFERENCES workout_templates(id) ON DELETE CASCADE;
 alter table public.user_consents add constraint user_consents_pkey PRIMARY KEY (id);

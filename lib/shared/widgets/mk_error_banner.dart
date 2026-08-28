@@ -107,7 +107,7 @@ class MkErrorState extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: AppColors.surfaceContainerHigh),
               ),
-              child: const Icon(Icons.cloud_off_outlined,
+              child: Icon(Icons.cloud_off_outlined,
                   color: AppColors.onSurfaceVariant, size: 30),
             ),
             const SizedBox(height: 18),
@@ -132,7 +132,7 @@ class MkErrorState extends StatelessWidget {
                 label: Text(L.of(context).comum_tentarNovamente),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary),
+                  side: BorderSide(color: AppColors.primary),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

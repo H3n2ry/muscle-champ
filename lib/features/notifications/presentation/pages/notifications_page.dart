@@ -57,7 +57,7 @@ class NotificationsPage extends ConsumerWidget {
                       border: Border.all(
                           color: AppColors.primary.withOpacity(0.4)),
                     ),
-                    child: const Icon(Icons.notifications_outlined,
+                    child: Icon(Icons.notifications_outlined,
                         color: AppColors.primary, size: 24),
                   ),
                 ],
@@ -71,7 +71,7 @@ class NotificationsPage extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
               child: Row(
                 children: [
-                  const Icon(Icons.people_outline,
+                  Icon(Icons.people_outline,
                       color: AppColors.onSurfaceVariant, size: 16),
                   const SizedBox(width: 8),
                   Text(L.of(context).notif_solicitacoes,
@@ -95,14 +95,14 @@ class NotificationsPage extends ConsumerWidget {
                   await Future.delayed(const Duration(milliseconds: 500));
                 },
                 child: requests.when(
-                loading: () => const Center(
+                loading: () => Center(
                     child: CircularProgressIndicator(
                         color: AppColors.primary)),
                 error: (e, _) => Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.wifi_off,
+                      Icon(Icons.wifi_off,
                           color: AppColors.onSurfaceVariant, size: 40),
                       const SizedBox(height: 12),
                       Text(L.of(context).notif_erroCarregar,
@@ -124,7 +124,7 @@ class NotificationsPage extends ConsumerWidget {
                               color: AppColors.primary.withOpacity(0.08),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.notifications_none,
+                            child: Icon(Icons.notifications_none,
                                 color: AppColors.primary, size: 40),
                           ),
                           const SizedBox(height: 20),
@@ -234,7 +234,7 @@ class _RequestCardState extends State<_RequestCard> {
                     child: Image.network(
                         widget.request.requesterAvatar!,
                         fit: BoxFit.cover))
-                : const Icon(Icons.person,
+                : Icon(Icons.person,
                     color: AppColors.primary, size: 26),
           ),
           const SizedBox(width: 14),
@@ -287,7 +287,7 @@ class _RequestCardState extends State<_RequestCard> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: _accepting
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 14,
                           height: 14,
                           child: Center(
@@ -323,11 +323,11 @@ class _RequestCardState extends State<_RequestCard> {
                         color: AppColors.error.withOpacity(0.4)),
                   ),
                   child: _rejecting
-                      ? SizedBox(
+                      ? const SizedBox(
                           width: 14,
                           height: 14,
-                          child: Center(
-                            child: CircularProgressIndicator(
+                          child: const Center(
+                            child: const CircularProgressIndicator(
                                 strokeWidth: 2,
                                 color: AppColors.error),
                           ))

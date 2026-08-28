@@ -57,9 +57,9 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     final scaffold = Scaffold(
       body: widget.child,
       bottomNavigationBar: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: AppColors.surfaceContainerLow,
-          border: const Border(
+          border: Border(
             top: BorderSide(color: AppColors.surfaceContainerHigh, width: 1),
           ),
         ),

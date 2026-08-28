@@ -324,7 +324,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                         elevation: 0,
                       ),
                       child: _isSaving
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 22,
                               height: 22,
                               child: CircularProgressIndicator(
@@ -443,11 +443,11 @@ class _GoalCard extends StatelessWidget {
               Container(
                 width: 22,
                 height: 22,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.primary,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check,
+                child: Icon(Icons.check,
                     color: AppColors.onPrimary, size: 14),
               ),
           ],
@@ -545,7 +545,7 @@ class _EditField extends StatelessWidget {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide:
-                  const BorderSide(color: AppColors.primary, width: 1.5),
+                  BorderSide(color: AppColors.primary, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
@@ -598,7 +598,7 @@ class _LiveBmiBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(children: [
-                const Icon(Icons.monitor_weight_outlined,
+                Icon(Icons.monitor_weight_outlined,
                     size: 14, color: AppColors.onSurfaceVariant),
                 const SizedBox(width: 6),
                 Text(L.of(context).edit_imc,

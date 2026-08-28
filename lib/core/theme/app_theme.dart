@@ -10,7 +10,7 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.background,
-      colorScheme: const ColorScheme.dark(
+      colorScheme: ColorScheme.dark(
         brightness: Brightness.dark,
         primary: AppColors.primary,
         onPrimary: AppColors.onPrimary,
@@ -61,7 +61,7 @@ class AppTheme {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide:
-              const BorderSide(color: AppColors.primary, width: 1.5),
+              BorderSide(color: AppColors.primary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -73,7 +73,7 @@ class AppTheme {
               const BorderSide(color: AppColors.error, width: 1.5),
         ),
         labelStyle:
-            const TextStyle(color: AppColors.onSurfaceVariant),
+            TextStyle(color: AppColors.onSurfaceVariant),
         hintStyle: const TextStyle(color: AppColors.secondary),
         contentPadding: const EdgeInsets.symmetric(
             horizontal: 16, vertical: 14),
@@ -107,7 +107,7 @@ class AppTheme {
         thickness: 1,
         space: 1,
       ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: AppColors.surfaceContainerLow,
         selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.secondary,
@@ -119,7 +119,7 @@ class AppTheme {
         selectedColor: AppColors.primaryContainer,
         labelStyle:
             const TextStyle(color: AppColors.onSurface, fontSize: 12),
-        side: const BorderSide(color: AppColors.outlineVariant),
+        side: BorderSide(color: AppColors.outlineVariant),
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20)),
         padding:

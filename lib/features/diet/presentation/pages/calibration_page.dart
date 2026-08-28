@@ -156,7 +156,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
               const SizedBox(height: 22),
 
               // ── Passos ─────────────────────────────────────────────
-              _StepLine(n: '1', text: 'Escolha a moeda que você vai usar'),
+              const _StepLine(n: '1', text: 'Escolha a moeda que você vai usar'),
               const SizedBox(height: 8),
               Row(
                 children: List.generate(_coins.length, (i) {
@@ -275,11 +275,11 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              CircularProgressIndicator(
+                              const CircularProgressIndicator(
                                   color: _accent, strokeWidth: 2),
-                              SizedBox(height: 10),
+                              const SizedBox(height: 10),
                               Text(L.of(context).calib_medindo,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                       color: Colors.white, fontSize: 13)),
                             ],
                           ),
@@ -309,7 +309,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.check_circle_outline,
+                          Icon(Icons.check_circle_outline,
                               color: AppColors.primary, size: 18),
                           const SizedBox(width: 8),
                           Text(L.of(context).calib_maoMedida,
@@ -356,7 +356,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
                       elevation: 0,
                     ),
                     child: _saving
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(

@@ -77,7 +77,7 @@ class _AssinaturaSucessoPageState extends ConsumerState<AssinaturaSucessoPage>
                           border:
                               Border.all(color: AppColors.primary, width: 2),
                         ),
-                        child: const Icon(Icons.check_rounded,
+                        child: Icon(Icons.check_rounded,
                             size: 48, color: AppColors.primary),
                       ),
                     ),
@@ -105,7 +105,7 @@ class _AssinaturaSucessoPageState extends ConsumerState<AssinaturaSucessoPage>
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.event_available_outlined,
+                              Icon(Icons.event_available_outlined,
                                   size: 15,
                                   color: AppColors.onSurfaceVariant),
                               const SizedBox(width: 10),
@@ -119,7 +119,7 @@ class _AssinaturaSucessoPageState extends ConsumerState<AssinaturaSucessoPage>
                           const SizedBox(height: 10),
                           Row(
                             children: [
-                              const Icon(Icons.payments_outlined,
+                              Icon(Icons.payments_outlined,
                                   size: 15,
                                   color: AppColors.onSurfaceVariant),
                               const SizedBox(width: 10),

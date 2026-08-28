@@ -39,7 +39,7 @@ class DietPage extends ConsumerWidget {
       body: SafeArea(
         bottom: false,
         child: summary.when(
-          loading: () => const Center(
+          loading: () => Center(
               child: CircularProgressIndicator(color: AppColors.primary)),
           error: (e, _) => MkErrorState(
             subtitle: L.of(context).dieta_erroDieta,
@@ -123,7 +123,7 @@ class _DietContent extends StatelessWidget {
                       color: AppColors.primary,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.add,
+                    child: Icon(Icons.add,
                         color: AppColors.onPrimary, size: 24),
                   ),
                 ),
@@ -170,8 +170,8 @@ class _DietContent extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(L.of(context).dieta_iaAtiva,
-                              style: TextStyle(
-                                  color: Color(0xFF7C3AED),
+                              style: const TextStyle(
+                                  color: const Color(0xFF7C3AED),
                                   fontSize: 10,
                                   letterSpacing: 1.5,
                                   fontWeight: FontWeight.w700)),
@@ -266,7 +266,7 @@ class _DietContent extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: data!.calorieProgress,
                       backgroundColor: AppColors.surfaceContainerHigh,
-                      valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+                      valueColor: AlwaysStoppedAnimation(AppColors.primary),
                       minHeight: 10,
                     ),
                   ),
@@ -348,7 +348,7 @@ class _DietContent extends StatelessWidget {
               child: Center(
                 child: Column(
                   children: [
-                    const Icon(Icons.restaurant,
+                    Icon(Icons.restaurant,
                         color: AppColors.onSurfaceVariant, size: 40),
                     const SizedBox(height: 12),
                     Text(L.of(context).dieta_nenhumaRefeicao,
@@ -470,7 +470,7 @@ class _WaterCard extends ConsumerWidget {
                           color: AppColors.surfaceContainerHigh,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.undo,
+                        child: Icon(Icons.undo,
                             size: 16, color: AppColors.onSurfaceVariant),
                       ),
                     ),
@@ -826,7 +826,7 @@ class _CustomDietBody extends ConsumerWidget {
             ),
             child: Column(
               children: [
-                const Icon(Icons.edit_note,
+                Icon(Icons.edit_note,
                     color: AppColors.primary, size: 28),
                 const SizedBox(height: 8),
                 Text(L.of(context).dieta_monteSuaDieta,
@@ -862,7 +862,7 @@ class _CustomDietBody extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.add, color: AppColors.primary, size: 18),
+                Icon(Icons.add, color: AppColors.primary, size: 18),
                 const SizedBox(width: 8),
                 Text(L.of(context).dieta_adicionarRefeicao,
                     style: AppTypography.labelSm.copyWith(
@@ -915,7 +915,7 @@ class _CustomMacroSummary extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.edit_note, color: AppColors.primary, size: 16),
+          Icon(Icons.edit_note, color: AppColors.primary, size: 16),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -990,7 +990,7 @@ class _CustomMealCardState extends ConsumerState<_CustomMealCard> {
                     color: AppColors.primary.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.restaurant_menu,
+                  child: Icon(Icons.restaurant_menu,
                       color: AppColors.primary, size: 16),
                 ),
                 const SizedBox(width: 10),
@@ -1004,7 +1004,7 @@ class _CustomMealCardState extends ConsumerState<_CustomMealCard> {
                         color: AppColors.onSurfaceVariant, fontSize: 11)),
                 IconButton(
                   visualDensity: VisualDensity.compact,
-                  icon: const Icon(Icons.delete_outline,
+                  icon: Icon(Icons.delete_outline,
                       size: 18, color: AppColors.onSurfaceVariant),
                   onPressed: () => ref
                       .read(customDietPlanProvider.notifier)
@@ -1076,7 +1076,7 @@ class _CustomMealCardState extends ConsumerState<_CustomMealCard> {
                     ),
                     IconButton(
                       visualDensity: VisualDensity.compact,
-                      icon: const Icon(Icons.close,
+                      icon: Icon(Icons.close,
                           size: 16, color: AppColors.onSurfaceVariant),
                       onPressed: () => ref
                           .read(customDietPlanProvider.notifier)
@@ -1092,7 +1092,7 @@ class _CustomMealCardState extends ConsumerState<_CustomMealCard> {
               onTap: _addFood,
               child: Row(
                 children: [
-                  const Icon(Icons.add_circle_outline,
+                  Icon(Icons.add_circle_outline,
                       color: AppColors.primary, size: 16),
                   const SizedBox(width: 6),
                   Text(L.of(context).dieta_adicionarAlimento,
@@ -1316,7 +1316,7 @@ class _AddFoodSheetState extends State<_AddFoodSheet> {
                 hintText: L.of(context).dieta_buscarNoBanco,
                 hintStyle: AppTypography.bodyMd
                     .copyWith(color: AppColors.onSurfaceVariant),
-                prefixIcon: const Icon(Icons.search,
+                prefixIcon: Icon(Icons.search,
                     color: AppColors.onSurfaceVariant, size: 20),
                 filled: true,
                 fillColor: AppColors.surfaceContainerHigh,
@@ -1362,7 +1362,7 @@ class _AddFoodSheetState extends State<_AddFoodSheet> {
                                 ],
                               ),
                             ),
-                            const Icon(Icons.add_circle_outline,
+                            Icon(Icons.add_circle_outline,
                                 color: AppColors.primary, size: 20),
                           ],
                         ),
@@ -1390,7 +1390,7 @@ class _AddFoodSheetState extends State<_AddFoodSheet> {
                         ),
                         GestureDetector(
                           onTap: () => setState(() => _selected = null),
-                          child: const Icon(Icons.close,
+                          child: Icon(Icons.close,
                               size: 18, color: AppColors.onSurfaceVariant),
                         ),
                       ],
@@ -1545,7 +1545,7 @@ class _AiDietBody extends ConsumerWidget {
                       const SizedBox(width: 4),
                       Text(L.of(context).dieta_regenerar,
                           style: AppTypography.labelSm.copyWith(
-                            color: Color(0xFF7C3AED),
+                            color: const Color(0xFF7C3AED),
                             fontSize: 9,
                             fontWeight: FontWeight.w700,
                           )),
@@ -1626,7 +1626,7 @@ class _AiDietBody extends ConsumerWidget {
                     const SizedBox(height: 12),
                     Text(L.of(context).dieta_gerarPlano,
                         style: AppTypography.labelSm.copyWith(
-                          color: Color(0xFF7C3AED),
+                          color: const Color(0xFF7C3AED),
                           letterSpacing: 1.5,
                           fontWeight: FontWeight.w700,
                         )),
@@ -1761,7 +1761,7 @@ class _PlanMealCardState extends State<_PlanMealCard> {
                       color: AppColors.primary.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.restaurant_menu,
+                    child: Icon(Icons.restaurant_menu,
                         color: AppColors.primary, size: 16),
                   ),
                   const SizedBox(width: 10),
@@ -2145,7 +2145,7 @@ class _SwapFoodSheetState extends State<_SwapFoodSheet> {
             // ── Ajuste de peso ─────────────────────────────────────────
             Row(
               children: [
-                const Icon(Icons.tune_rounded,
+                Icon(Icons.tune_rounded,
                     size: 14, color: AppColors.primary),
                 const SizedBox(width: 6),
                 Text(L.of(context).dieta_ajustarPeso,
@@ -2214,7 +2214,7 @@ class _SwapFoodSheetState extends State<_SwapFoodSheet> {
             // ── Trocar alimento ────────────────────────────────────────
             Row(
               children: [
-                const Icon(Icons.swap_horiz,
+                Icon(Icons.swap_horiz,
                     size: 14, color: AppColors.onSurfaceVariant),
                 const SizedBox(width: 6),
                 Text(L.of(context).dieta_trocarAlimento,
@@ -2253,7 +2253,7 @@ class _SwapFoodSheetState extends State<_SwapFoodSheet> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.restaurant,
+                    Icon(Icons.restaurant,
                         color: AppColors.primary, size: 16),
                     const SizedBox(width: 8),
                     Expanded(
@@ -2281,7 +2281,7 @@ class _SwapFoodSheetState extends State<_SwapFoodSheet> {
                     hintText: L.of(context).dieta_buscarAlternativa,
                     hintStyle: AppTypography.bodyMd
                         .copyWith(color: AppColors.onSurfaceVariant),
-                    prefixIcon: const Icon(Icons.search,
+                    prefixIcon: Icon(Icons.search,
                         color: AppColors.onSurfaceVariant, size: 18),
                     border: InputBorder.none,
                     contentPadding:
@@ -2422,7 +2422,7 @@ class _MealCard extends StatelessWidget {
               color: AppColors.surfaceContainerHigh,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.restaurant_menu,
+            child: Icon(Icons.restaurant_menu,
                 color: AppColors.onSurfaceVariant, size: 18),
           ),
           const SizedBox(width: 12),
@@ -2475,7 +2475,7 @@ class _MealCard extends StatelessWidget {
               const SizedBox(height: 6),
               GestureDetector(
                 onTap: onDelete,
-                child: const Icon(Icons.delete_outline,
+                child: Icon(Icons.delete_outline,
                     size: 16, color: AppColors.onSurfaceVariant),
               ),
             ],
@@ -2534,8 +2534,8 @@ class _EmptyDiet extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(L.of(context).dieta_iaAtivaGroq,
-                          style: TextStyle(
-                            color: Color(0xFF7C3AED),
+                          style: const TextStyle(
+                            color: const Color(0xFF7C3AED),
                             fontSize: 10,
                             letterSpacing: 1.5,
                             fontWeight: FontWeight.w700,
@@ -2560,7 +2560,7 @@ class _EmptyDiet extends StatelessWidget {
               color: AppColors.surfaceContainerHigh,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Icon(Icons.restaurant,
+            child: Icon(Icons.restaurant,
                 color: AppColors.onSurfaceVariant, size: 36),
           ),
           const SizedBox(height: 16),
@@ -2796,7 +2796,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
         ),
         child: Row(
           children: [
-            const Icon(Icons.check_circle, color: AppColors.primary, size: 15),
+            Icon(Icons.check_circle, color: AppColors.primary, size: 15),
             const SizedBox(width: 8),
             Expanded(
               child: Text(L.of(context).dieta_iaCalibrada,
@@ -2975,7 +2975,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
                 elevation: 0,
               ),
               child: _saving
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
@@ -3022,11 +3022,11 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
                 hintText: L.of(context).dieta_exBusca,
                 hintStyle: AppTypography.bodyMd
                     .copyWith(color: AppColors.onSurfaceVariant),
-                prefixIcon: const Icon(Icons.search,
+                prefixIcon: Icon(Icons.search,
                     color: AppColors.onSurfaceVariant, size: 20),
                 suffixIcon: _searchCtrl.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.close,
+                        icon: Icon(Icons.close,
                             color: AppColors.onSurfaceVariant, size: 18),
                         onPressed: () {
                           _searchCtrl.clear();
@@ -3078,7 +3078,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.search_off,
+                  Icon(Icons.search_off,
                       color: AppColors.onSurfaceVariant, size: 18),
                   const SizedBox(width: 10),
                   Text(L.of(context).dieta_nenhumEncontrado,
@@ -3105,7 +3105,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
                     color: AppColors.primary.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.restaurant,
+                  child: Icon(Icons.restaurant,
                       color: AppColors.primary, size: 18),
                 ),
                 const SizedBox(width: 12),
@@ -3130,7 +3130,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
                 ),
                 IconButton(
                   onPressed: _clearSelection,
-                  icon: const Icon(Icons.close,
+                  icon: Icon(Icons.close,
                       size: 18, color: AppColors.onSurfaceVariant),
                 ),
               ],
@@ -3186,7 +3186,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
                 color: AppColors.surfaceContainerHigh,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Center(
+              child: Center(
                 child: Text('g',
                     style: TextStyle(
                       color: AppColors.onSurfaceVariant,
@@ -3380,7 +3380,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.tune,
+                          Icon(Icons.tune,
                               size: 14, color: AppColors.onSurfaceVariant),
                           const SizedBox(width: 6),
                           Text(L.of(context).dieta_ajustarPeso,
@@ -3611,11 +3611,11 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const CircularProgressIndicator(
+                        CircularProgressIndicator(
                             color: AppColors.primary, strokeWidth: 2),
                         const SizedBox(height: 10),
                         Text(L.of(context).dieta_analisando,
-                            style: TextStyle(
+                            style: const TextStyle(
                                 color: Colors.white, fontSize: 13)),
                       ],
                     ),
@@ -3673,7 +3673,7 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.tune_rounded,
+                          Icon(Icons.tune_rounded,
                               size: 14, color: AppColors.primary),
                           const SizedBox(width: 6),
                           Text(L.of(context).dieta_ajustarPeso,
@@ -3898,7 +3898,7 @@ class _FoodResultTile extends StatelessWidget {
                 color: AppColors.surfaceContainerHigh,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.restaurant,
+              child: Icon(Icons.restaurant,
                   color: AppColors.onSurfaceVariant, size: 16),
             ),
             const SizedBox(width: 12),
@@ -3999,7 +3999,7 @@ class _NutritionPreview extends StatelessWidget {
                   ),
                   child: Text(aiLabel,
                       style: AppTypography.labelSm.copyWith(
-                        color: Color(0xFF7C3AED),
+                        color: const Color(0xFF7C3AED),
                         fontSize: 9,
                         fontWeight: FontWeight.w700,
                       )),
@@ -4045,7 +4045,7 @@ class _NutritionPreview extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.info_outline,
+                Icon(Icons.info_outline,
                     color: AppColors.onSurfaceVariant, size: 13),
                 const SizedBox(width: 6),
                 Expanded(

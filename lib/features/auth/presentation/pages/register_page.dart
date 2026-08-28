@@ -414,7 +414,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     elevation: 0,
                   ),
                   child: isLoading
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 22,
                           height: 22,
                           child: CircularProgressIndicator(
@@ -651,7 +651,7 @@ class _Step0AccountState extends ConsumerState<_Step0Account> {
                 _FieldLabel(L.of(context).cad_emailLabel),
                 if (_isCheckingEmail) ...[
                   const SizedBox(width: 8),
-                  const SizedBox(
+                  SizedBox(
                     width: 12,
                     height: 12,
                     child: CircularProgressIndicator(
@@ -1132,7 +1132,7 @@ class _Step2Frequency extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Icon(Icons.auto_awesome,
+                Icon(Icons.auto_awesome,
                     color: AppColors.primary, size: 18),
               ],
             ),
@@ -1269,8 +1269,8 @@ class _ConsentBlock extends StatelessWidget {
                                           color: AppColors.primary)),
                                 ),
                               if (LegalDocuments.forConsent(item.type) != null)
-                                const Padding(
-                                  padding: EdgeInsets.only(left: 6),
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 6),
                                   child: Icon(Icons.article_outlined,
                                       size: 13, color: AppColors.primary),
                                 ),
@@ -1289,7 +1289,7 @@ class _ConsentBlock extends StatelessWidget {
             ),
 
           // ── Aceitar tudo de uma vez ──────────────────────────────────
-          Divider(color: AppColors.surfaceContainerHigh, height: 20),
+          const Divider(color: AppColors.surfaceContainerHigh, height: 20),
           InkWell(
             borderRadius: BorderRadius.circular(8),
             onTap: () => onAceitarTudo(!tudoAceito),
@@ -1552,7 +1552,7 @@ class _UnitField extends StatelessWidget {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(
+                borderSide: BorderSide(
                     color: AppColors.primary, width: 1.5),
               ),
               errorBorder: OutlineInputBorder(

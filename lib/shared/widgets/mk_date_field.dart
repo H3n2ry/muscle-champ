@@ -35,7 +35,7 @@ class MkDateField extends StatelessWidget {
       helpText: 'DATA DE NASCIMENTO',
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.dark(
+          colorScheme: ColorScheme.dark(
             primary: AppColors.primary,
             onPrimary: AppColors.onPrimary,
             surface: AppColors.surfaceContainerLow,
@@ -69,7 +69,7 @@ class MkDateField extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Icon(Icons.cake_outlined,
+                Icon(Icons.cake_outlined,
                     size: 18, color: AppColors.onSurfaceVariant),
                 const SizedBox(width: 12),
                 Text(
@@ -81,7 +81,7 @@ class MkDateField extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                const Icon(Icons.calendar_today_outlined,
+                Icon(Icons.calendar_today_outlined,
                     size: 16, color: AppColors.onSurfaceVariant),
               ],
             ),

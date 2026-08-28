@@ -189,7 +189,7 @@ class _ConfirmEmailPageState extends ConsumerState<ConfirmEmailPage> {
                   color: AppColors.primary.withOpacity(0.10),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.mark_email_unread_outlined,
                   color: AppColors.primary,
                   size: 48,
@@ -307,7 +307,7 @@ class _ConfirmEmailPageState extends ConsumerState<ConfirmEmailPage> {
                     elevation: 0,
                   ),
                   child: _isVerifying
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 22,
                           height: 22,
                           child: CircularProgressIndicator(
@@ -334,7 +334,7 @@ class _ConfirmEmailPageState extends ConsumerState<ConfirmEmailPage> {
                 onPressed:
                     (_resendCountdown > 0 || _isResending) ? null : _resend,
                 child: _isResending
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
@@ -434,7 +434,7 @@ class _OtpBox extends StatelessWidget {
           disabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide:
-                const BorderSide(color: AppColors.outlineVariant),
+                BorderSide(color: AppColors.outlineVariant),
           ),
         ),
         onChanged: onChanged,

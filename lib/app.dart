@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/i18n/locale_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/paleta_provider.dart';
 import 'l10n/app_localizations.dart';
 
 class MuscleCampApp extends ConsumerWidget {
@@ -13,6 +14,11 @@ class MuscleCampApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
     final appLocale = ref.watch(localeProvider);
+
+    // Observado para o `AppTheme.dark()` abaixo ser remontado com as cores
+    // novas. O resto da árvore é repintado pelo `repintarTudo()` do notifier —
+    // reconstruir daqui não alcança as páginas, que o Navigator segura.
+    ref.watch(paletaProvider);
 
     // Espelha o idioma para o GroqService, que é estático e não alcança o
     // provider. Sem isso a IA continuaria respondendo em português para quem

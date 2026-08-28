@@ -150,7 +150,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 color: AppColors.primary,
                                 borderRadius: BorderRadius.circular(16),
                               ),
-                              child: const Icon(Icons.emoji_events,
+                              child: Icon(Icons.emoji_events,
                                   color: AppColors.onPrimary, size: 38),
                             ),
                           ),
@@ -244,7 +244,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           elevation: 0,
                         ),
                         child: isLoading
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 22,
                                 height: 22,
                                 child: CircularProgressIndicator(

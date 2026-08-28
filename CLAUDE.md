@@ -529,6 +529,52 @@ Dark theme only. Full spec in `../obsidian_kinetic/DESIGN.md`. Key colors:
 
 UI mockups: `../dashboard_de_progresso_v3/` and `../perfil_e_evolu_o_v3/` (HTML + screenshot).
 
+### Accent colour is user-chosen (`paleta.dart`, 2026-08-27)
+
+Seven closed palettes; the user picks one in the profile. The choice lives in
+`profiles.tema` (migration `20260827_tema_do_app_por_conta.sql`), so it follows
+the **account** across devices, with SharedPreferences as a first-frame cache —
+waiting for the network to learn the colour would open the app green and flip
+half a second later.
+
+**A palette is a set, not a value.** The theme's greys are *biased*:
+`onSurfaceVariant` was `#BDCBAE`, a greenish grey picked to sit with lime, and
+`outline`/`outlineVariant` lean green too. Swapping only `primary` leaves half
+the screen green with nobody able to say why. Each `Paleta` therefore carries
+its own greys and borders.
+
+`warning` and `error` deliberately do **not** follow the accent: an alert that
+changes colour with the theme stops alerting. The streak flame is gold in all
+seven.
+
+⚠️ **`AppColors.primary` and friends are getters now, not `const`.** Making them
+dynamic broke 163 `const` widget constructors across 23 files, and those `const`
+keywords were removed. **Do not put them back** — `dart fix --apply
+--code=prefer_const_constructors` will not offer to (the analyzer knows they
+can't be const), but a hand-written `const` around anything reading `AppColors`
+will fail to compile, which is the good outcome. The bad outcome is someone
+"fixing" it by hard-coding a hex.
+
+The cost is real and was accepted: those 163 widgets no longer get skipped on
+rebuild, and 61 of them sit in the diet and workout scrolling lists.
+
+**Repainting is explicit** (`repintarTudo()` in `paleta_provider.dart`). The
+colours are a static field — nothing observes them, so assignment repaints
+nothing, and rebuilding `MaterialApp` doesn't reach pages held inside
+`Navigator` routes. The function walks the element tree calling
+`markNeedsBuild`. Swapping the app's `key` to force a remount was the
+alternative and was rejected: the picker sits at the bottom of the profile page,
+so remounting would throw the user back to the top on every colour tried.
+`test/paleta_test.dart` pins both halves — it repaints, and `initState` does not
+run again.
+
+⚠️ **The palette ids are a contract with the database.** `profiles_tema_valido`
+lists the seven; adding a `Paleta` without touching the migration means the app
+paints the colour and the server rejects the write, so the choice vanishes on
+next launch. `test/paleta_test.dart` keeps the two lists in sync, and also pins
+the WCAG contrast that is the reason the list is closed rather than a free
+colour picker.
+
 ## External Services
 
 | Service | Purpose | Config |

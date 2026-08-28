@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
 
+import 'paleta.dart';
+
 class AppColors {
   AppColors._();
+
+  /// Paleta em uso. Trocar isto **não** repinta nada sozinho — quem repinta é
+  /// o `PaletaScope`, que reconstrói a árvore depois de trocar.
+  ///
+  /// É um campo estático e não um `InheritedWidget` porque estas cores são
+  /// lidas de 33 arquivos, muitos deles sem `BuildContext` à mão. Ler pelo
+  /// `Theme.of(context)` seria o caminho canônico do Flutter e custaria 431
+  /// mudanças de chamada em vez de 163.
+  static Paleta paleta = Paleta.limao;
 
   // Obsidian Kinetic - Base surfaces
   static const Color background        = Color(0xFF121413);
@@ -13,17 +24,20 @@ class AppColors {
   static const Color surfaceContainerHighest = Color(0xFF343535);
   static const Color surfaceBright     = Color(0xFF393939);
 
-  // Primary — lime green accent
-  static const Color primary           = Color(0xFF7EFC00);
-  static const Color primaryDim        = Color(0xFF6FE000);
-  static const Color primaryText       = Color(0xFFF7FFEA);
-  static const Color onPrimary         = Color(0xFF173800);
-  static const Color primaryContainer  = Color(0xFF7EFC00);
-  static const Color onPrimaryContainer = Color(0xFF357000);
+  // Primary — vem da paleta escolhida
+  static Color get primary            => paleta.primary;
+  static Color get primaryDim         => paleta.primaryDim;
+  static Color get primaryText        => paleta.primaryText;
+  static Color get onPrimary          => paleta.onPrimary;
+  static Color get primaryContainer   => paleta.primary;
+  static Color get onPrimaryContainer => paleta.onPrimaryContainer;
 
   // On surfaces
   static const Color onSurface        = Color(0xFFE4E2E1);
-  static const Color onSurfaceVariant = Color(0xFFBDCBAE);
+
+  /// Cinza esverdeado no limão, e enviesado para o acento nas outras paletas.
+  static Color get onSurfaceVariant   => paleta.onSurfaceVariant;
+
   static const Color onBackground     = Color(0xFFE4E2E1);
 
   // Secondary
@@ -31,19 +45,21 @@ class AppColors {
   static const Color secondaryContainer = Color(0xFF454747);
   static const Color onSecondary        = Color(0xFF2F3131);
 
-  // Borders
-  static const Color outline        = Color(0xFF88957B);
-  static const Color outlineVariant = Color(0xFF3F4A34);
+  // Borders — também enviesadas; ver o comentário em paleta.dart
+  static Color get outline        => paleta.outline;
+  static Color get outlineVariant => paleta.outlineVariant;
 
   // Error
   static const Color error          = Color(0xFFFFB4AB);
   static const Color errorContainer = Color(0xFF93000A);
 
-  // Semantic
-  static const Color success = Color(0xFF7EFC00);
+  // Semantic. `warning` e `error` NÃO seguem o acento de propósito: são cores
+  // com significado, e um alerta que muda de cor junto com o tema deixa de
+  // avisar. A chama da sequência é dourada em todas as paletas.
+  static Color get success => paleta.primary;
   static const Color warning = Color(0xFFFFD700);
 
   // Glow effect (low opacity primary for inner glow)
-  static Color primaryGlow = primary.withOpacity(0.15);
-  static Color primaryGlowStrong = primary.withOpacity(0.30);
+  static Color get primaryGlow => primary.withOpacity(0.15);
+  static Color get primaryGlowStrong => primary.withOpacity(0.30);
 }
