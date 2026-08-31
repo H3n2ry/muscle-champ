@@ -1331,6 +1331,76 @@ class LPt extends L {
   String get conf_naoRecebeu => 'Não recebeu o código? Reenviar';
 
   @override
+  String get recSenha_titulo1 => 'ESQUECEU';
+
+  @override
+  String get recSenha_titulo2 => 'A SENHA?';
+
+  @override
+  String get recSenha_explicacao =>
+      'Digite o e-mail da sua conta. Enviaremos um código de 8 dígitos para você criar uma senha nova.';
+
+  @override
+  String get recSenha_email => 'E-MAIL';
+
+  @override
+  String get recSenha_enviarCodigo => 'ENVIAR CÓDIGO';
+
+  @override
+  String get recSenha_voltarLogin => 'Voltar para o login';
+
+  @override
+  String get recSenha_linkLogin => 'Esqueci minha senha';
+
+  @override
+  String recSenha_seExistir(String email) {
+    return 'Se existir uma conta com $email, o código chegou lá. Confira também o spam.';
+  }
+
+  @override
+  String get recSenha_novaTitulo1 => 'NOVA';
+
+  @override
+  String get recSenha_novaTitulo2 => 'SENHA';
+
+  @override
+  String get recSenha_digiteCodigo =>
+      'Digite o código de 8 dígitos enviado para:';
+
+  @override
+  String get recSenha_novaSenha => 'NOVA SENHA';
+
+  @override
+  String get recSenha_confirmarSenha => 'CONFIRMAR SENHA';
+
+  @override
+  String get recSenha_salvar => 'SALVAR SENHA';
+
+  @override
+  String get recSenha_naoConfere => 'As senhas não são iguais.';
+
+  @override
+  String get recSenha_codigoInvalido =>
+      'Código inválido ou expirado. Peça um novo.';
+
+  @override
+  String get recSenha_sucesso => 'Senha alterada. Bem-vindo de volta!';
+
+  @override
+  String get recSenha_erroSalvar =>
+      'Não foi possível salvar a senha nova. Tente novamente.';
+
+  @override
+  String get recSenha_digite8 => 'Digite os 8 dígitos do código.';
+
+  @override
+  String get recSenha_senhaIgual =>
+      'A senha nova precisa ser diferente da atual. Escolha outra — o código continua válido.';
+
+  @override
+  String get recSenha_codigoOk => 'Código validado';
+
+  @override
   String get login_credenciaisInvalidas =>
       'Email ou senha incorretos. Verifique e tente novamente.';
 

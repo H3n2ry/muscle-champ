@@ -101,11 +101,15 @@ Remove-Item -Recurse -Force "ios/Flutter/ephemeral" -ErrorAction SilentlyContinu
 flutter build web --release
 ```
 
-### Deploy Vercel retorna "project not found"
-```powershell
-# Usar scope explícito
-vercel --prod --yes --scope "af-dev"
+### Deploy web: subiu mas a tela não muda
+Quase sempre é cache, não deploy. Compare o hash antes de investigar qualquer outra coisa:
+```bash
+curl -sL https://musclechamp.com.br/main.dart.js | sha256sum
+sha256sum build/web/main.dart.js
 ```
+Hash igual = está no ar. Aí o problema é do lado do cliente: service worker do Flutter, cache do navegador, ou proxy/VPN. Ver `CLAUDE.md`, seção sobre Browser Cache TTL.
+
+> O deploy hoje é `npx wrangler pages deploy build/web --project-name=muscle-champ --branch=main`. **Não usar Vercel** — aposentado em 26/08/2026.
 
 ### PNG da galeria não é identificado pela IA
 - Verificar se `_optimizeImage()` está detectando magic bytes `0x89 0x50 0x4E 0x47`

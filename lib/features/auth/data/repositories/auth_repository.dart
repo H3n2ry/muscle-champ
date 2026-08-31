@@ -18,6 +18,15 @@ class UnderageException implements Exception {
   String toString() => LegalTexts.underageMessage;
 }
 
+/// Lançado quando a senha nova enviada na recuperação é igual à atual.
+///
+/// Vale uma exceção própria porque o tratamento é diferente de qualquer outra
+/// falha: o código de recuperação já foi consumido, a sessão está aberta, e a
+/// pessoa só precisa escolher outra senha — não pedir um código novo.
+class SamePasswordException implements Exception {
+  const SamePasswordException();
+}
+
 /// Lançado quando falta um consentimento obrigatório para operar o serviço.
 class MissingConsentException implements Exception {
   final String consentType;
@@ -137,6 +146,57 @@ class AuthRepository {
       type: OtpType.signup,
       email: email,
     );
+  }
+
+  // ── Recuperação de senha ───────────────────────────────────────────────────
+
+  /// Dispara o e-mail de recuperação com o código OTP.
+  ///
+  /// Não retorna nada e não distingue e-mail existente de inexistente — de
+  /// propósito. O Supabase responde igual nos dois casos para não virar um
+  /// oráculo de "esta pessoa tem conta aqui", e a UI precisa manter a mesma
+  /// resposta. Não usar `checkEmailExists` neste fluxo.
+  ///
+  /// Depende do template "Reset Password" no painel do Supabase conter
+  /// `{{ .Token }}`. O template padrão manda `{{ .ConfirmationURL }}` (link), e
+  /// com ele nenhum código chega ao usuário.
+  Future<void> sendPasswordReset(String email) async {
+    await _client.auth.resetPasswordForEmail(email);
+  }
+
+  /// Troca o código de recuperação por uma sessão autenticada.
+  ///
+  /// Separado de [updatePassword] porque **o código é de uso único**: assim que
+  /// isto retorna, ele está queimado. Se a gravação da senha falhar depois
+  /// (senha igual à anterior, rede caindo), refazer esta etapa com o mesmo
+  /// código dá 403 — a tela precisa reaproveitar a sessão em vez de recomeçar.
+  Future<void> verifyRecoveryCode({
+    required String email,
+    required String token,
+  }) async {
+    await _client.auth.verifyOTP(
+      email: email,
+      token: token,
+      type: OtpType.recovery,
+    );
+  }
+
+  /// Grava a senha nova na sessão aberta por [verifyRecoveryCode].
+  ///
+  /// Lança [SamePasswordException] quando a senha nova é igual à atual — o
+  /// Supabase devolve 422 nesse caso, e é o erro mais provável de todos, já que
+  /// quem esqueceu a senha costuma tentar primeiro a que achava que era.
+  Future<void> updatePassword(String newPassword) async {
+    try {
+      await _client.auth.updateUser(UserAttributes(password: newPassword));
+    } on AuthException catch (e) {
+      final msg = e.message.toLowerCase();
+      if (msg.contains('should be different') ||
+          msg.contains('same_password')) {
+        throw const SamePasswordException();
+      }
+      rethrow;
+    }
   }
 
   Future<UserModel> _fetchProfile(String userId) async {

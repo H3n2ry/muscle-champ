@@ -39,7 +39,17 @@
 |---------|-------|-------------------|-------|
 | **Supabase** | Free | 500MB DB, 1GB Storage, 50.000 MAU/mês, 5GB transferência | Sem SLA; projeto pausado após 1 semana inativo |
 | **Groq API** | Free | ~500k tokens/dia estimado | Sem SLA; rate limit sem aviso prévio |
-| **Vercel** | Free (Hobby) | 100GB bandwidth/mês, deploys ilimitados | Sem SLA comercial |
+| **Cloudflare Pages** | Free | 25 MiB por arquivo, 20.000 arquivos, 500 builds/mês | Sem SLA comercial. Substituiu o Vercel em 26/08/2026: o plano Hobby proíbe uso comercial, e anunciar a assinatura já violaria a política |
+| **Brevo (SMTP)** | Free | 300 e-mails/dia | Entrega dos e-mails de confirmação de cadastro depende dele — se cair ou estourar a cota, ninguém consegue criar conta. IP compartilhado: reputação afetada por outros remetentes |
+
+**Brevo** entrou em 28/08/2026 como SMTP customizado do Supabase Auth, substituindo
+o serviço interno de testes que limitava o cadastro a ~2 contas/hora. Envia de
+`noreply@musclechamp.com.br` (domínio autenticado por DKIM + DMARC). As credenciais
+ficam **só no painel do Supabase** — nunca no repositório. Ver `CLAUDE.md`,
+seção "Signup email runs through Brevo SMTP", para as armadilhas de DNS envolvidas.
+
+O limite prático de cadastros é o menor entre a cota do Brevo (300/dia) e o rate
+limit do Supabase Auth (30/hora) — não mais o teto de ~2/hora do serviço interno.
 
 ---
 

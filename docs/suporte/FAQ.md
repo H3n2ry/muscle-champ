@@ -6,13 +6,15 @@
 ## Conta e Acesso
 
 **1. Não recebi o e-mail de confirmação de conta. O que fazer?**
-Verifique a pasta de spam. Se não encontrar, tente se cadastrar novamente com o mesmo e-mail — um novo e-mail de confirmação será enviado. Se o problema persistir, entre em contato com [suporte@contato.com].
+Verifique a pasta de spam — o remetente é `Muscle Champ <noreply@musclechamp.com.br>`. Na própria tela de confirmação há o botão "Não recebeu? Reenviar". Se o problema persistir, entre em contato com [suporte@contato.com].
+
+> **Nota interna (não exibir ao usuário):** se um usuário específico parou de receber, verifique se ele não está na *blocklist* do Brevo — clicar em "Unsubscribe" no e-mail de confirmação o adiciona lá, e a partir daí todos os envios para ele falham em silêncio. Ver `docs/seguranca/CHECKLIST_SEGURANCA.md`.
 
 **2. Esqueci minha senha. Como recuperar?**
-Na tela de login, toque em "Esqueci minha senha" (a implementar). Um link de redefinição será enviado para o seu e-mail.
+Na tela de login, toque em "Esqueci minha senha" e informe o e-mail da sua conta. Enviaremos um código de 8 dígitos; digite o código junto com a senha nova e pronto. Confira também a pasta de spam.
 
 **3. Posso usar o mesmo login no celular e no navegador?**
-Sim. O Muscle Champ funciona no app Android e em qualquer navegador via https://muscle-champ.pages.dev. Seus dados são sincronizados automaticamente.
+Sim. O Muscle Champ funciona no app Android e em qualquer navegador via https://musclechamp.com.br. Seus dados são sincronizados automaticamente.
 
 ---
 

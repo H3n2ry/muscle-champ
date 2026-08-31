@@ -506,6 +506,34 @@
   "conf_enviamosCodigo": "We sent an 8-digit code to:",
   "conf_reenviarEm": "Resend code in {seg}s",
   "conf_naoRecebeu": "Didn’t get the code? Resend",
+  "recSenha_titulo1": "FORGOT",
+  "recSenha_titulo2": "YOUR PASSWORD?",
+  "recSenha_explicacao": "Enter your account email. We’ll send you an 8-digit code to create a new password.",
+  "recSenha_email": "EMAIL",
+  "recSenha_enviarCodigo": "SEND CODE",
+  "recSenha_voltarLogin": "Back to login",
+  "recSenha_linkLogin": "Forgot my password",
+  "recSenha_seExistir": "If an account exists for {email}, the code is on its way. Check your spam folder too.",
+  "@recSenha_seExistir": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "recSenha_novaTitulo1": "NEW",
+  "recSenha_novaTitulo2": "PASSWORD",
+  "recSenha_digiteCodigo": "Enter the 8-digit code sent to:",
+  "recSenha_novaSenha": "NEW PASSWORD",
+  "recSenha_confirmarSenha": "CONFIRM PASSWORD",
+  "recSenha_salvar": "SAVE PASSWORD",
+  "recSenha_naoConfere": "The passwords don’t match.",
+  "recSenha_codigoInvalido": "Invalid or expired code. Request a new one.",
+  "recSenha_sucesso": "Password changed. Welcome back!",
+  "recSenha_erroSalvar": "Couldn’t save the new password. Try again.",
+  "recSenha_digite8": "Enter all 8 digits of the code.",
+  "recSenha_senhaIgual": "The new password must be different from your current one. Pick another — your code is still valid.",
+  "recSenha_codigoOk": "Code verified",
   "login_credenciaisInvalidas": "Wrong email or password. Check them and try again.",
   "login_confirmeEmail": "Confirm your email before logging in. Check your inbox.",
   "login_contaNaoEncontrada": "No account found with this email.",

@@ -157,8 +157,38 @@ republishes the previous version. Check for `✓ Built build\web` first, or
 compare hashes afterwards:
 
 ```bash
-curl -s -o /tmp/served.js https://muscle-champ.pages.dev/main.dart.js && sha256sum /tmp/served.js build/web/main.dart.js
+curl -s -o /tmp/served.js https://musclechamp.com.br/main.dart.js && sha256sum /tmp/served.js build/web/main.dart.js
 ```
+
+Same hash and the deploy is live — **whatever the browser shows**. Compare hashes
+before debugging a "deploy that did not go out"; the answer is almost always
+caching, and the next section says where.
+
+### ⚠️ The zone's Browser Cache TTL overrides `web/_headers`
+
+`web/_headers` sets `no-cache, must-revalidate` on the entry points
+(`index.html`, `main.dart.js`, `flutter_bootstrap.js`, `flutter_service_worker.js`,
+`version.json`) precisely so a deploy is visible immediately. **On the custom
+domain that file is not the last word.** Traffic to `musclechamp.com.br` goes
+through the proxied Cloudflare zone, and the zone's *Browser Cache TTL* setting
+rewrites the header on the way out:
+
+```
+muscle-champ.pages.dev/main.dart.js → Cache-Control: no-cache, must-revalidate
+musclechamp.com.br/main.dart.js     → Cache-Control: max-age=14400, must-revalidate
+```
+
+Same file, same project, same deploy. 14400s is **4 hours**, and it appears
+nowhere in `_headers` — it is the zone default. Every returning visitor keeps the
+previous bundle for up to four hours after any deploy, including a hotfix. Only a
+browser that never opened the site sees the new build.
+
+**Fix:** Cloudflare → zone `musclechamp.com.br` → Caching → Configuration →
+Browser Cache TTL → **Respect Existing Headers**.
+
+The tell is that `pages.dev` shows the new version and the custom domain does not.
+That looks like a broken custom domain and is not: the files are byte-identical,
+verified by hash. Check `curl -sI` for the header before touching the deploy.
 
 ### If build fails with path errors
 ```powershell
@@ -640,8 +670,8 @@ colour picker.
 |---------|---------|--------|
 | Supabase | Auth + PostgreSQL + Storage + Edge Functions + Vault | `supabase_config.dart` / `secrets.dart` (project `jryetjysjiyuuoznaejc`) |
 | Groq | LLM inference (via `groq-proxy` Edge Function) | key in Supabase Vault, never in client |
-| Cloudflare Pages | Web hosting (destino) | Project: `muscle-champ` → `muscle-champ.pages.dev` |
-| Vercel | Web hosting (legado, sair antes de vender) | Project: `muscle-champ`, scope: `af-dev` |
+| Cloudflare Pages | Web hosting (destino) | Project: `muscle-champ` → `musclechamp.com.br` (alias: `muscle-champ.pages.dev`) |
+| Vercel | **RETIRED 2026-08-26** — serves only a 307 to the Pages site. Do not deploy. | Archived config in `tools/vercel-retirado/` |
 | GitHub Actions | Keepalive, backup, AI healthcheck | `.github/workflows/` |
 
 **Workflows** (all run on GitHub's infra, only once pushed):
@@ -669,34 +699,95 @@ during a spike is healthy, and failing there would cry wolf — a genuinely dead
 still fails via `x-model-fallback`. Sending the primary from the proxy avoids the
 workflow keeping its own copy of `MODEL_CHAINS`, which would drift on the first swap.
 
-## ⚠️ Signup is capped at ~2 accounts/hour (blocker)
+## Signup email runs through Brevo SMTP (resolved 2026-08-28)
 
-Auth still uses Supabase's **built-in email service** (`noreply@mail.app.supabase.io`),
-which Supabase documents as test-only and rate-limits hard. Confirmed in the auth
-logs on 2026-08-24:
+Auth used to run on Supabase's **built-in email service**
+(`noreply@mail.app.supabase.io`), which Supabase documents as test-only and caps
+at ~2 signups/hour. Confirmed in the auth logs on 2026-08-24:
 
 ```
 error_code: "over_email_send_rate_limit"   path: /signup   status: 429
 ```
 
-Two signups went through (17:51, 18:09), then 18:36 / 18:39 / 18:39 / 18:41 all
-429'd. **No amount of app-side work raises this** — it is a server-side sending
-cap, and it means the app currently cannot onboard more than a couple of users
-per hour.
+Now on custom SMTP via **Brevo**, sending from `noreply@musclechamp.com.br` on
+the owned domain. Email rate limit raised 2/h → 30/h in Auth → Rate Limits.
+Verified end to end on 2026-08-28: `/signup` returns 200 and the confirmation
+code arrives signed by the domain.
 
-**Fix**: configure custom SMTP in Authentication → Emails → SMTP Settings
-(Resend, Brevo, SES…), then raise the limit in Auth → Rate Limits. Needs
-dashboard access and provider credentials.
+**The config lives in the dashboard, not the repo.** Host `smtp-relay.brevo.com`,
+port 587, username = the Brevo account email, password = an SMTP key generated in
+Brevo → SMTP & API. That key is a secret and never lands in the repository.
+Supabase does not echo it back to the settings page after saving, so a blank
+password field means *hidden*, not *lost* — do not re-save the form blank to
+"check" whether it stuck.
 
-Good news, verified by querying `auth.users`: the 429 rolls the signup back
-cleanly — **no orphaned unconfirmed rows**. Without that, a retry would hit
-"email já cadastrado" and lock the person out permanently.
+### Three traps this hit, none of them obvious
 
-The client distinguishes this from a user-caused rate limit
-(`cad_limiteEmails` / `conf_limiteEmails`). The old copy said "Muitas
+**1. A pre-existing SPF that blocked every sender.** The domain carried
+`v=spf1 -all`, which Cloudflare writes when a domain is marked as not sending
+email. It authorizes *nobody*, so every Brevo send would have failed SPF even
+with DKIM and DMARC perfect. Now `v=spf1 include:spf.brevo.com -all`. A domain
+may have only **one** SPF record — a second one is a `permerror` — so this had to
+be an edit of the existing record, not a new one.
+
+**2. Two DMARC records.** `_dmarc` held both Cloudflare's `p=reject` and Brevo's
+`p=none`. Per RFC 7489, a resolver that finds multiple `v=DMARC1` records ignores
+all of them: the domain effectively had no DMARC while appearing to have two.
+Deleted Cloudflare's, kept Brevo's `p=none` so failures get reported rather than
+bounced while the setup settles.
+
+**3. `525 "5.7.1 Unauthorized IP address"` reads like a credential error and is
+not.** Brevo refuses SMTP connections from IPs outside its authorized list, and
+Supabase sends from its own infrastructure. A wrong key returns
+`535 Authentication failed` instead — so a 525 actually proves the credentials
+worked. Fixed by lifting the IP restriction in Brevo → Security rather than
+allowlisting an address, because Supabase's outbound IPs are neither fixed nor
+published; pinning one would break signup again weeks later with no warning.
+
+The two DKIM CNAMEs (`brevo1._domainkey`, `brevo2._domainkey`) must stay **DNS
+only** in Cloudflare. Proxied — orange cloud — they resolve to Cloudflare instead
+and Brevo cannot validate them.
+
+### Still open
+
+Brevo attaches a `List-Unsubscribe` header, so Gmail renders an "Unsubscribe"
+button on the confirmation email. On a transactional auth message that is a
+footgun: a user who clicks it lands on Brevo's blocklist and then silently stops
+receiving confirmation codes, with nothing in the app to explain why.
+
+**There is no setting for this.** Brevo states it does not strip the header from
+anything sent over SMTP, because campaigns and transactional mail share that path
+and it cannot tell them apart. The header-free alternative (`list-help`) is
+Enterprise-only. Three ways out, in order of cost:
+
+1. **Live with it and watch the blocklist** (Contacts → Blocklist). Tolerable
+   today: the only transactional mail is the signup code, and nobody unsubscribes
+   from a code they just asked for.
+2. **Move to the [Send Email Hook](https://supabase.com/docs/guides/auth/auth-hooks/send-email-hook)**
+   — Auth calls an Edge Function, which calls Brevo's *transactional API*, and the
+   API does not add the header. Same pattern as `groq-proxy`, and it drags the
+   email templates out of the dashboard into version control, which is the exact
+   reason that function was committed in the first place. Deploy with
+   `--no-verify-jwt`: Auth calls it server-side, with no user JWT.
+3. Switch provider — costs redoing the DKIM records.
+
+⚠️ **Password reset now exists** (`/forgot-password` → `/reset-password`), so this
+is live, not hypothetical: someone who unsubscribed from an earlier confirmation
+email silently cannot recover their account, and nothing in the app or the auth
+logs explains why — the send simply never happens. Until option 2 ships, a
+support report of "I never get the reset code" means **check Brevo's blocklist
+first**.
+
+Good news, verified twice by querying `auth.users`: a failed send rolls the
+signup back cleanly — **no orphaned unconfirmed rows**, on both the 429 and the
+500. Without that, a retry would hit "email já cadastrado" and lock the person
+out permanently.
+
+The client still distinguishes a server-side send failure from a user-caused
+rate limit (`cad_limiteEmails` / `conf_limiteEmails`). The old copy said "Muitas
 tentativas… espere alguns minutos", which blamed a user who did nothing — the
-quota was spent by someone else's signup — and named the wrong window (it is
-hourly). Copy is a bandage; custom SMTP is the fix.
+quota was spent by someone else's signup — and named the wrong window (it was
+hourly).
 
 ## Security (hardened 2026-06)
 
@@ -850,7 +941,10 @@ to be reachable without login. Keep them in sync with `docs/juridico/`.
 From `docs/juridico/LEGAL.md` — pending before publishing:
 - [ ] Change `applicationId` from `com.example.muscle_camp` (in `android/app/build.gradle.kts`)
 - [ ] Generate release keystore (currently debug-signed)
-- [ ] Point the legal URLs at the owned domain once `musclechamp.com.br` exists
+- [x] Legal URLs on the owned domain — `musclechamp.com.br` is attached to the
+      Pages project; `LegalTexts` points at `/privacidade`, `/termos`,
+      `/excluir-conta` (no `.html` — Pages 308s the extension away, and the URL
+      filed with Play should not depend on a redirect staying configured)
 - [ ] Fill Play Console Data Safety form (declares health data + Groq photo sharing)
 - [ ] Decide on EU distribution — GDPR Art. 27 requires an EU representative, or
       restrict the EEA in Play Console

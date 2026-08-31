@@ -2577,6 +2577,132 @@ abstract class L {
   /// **'Não recebeu o código? Reenviar'**
   String get conf_naoRecebeu;
 
+  /// No description provided for @recSenha_titulo1.
+  ///
+  /// In pt, this message translates to:
+  /// **'ESQUECEU'**
+  String get recSenha_titulo1;
+
+  /// No description provided for @recSenha_titulo2.
+  ///
+  /// In pt, this message translates to:
+  /// **'A SENHA?'**
+  String get recSenha_titulo2;
+
+  /// No description provided for @recSenha_explicacao.
+  ///
+  /// In pt, this message translates to:
+  /// **'Digite o e-mail da sua conta. Enviaremos um código de 8 dígitos para você criar uma senha nova.'**
+  String get recSenha_explicacao;
+
+  /// No description provided for @recSenha_email.
+  ///
+  /// In pt, this message translates to:
+  /// **'E-MAIL'**
+  String get recSenha_email;
+
+  /// No description provided for @recSenha_enviarCodigo.
+  ///
+  /// In pt, this message translates to:
+  /// **'ENVIAR CÓDIGO'**
+  String get recSenha_enviarCodigo;
+
+  /// No description provided for @recSenha_voltarLogin.
+  ///
+  /// In pt, this message translates to:
+  /// **'Voltar para o login'**
+  String get recSenha_voltarLogin;
+
+  /// No description provided for @recSenha_linkLogin.
+  ///
+  /// In pt, this message translates to:
+  /// **'Esqueci minha senha'**
+  String get recSenha_linkLogin;
+
+  /// No description provided for @recSenha_seExistir.
+  ///
+  /// In pt, this message translates to:
+  /// **'Se existir uma conta com {email}, o código chegou lá. Confira também o spam.'**
+  String recSenha_seExistir(String email);
+
+  /// No description provided for @recSenha_novaTitulo1.
+  ///
+  /// In pt, this message translates to:
+  /// **'NOVA'**
+  String get recSenha_novaTitulo1;
+
+  /// No description provided for @recSenha_novaTitulo2.
+  ///
+  /// In pt, this message translates to:
+  /// **'SENHA'**
+  String get recSenha_novaTitulo2;
+
+  /// No description provided for @recSenha_digiteCodigo.
+  ///
+  /// In pt, this message translates to:
+  /// **'Digite o código de 8 dígitos enviado para:'**
+  String get recSenha_digiteCodigo;
+
+  /// No description provided for @recSenha_novaSenha.
+  ///
+  /// In pt, this message translates to:
+  /// **'NOVA SENHA'**
+  String get recSenha_novaSenha;
+
+  /// No description provided for @recSenha_confirmarSenha.
+  ///
+  /// In pt, this message translates to:
+  /// **'CONFIRMAR SENHA'**
+  String get recSenha_confirmarSenha;
+
+  /// No description provided for @recSenha_salvar.
+  ///
+  /// In pt, this message translates to:
+  /// **'SALVAR SENHA'**
+  String get recSenha_salvar;
+
+  /// No description provided for @recSenha_naoConfere.
+  ///
+  /// In pt, this message translates to:
+  /// **'As senhas não são iguais.'**
+  String get recSenha_naoConfere;
+
+  /// No description provided for @recSenha_codigoInvalido.
+  ///
+  /// In pt, this message translates to:
+  /// **'Código inválido ou expirado. Peça um novo.'**
+  String get recSenha_codigoInvalido;
+
+  /// No description provided for @recSenha_sucesso.
+  ///
+  /// In pt, this message translates to:
+  /// **'Senha alterada. Bem-vindo de volta!'**
+  String get recSenha_sucesso;
+
+  /// No description provided for @recSenha_erroSalvar.
+  ///
+  /// In pt, this message translates to:
+  /// **'Não foi possível salvar a senha nova. Tente novamente.'**
+  String get recSenha_erroSalvar;
+
+  /// No description provided for @recSenha_digite8.
+  ///
+  /// In pt, this message translates to:
+  /// **'Digite os 8 dígitos do código.'**
+  String get recSenha_digite8;
+
+  /// No description provided for @recSenha_senhaIgual.
+  ///
+  /// In pt, this message translates to:
+  /// **'A senha nova precisa ser diferente da atual. Escolha outra — o código continua válido.'**
+  String get recSenha_senhaIgual;
+
+  /// No description provided for @recSenha_codigoOk.
+  ///
+  /// In pt, this message translates to:
+  /// **'Código validado'**
+  String get recSenha_codigoOk;
+
   /// No description provided for @login_credenciaisInvalidas.
   ///
   /// In pt, this message translates to:

@@ -363,7 +363,7 @@ class _ConsentTile extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
-                'L.of(context).priv_aceitoNaVersao(status!.documentVersion)',
+                L.of(context).priv_aceitoNaVersao(status!.documentVersion),
                 style: AppTypography.bodySm.copyWith(color: AppColors.warning),
               ),
             ),

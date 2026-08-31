@@ -219,13 +219,33 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               : null,
                     ),
 
+                    // ── Esqueci minha senha ───────────────────────
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () => context.push('/forgot-password'),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(
+                          L.of(context).recSenha_linkLogin,
+                          style: AppTypography.bodyMd.copyWith(
+                            color: AppColors.primary,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ),
+
                     // ── Erro inline ───────────────────────────────
                     MkErrorBanner(
                       message: _errorMessage,
                       onDismiss: () => setState(() => _errorMessage = null),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
 
                     // ── Login button ───────────────────────────────
                     SizedBox(

@@ -125,7 +125,7 @@ class LegalDocuments {
       LegalSection('4. Com quem compartilhamos',
           '• Supabase (operador) — todos os dados da conta — AWS São Paulo\n'
           '• Groq (operador) — descrição ou foto da refeição — Estados Unidos\n'
-          '• Vercel — hospedagem do app web — nenhum dado pessoal\n'
+          '• Cloudflare (operador) — hospedagem do app web — endereço IP e metadados de requisição\n'
           '• Google Play — dados de assinatura; não temos acesso ao cartão\n'
           '• Outros usuários — nome, avatar e pontuação no ranking\n\n'
           'Não vendemos dados pessoais e não fazemos publicidade comportamental.'),

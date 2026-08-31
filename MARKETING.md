@@ -37,7 +37,7 @@ Ganhe pontos completando treinos e batendo metas de dieta. Suba no ranking globa
 Registre seu peso, medidas corporais e dados de bioimpedância. Visualize seu progresso e mantenha o foco na sua meta — ganhar massa, perder peso ou manter.
 
 **✅ Disponível em Android e Web**
-Acesse em qualquer dispositivo: app Android nativo ou diretamente no navegador em muscle-champ.pages.dev.
+Acesse em qualquer dispositivo: app Android nativo ou diretamente no navegador em musclechamp.com.br.
 
 ---
 
@@ -66,7 +66,7 @@ Acesse em qualquer dispositivo: app Android nativo ou diretamente no navegador e
 > 🏆 Pontos + ranking com seus amigos
 >
 > Android & Web 👇
-> muscle-champ.pages.dev
+> musclechamp.com.br
 >
 > #fitness #musculação #IA #treino #dieta
 

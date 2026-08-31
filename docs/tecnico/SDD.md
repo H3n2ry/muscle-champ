@@ -103,7 +103,7 @@ main.dart
 |---------|-----------|-------------|-----------------|
 | Supabase | HTTPS/WSS | JWT (anonKey + Bearer) | SLA não garantido (free tier; keepalive evita pausa) |
 | Groq API | HTTPS (via Edge Function `groq-proxy`) | Chave no Vault, server-side | SLA não garantido (free tier) |
-| Vercel | HTTPS | N/A (hosting estático) | Edge Network global |
+| Cloudflare Pages | HTTPS | N/A (hosting estático) | Rede global; POP brasileiro é GRU |
 
 ### 3.2 Grafo de dependências internas
 
@@ -328,7 +328,7 @@ Tutorial (12 passos em 5 seções):
 | Sem tratamento global de erros | 🟡 Médio | Exceções Supabase não são normalizadas — UX de erro inconsistente |
 | `Supabase.instance.client` direto | 🟡 Médio | Dificulta mocking em testes; sem abstração de data source |
 | Free tier Supabase/Groq | 🟡 Médio | Sem SLA; limites podem ser atingidos com crescimento |
-| Sem CI/CD | 🟡 Médio | Build e deploy são manuais via PowerShell + Vercel CLI |
+| Sem CI/CD | 🟡 Médio | Build e deploy são manuais via PowerShell + Wrangler |
 | iOS não testado | 🟡 Médio | Projeto nunca foi buildado para iOS |
 | Sem modo offline | 🟢 Baixo | App inutilizável sem internet |
 

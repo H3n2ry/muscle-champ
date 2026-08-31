@@ -7,6 +7,19 @@
 #
 # A regra: pontos de entrada sempre revalidam; o resto pode cachear por muito
 # tempo, porque tem hash no nome ou é atualizado junto com o bootstrap.
+#
+# ⚠️ ESTE ARQUIVO SOZINHO NÃO BASTA no domínio próprio. O tráfego de
+# musclechamp.com.br passa pelo proxy da zona Cloudflare, e o "Browser Cache TTL"
+# da zona reescreve o Cache-Control na saída — o `no-cache` daqui virava
+# `max-age=14400` (4h) e cada usuário recorrente ficava com o build anterior por
+# até quatro horas depois do deploy. Em pages.dev o arquivo era respeitado, o que
+# fazia parecer defeito do domínio novo.
+#
+# Para este arquivo valer: Cloudflare → zona musclechamp.com.br → Caching →
+# Configuration → Browser Cache TTL → "Respect Existing Headers".
+#
+# Conferir depois de mexer:
+#   curl -sI https://musclechamp.com.br/main.dart.js | grep -i cache-control
 
 /index.html
   Cache-Control: no-cache, must-revalidate

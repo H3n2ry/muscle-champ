@@ -10,9 +10,9 @@
 - **Versão atual:** 1.0.0+1
 - **Status:** Em desenvolvimento (pré-lançamento Play Store)
 - **Objetivo principal:** App fitness gamificado para Android e Web — treinos com IA, dieta por foto e ranking entre amigos
-- **Stack:** Flutter 3.44 · Dart 3.12 · Riverpod · GoRouter · Supabase · Groq API · Vercel
+- **Stack:** Flutter 3.44 · Dart 3.12 · Riverpod · GoRouter · Supabase · Groq API · Cloudflare Pages · Brevo (SMTP)
 - **Repositório:** local (`C:\Users\Jean\Desktop\muscle camp\project\app`)
-- **Deploy atual:** https://muscle-champ.pages.dev (web) · APK distribuído via Google Drive
+- **Deploy atual:** https://musclechamp.com.br (web) · APK distribuído via Google Drive
 
 ---
 
@@ -28,7 +28,7 @@
 - Ranking: placar global e entre amigos, streak de dias consecutivos
 - Amizades: buscar usuários por nome, enviar/aceitar/rejeitar/remover amigos
 - Notificações: página de notificações in-app
-- Build Android (APK) e web funcionando; deploy automático via Vercel CLI
+- Build Android (APK) e web funcionando; deploy web via Wrangler (Cloudflare Pages)
 - **Contador de água**: card na aba Dieta com botões +200/+350/+500ml, anel de
   progresso, desfazer. Meta diária calculada no banco pela fórmula
   peso(kg) × fator etário (≤17: 40ml · 18-55: 35ml · 56-65: 30ml · >65: 25ml)
@@ -77,6 +77,9 @@
 | kcal oficiais na tabela em vez de Atwater | 4/4/9 conta fibra como 4kcal/g quando ela rende ~2, superestimando frutas/vegetais/grãos em ~10% | ago/2026 |
 | Modelo de visão: `qwen/qwen3.6-27b` | A Groq desligou `llama-4-scout` em 17/07/2026. Substituto oficial indicado por eles | ago/2026 |
 | `groq-proxy` versionada no repositório | A função só existia deployada em produção, fora do controle de versão — se o projeto Supabase caísse, o código estaria perdido | ago/2026 |
+| Brevo como SMTP em vez de Resend ou SES | O serviço interno do Supabase limitava o cadastro a ~2 contas/hora, o que inviabilizava o lançamento. Brevo tem cota gratuita maior (300/dia) e não exige sair de sandbox como o SES | ago/2026 |
+| Restrição de IP desativada no Brevo | O Supabase envia da infraestrutura dele e os IPs de saída não são fixos nem publicados. Autorizar um IP específico quebraria o cadastro semanas depois, sem aviso e sem sintoma óbvio | ago/2026 |
+| DMARC mantido em `p=none` | Política de monitoramento enquanto o envio se estabiliza: falhas são reportadas em vez de rejeitadas. Apertar para `quarantine`/`reject` só depois de semanas sem incidente | ago/2026 |
 
 ---
 
@@ -96,8 +99,8 @@
 
 - **Usuário:** público brasileiro interessado em fitness; usa o app para acompanhar treinos e dieta de forma gamificada
 - **Prazo:** sem prazo fixo — projeto pessoal em evolução
-- **Restrições importantes:** Groq free tier (~500k tokens/dia) — não escalar para muitos usuários sem revisar plano; Supabase free tier (500MB DB, 1GB Storage, 50k MAU)
-- **Integrações obrigatórias:** Supabase (auth + dados), Groq API (IA), Vercel (web deploy)
+- **Restrições importantes:** Groq free tier (~500k tokens/dia) — não escalar para muitos usuários sem revisar plano; Supabase free tier (500MB DB, 1GB Storage, 50k MAU); Brevo free tier (300 e-mails/dia) — teto real de cadastros novos por dia
+- **Integrações obrigatórias:** Supabase (auth + dados), Groq API (IA), Cloudflare Pages (web deploy), Brevo (SMTP dos e-mails de confirmação)
 
 ---
 
@@ -113,7 +116,7 @@
 | PNG da galeria enviado como `image/jpeg` | Detectar PNG via magic bytes (`0x89 0x50 0x4E 0x47`) em `_optimizeImage()` e retornar MIME correto |
 | Pratos complexos/grandes não identificados pela IA | Limite de 512px era insuficiente; aumentado para 768px + prompt atualizado para somar todos os itens do prato |
 | Web build falhava com lock no iOS ephemeral | `Remove-Item -Recurse -Force ios/Flutter/ephemeral` |
-| Vercel `list_projects` retornava vazio | Usar `vercel --prod --yes --scope "af-dev"` que autovincula ao projeto existente `muscle-champ` |
+| Vercel `list_projects` retornava vazio | Resolvido na época com `vercel --prod --yes --scope "af-dev"`. **Histórico** — o Vercel foi aposentado em 26/08/2026 |
 | `JAVA_HOME` não definido ao rodar `sdkmanager` | Definir `$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"` no mesmo terminal |
 | Excluir treino deixava a tela preta | O diálogo de confirmação fazia `Navigator.pop` com o context da página, removendo a própria página da navegação em vez do diálogo. Usar o context do `builder` do diálogo. Mesmo bug existia no "Remover amigo" do ranking |
 | Editar treino não deixava adicionar exercício | A lista vinha do banco como `Map<String, Object>` e o `.add()` de um novo exercício lançava `TypeError`. Tipo explícito `<String, dynamic>` no `.map()` |
@@ -122,6 +125,10 @@
 | Qwen cortava o JSON no meio | O modelo raciocina antes de responder por padrão e o raciocínio consumia o `max_tokens`. Passar `reasoning_effort: 'none'` |
 | IA exagerava calorias (até 2x) | Ela estimava o total. Agora devolve só peso + densidade por item e o app calcula (ver "Decisões Tomadas") |
 | `flutter build web` falha com "Unable to determine engine version" | Bug do script interno `update_engine_version.ps1` quando o terminal não tem stdin. Criar `bin/cache/engine.realm` vazio e rodar o build pelo `cmd` em vez do PowerShell |
+| Cadastro travado em ~2 contas/hora (`over_email_send_rate_limit`, 429) | Serviço de e-mail interno do Supabase é só para testes. Trocado por SMTP do Brevo com domínio próprio e rate limit elevado para 30/h |
+| Cadastro retornava 500 mesmo com SMTP configurado | `525 "5.7.1 Unauthorized IP address"` — o Brevo bloqueia IPs fora da lista autorizada. **Não é erro de credencial**: chave errada dá `535`, então um 525 prova que a autenticação passou. Resolvido desativando a restrição de IP no Brevo |
+| E-mails do Brevo falhariam mesmo com DKIM/DMARC corretos | O domínio tinha `v=spf1 -all` herdado da Cloudflare, que não autoriza remetente nenhum. Editado (não duplicado — só pode haver um SPF por domínio) para `v=spf1 include:spf.brevo.com -all` |
+| DMARC configurado mas ignorado pelos resolvedores | Havia **dois** registros `v=DMARC1` em `_dmarc`. Pela RFC 7489 múltiplos registros invalidam todos. Removido o da Cloudflare (`p=reject`), mantido o do Brevo (`p=none`) |
 
 ---
 
@@ -135,7 +142,7 @@
 6. Manter Supabase como único backend — não introduzir Firebase, servidor Node/Python ou outro BaaS
 7. Todo texto exibido ao usuário deve estar em português brasileiro
 8. Ao fazer builds Android, sempre definir `ANDROID_HOME`, `JAVA_HOME` e `PATH` no mesmo PowerShell antes de rodar `flutter build`
-9. Para deploy web, rodar `vercel --prod --yes --scope "af-dev"` dentro de `build/web/`
+9. Para deploy web, rodar `npx wrangler pages deploy build/web --project-name=muscle-champ --branch=main` na raiz do projeto. **Nunca fazer deploy no Vercel** — foi aposentado em 26/08/2026 e `muscle-champ.vercel.app` hoje só devolve um 307
 10. Nunca reduzir `_maxImagePx` abaixo de 768 nem `max_tokens` abaixo de 300 em `analyzeFoodPhoto`
 
 ---
@@ -158,9 +165,18 @@
 
 ## Última Atualização
 
-- **Atualizado em:** 2026-08-10
+- **Atualizado em:** 2026-08-28
 - **Por:** Claude Code
-- **O que mudou:** Contador de água (com data de nascimento e meta calculada no
+- **O que mudou:** SMTP customizado via Brevo, enviando de
+  `noreply@musclechamp.com.br` no domínio próprio (registrado, DNS na
+  Cloudflare, autenticado por DKIM + DMARC). Isso desbloqueia o cadastro, que
+  estava limitado a ~2 contas/hora pelo serviço de e-mail interno do Supabase;
+  o rate limit foi elevado para 30/h. Corrigidos no caminho um SPF `-all`
+  herdado que bloquearia todo envio e um DMARC duplicado que invalidava os dois
+  registros. Pendência conhecida: o Brevo anexa cabeçalho `List-Unsubscribe`,
+  e um usuário que clicar em "Unsubscribe" no e-mail de confirmação entra na
+  blocklist e para de receber códigos silenciosamente.
+- **Atualização anterior (2026-08-10):** Contador de água (com data de nascimento e meta calculada no
   banco), dieta manual, peso editável no modo texto. Correção de 4 bugs de UI
   (excluir/editar treino, ranking, cronômetro). Migração do modelo de visão
   após a Groq desligar o LLaMA 4 Scout. Recalibração completa da IA de dieta:

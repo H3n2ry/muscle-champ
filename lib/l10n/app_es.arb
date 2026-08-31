@@ -506,6 +506,34 @@
   "conf_enviamosCodigo": "Enviamos un código de 8 dígitos a:",
   "conf_reenviarEm": "Reenviar código en {seg}s",
   "conf_naoRecebeu": "¿No recibiste el código? Reenviar",
+  "recSenha_titulo1": "¿OLVIDASTE",
+  "recSenha_titulo2": "TU CONTRASEÑA?",
+  "recSenha_explicacao": "Escribe el correo de tu cuenta. Te enviaremos un código de 8 dígitos para crear una contraseña nueva.",
+  "recSenha_email": "CORREO",
+  "recSenha_enviarCodigo": "ENVIAR CÓDIGO",
+  "recSenha_voltarLogin": "Volver al inicio de sesión",
+  "recSenha_linkLogin": "Olvidé mi contraseña",
+  "recSenha_seExistir": "Si existe una cuenta con {email}, el código ya está en camino. Revisa también el spam.",
+  "@recSenha_seExistir": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "recSenha_novaTitulo1": "NUEVA",
+  "recSenha_novaTitulo2": "CONTRASEÑA",
+  "recSenha_digiteCodigo": "Escribe el código de 8 dígitos enviado a:",
+  "recSenha_novaSenha": "NUEVA CONTRASEÑA",
+  "recSenha_confirmarSenha": "CONFIRMAR CONTRASEÑA",
+  "recSenha_salvar": "GUARDAR CONTRASEÑA",
+  "recSenha_naoConfere": "Las contraseñas no coinciden.",
+  "recSenha_codigoInvalido": "Código inválido o vencido. Pide uno nuevo.",
+  "recSenha_sucesso": "Contraseña cambiada. ¡Bienvenido de vuelta!",
+  "recSenha_erroSalvar": "No se pudo guardar la contraseña nueva. Inténtalo de nuevo.",
+  "recSenha_digite8": "Escribe los 8 dígitos del código.",
+  "recSenha_senhaIgual": "La contraseña nueva debe ser distinta de la actual. Elige otra — tu código sigue siendo válido.",
+  "recSenha_codigoOk": "Código verificado",
   "login_credenciaisInvalidas": "Email o contraseña incorrectos. Verifícalos e inténtalo de nuevo.",
   "login_confirmeEmail": "Confirma tu email antes de entrar. Revisa tu bandeja de entrada.",
   "login_contaNaoEncontrada": "No se encontró ninguna cuenta con este email.",
