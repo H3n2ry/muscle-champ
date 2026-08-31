@@ -138,7 +138,12 @@ class LegalDocuments {
           '• Para usuários no EEE/Reino Unido, apoia-se nas Cláusulas '
           'Contratuais Padrão do provedor\n\n'
           'Se você não autorizar, os modos BANCO e IA por texto continuam '
-          'disponíveis — apenas o modo FOTO fica indisponível.'),
+          'disponíveis — apenas o modo FOTO fica indisponível.\n\n'
+          'Separadamente, o app web é entregue pela Cloudflare, cuja rede é '
+          'global: seu endereço IP e os metadados da requisição passam pelo '
+          'servidor de borda mais próximo, que pode estar fora do Brasil. Vale '
+          'para qualquer acesso ao site e não depende de consentimento '
+          'específico — é o que torna a entrega possível.'),
       LegalSection('6. Seus direitos',
           'Direto no app, em Perfil → Privacidade e dados:\n'
           '• Acesso e portabilidade — "Baixar meus dados" gera um JSON completo\n'
