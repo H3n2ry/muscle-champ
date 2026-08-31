@@ -21,6 +21,28 @@
 # Conferir depois de mexer:
 #   curl -sI https://musclechamp.com.br/main.dart.js | grep -i cache-control
 
+# ── Segurança ────────────────────────────────────────────────────────────────
+#
+# HSTS. O domínio já redireciona http → https com 301, mas o 301 só acontece
+# DEPOIS de uma requisição em claro: na primeira visita de cada navegador existe
+# uma janela em que alguém na mesma rede intercepta antes do redirect. Este
+# cabeçalho faz o navegador nunca mais tentar HTTP neste domínio.
+#
+# `includeSubDomains` cobre os subdomínios. Não afeta registro DNS — os CNAME de
+# DKIM do Brevo (brevo1/brevo2._domainkey) continuam resolvendo normalmente,
+# porque HSTS só governa tráfego HTTP. Mas se um dia existir subdomínio servindo
+# HTTP puro, ele para de abrir; nesse caso, remover a diretiva.
+#
+# `preload` foi deixado de FORA de propósito: entrar na lista de preload dos
+# navegadores é praticamente irreversível (a remoção leva meses e depende de
+# aprovação externa), e não vale travar isso antes do app estar publicado.
+#
+# Conferir:
+#   curl -sI https://musclechamp.com.br/ | grep -i strict-transport
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Frame-Options: DENY
+
 /index.html
   Cache-Control: no-cache, must-revalidate
 
