@@ -1041,6 +1041,12 @@ abstract class L {
   /// **'ENTRAR'**
   String get login_entrar;
 
+  /// No description provided for @login_entrarComGoogle.
+  ///
+  /// In pt, this message translates to:
+  /// **'Entrar com Google'**
+  String get login_entrarComGoogle;
+
   /// No description provided for @login_criarConta.
   ///
   /// In pt, this message translates to:

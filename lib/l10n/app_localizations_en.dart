@@ -513,6 +513,9 @@ class LEn extends L {
   String get login_entrar => 'SIGN IN';
 
   @override
+  String get login_entrarComGoogle => 'Sign in with Google';
+
+  @override
   String get login_criarConta => 'CREATE ACCOUNT';
 
   @override

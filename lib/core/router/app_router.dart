@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../features/auth/presentation/pages/completar_perfil_page.dart';
 import '../../features/auth/presentation/pages/confirm_email_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
@@ -59,6 +60,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/forgot-password',
         builder: (_, __) => const ForgotPasswordPage(),
+      ),
+      // Fora do ShellRoute de proposito: quem chega aqui ainda nao pode usar o
+      // app, entao nao ve a barra de navegacao.
+      GoRoute(
+        path: '/completar-perfil',
+        builder: (_, __) => const CompletarPerfilPage(),
       ),
       GoRoute(
         path: '/reset-password',

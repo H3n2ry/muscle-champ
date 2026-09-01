@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/auth/completude_do_perfil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -41,8 +42,28 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     return idx < 0 ? 0 : idx;
   }
 
+  /// Impede usar o app com perfil incompleto.
+  ///
+  /// Mora aqui, e nao no `redirect` do GoRouter, porque a checagem consulta o
+  /// banco e o `redirect` e SINCRONO — nao da para aguardar ali dentro. Como o
+  /// MainScaffold embrulha as cinco abas, toda entrada no app passa por este
+  /// ponto.
+  ///
+  /// So dispara quando a resposta chegou (`valueOrNull`): enquanto carrega, o
+  /// app aparece normalmente. O custo e um piscar para quem esta incompleto —
+  /// preferivel a segurar a interface inteira num spinner por causa de uma
+  /// condicao que quase ninguem tem.
+  void _guardaPerfilIncompleto() {
+    final completude = ref.watch(completudeDoPerfilProvider).valueOrNull;
+    if (completude == null || completude.completo) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.go('/completar-perfil');
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    _guardaPerfilIncompleto();
     final currentIndex = _currentIndex(context);
     final tutorialState = ref.watch(tutorialProvider);
 

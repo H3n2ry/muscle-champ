@@ -515,6 +515,9 @@ class LPt extends L {
   String get login_entrar => 'ENTRAR';
 
   @override
+  String get login_entrarComGoogle => 'Entrar com Google';
+
+  @override
   String get login_criarConta => 'CRIAR CONTA';
 
   @override

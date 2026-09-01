@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/legal/legal_texts.dart';
@@ -145,6 +146,33 @@ class AuthRepository {
     await _client.auth.resend(
       type: OtpType.signup,
       email: email,
+    );
+  }
+
+  // ── Login social ───────────────────────────────────────────────────────────
+
+  /// Inicia o login com Google.
+  ///
+  /// ⚠️ Isto cria a conta SEM data de nascimento e SEM consentimento. O trigger
+  /// `handle_new_user` lê essas coisas dos metadados do `signUp()`, e o OAuth
+  /// não manda nenhum — a conta nasce com `birth_date` NULL, consentimentos
+  /// `false` e `document_version` 'unknown'.
+  ///
+  /// Quem fecha esse buraco é [completudeDoPerfilProvider] + a tela
+  /// `/completar-perfil`, que barram o acesso até a pessoa informar a idade
+  /// (LegalTexts.minimumAge) e aceitar os obrigatórios. **Mexer neste método
+  /// sem manter aquele gate reabre a entrada de menor de 16 tratando dado de
+  /// saúde sem base legal.**
+  ///
+  /// No web o Supabase redireciona a aba inteira e volta pelo callback; no
+  /// Android abre a conta já logada no aparelho, porque o Client ID nativo está
+  /// registrado no provider.
+  Future<void> signInWithGoogle() async {
+    await _client.auth.signInWithOAuth(
+      OAuthProvider.google,
+      // Sem isto o Supabase manda de volta para o Site URL configurado no
+      // painel, que pode não ser onde a pessoa estava.
+      redirectTo: kIsWeb ? null : 'br.com.musclechamp://login-callback',
     );
   }
 

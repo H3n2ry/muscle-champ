@@ -515,6 +515,9 @@ class LEs extends L {
   String get login_entrar => 'ENTRAR';
 
   @override
+  String get login_entrarComGoogle => 'Entrar con Google';
+
+  @override
   String get login_criarConta => 'CREAR CUENTA';
 
   @override

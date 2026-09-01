@@ -250,6 +250,7 @@
   "login_senha": "SENHA",
   "login_emailHint": "seu@email.com",
   "login_entrar": "ENTRAR",
+  "login_entrarComGoogle": "Entrar com Google",
   "login_criarConta": "CRIAR CONTA",
   "login_pillTreinos": "Treinos",
   "login_pillDieta": "Dieta",
