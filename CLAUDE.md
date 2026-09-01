@@ -740,15 +740,27 @@ bounced while the setup settles.
 not.** Brevo refuses SMTP connections from IPs outside its authorized list, and
 Supabase sends from its own infrastructure. A wrong key returns
 `535 Authentication failed` instead — so a 525 actually proves the credentials
-worked. Fixed by lifting the IP restriction in Brevo → Security rather than
-allowlisting an address, because Supabase's outbound IPs are neither fixed nor
-published; pinning one would break signup again weeks later with no warning.
+worked.
+
+⚠️ **This line used to claim the fix was "lifting the IP restriction in Brevo →
+Security". That was wrong**, and the correction matters. Brevo → Security → IPs
+autorizados has **two independent switches**, one for API keys and one for SMTP
+keys, and on 2026-09-01 both still read *Ativada*. What actually unblocked SMTP
+on 28/08 was Brevo **auto-authorizing** the address that connected — the list
+shows `54.94.127.52` (Amazon) added that day with método *Automático*.
+
+So SMTP was never on a lifted restriction; it was resting on one pinned IP. Since
+Supabase's outbound addresses rotate — the API path produced four different IPv6
+addresses across four attempts minutes apart — that arrangement breaks the day the
+address changes, with the same 525 and no warning. Both switches are off as of
+2026-09-01. If signup ever starts failing with 525 again, check whether one of
+them came back on.
 
 The two DKIM CNAMEs (`brevo1._domainkey`, `brevo2._domainkey`) must stay **DNS
 only** in Cloudflare. Proxied — orange cloud — they resolve to Cloudflare instead
 and Brevo cannot validate them.
 
-### Still open
+### The List-Unsubscribe trap (solved — see next section)
 
 Brevo attaches a `List-Unsubscribe` header, so Gmail renders an "Unsubscribe"
 button on the confirmation email. On a transactional auth message that is a
@@ -778,32 +790,45 @@ logs explains why — the send simply never happens. While SMTP is still the
 delivery path, a support report of "I never get the reset code" means **check
 Brevo's blocklist first**.
 
-### The hook is deployed but NOT wired up yet
+### RESOLVED 2026-09-01 — Auth email goes through the Send Email Hook
 
-Option 2 above is written: `supabase/functions/enviar-email-auth/`, deployed with
-`verify_jwt: false`. It reads the Brevo key from the Vault via
-`get_brevo_api_key()` (migration `20260901_chave_brevo_no_vault.sql`) and posts to
-Brevo's transactional API, which does not add the header. Templates live in the
-function, so they are finally in version control.
+Option 2 shipped. `supabase/functions/enviar-email-auth/` is deployed with
+`verify_jwt: false`, reads the Brevo key from the Vault via `get_brevo_api_key()`
+(migration `20260901_chave_brevo_no_vault.sql`), and posts to Brevo's
+**transactional API**, which does not add the header. Verified end to end: the
+recovery email arrives with no Unsubscribe button.
 
-**Auth still sends over SMTP** until three things happen in the dashboard, in
-this order:
+The three things wired in the dashboard, for the record:
 
 1. `select vault.create_secret('xkeysib-...', 'brevo_api_key');` — the API key
    from Brevo → SMTP & API → **API Keys** (not the SMTP key: different credential)
 2. Authentication → Hooks → **Send Email Hook** → HTTPS →
    `https://jryetjysjiyuuoznaejc.supabase.co/functions/v1/enviar-email-auth` →
    Generate Secret
-3. Set that secret as the function's `SEND_EMAIL_HOOK_SECRET` env var
+3. That secret as the function's `SEND_EMAIL_HOOK_SECRET` env var
 
-Until step 3, the function returns **500 and sends nothing** — it fails closed by
+Without step 3 the function returns **500 and sends nothing** — it fails closed by
 design. Signature verification is the only barrier, since `verify_jwt` is off;
 without it, anyone who found the URL could send mail signed by the domain.
 
-⚠️ **Enabling the hook makes the dashboard email templates dead code.** The
-copy then lives in the function, and editing the template in the dashboard
-changes nothing. That surprise is worth remembering before someone spends an
-afternoon on it.
+**Two things bit us while wiring this up, both silent:**
+
+⚠️ **Enabling the hook reset the email rate limit from 30/h back to 2/h.** No
+warning on screen; it only showed up in the auth logs as
+`env GOTRUE_RATE_LIMIT_EMAIL_SENT changed, updating Email limiter from 30 to 2`.
+That is the exact blocker the whole Brevo migration existed to remove, quietly
+restored. **After touching any Auth hook, re-check Authentication → Rate Limits.**
+
+⚠️ **Brevo's IP restriction blocks the API path separately from SMTP.** The hook
+failed with `401 unauthorized` and *"unrecognised IP address"* on every attempt,
+each from a different IPv6. Fixed with **Desativar para chaves API** in Brevo →
+Security → IPs autorizados. That button disables *IP blocking for API keys* — it
+does not disable the key itself, which the wording makes easy to misread.
+
+⚠️ **The dashboard email templates are now dead code.** The copy lives in the
+function; editing the template in the dashboard changes nothing. Worth
+remembering before someone spends an afternoon on it. SMTP settings stay
+configured as a fallback — disabling the hook reverts to them immediately.
 
 Good news, verified twice by querying `auth.users`: a failed send rolls the
 signup back cleanly — **no orphaned unconfirmed rows**, on both the 429 and the
