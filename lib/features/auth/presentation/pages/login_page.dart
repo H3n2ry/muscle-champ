@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/language_selector.dart';
+import '../../../../shared/widgets/logo_google.dart';
 import '../../../../shared/widgets/mk_error_banner.dart';
 import '../../../../shared/widgets/mk_text_field.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -348,7 +349,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                   color: AppColors.onSurfaceVariant,
                                 ),
                               )
-                            : const Icon(Icons.g_mobiledata, size: 28),
+                            : const LogoGoogle(size: 20),
                         label: Text(
                           L.of(context).login_entrarComGoogle,
                           style: AppTypography.labelMd
