@@ -145,7 +145,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'L.of(context).calib_explicacao',
+                      L.of(context).calib_explicacao,
                       style: AppTypography.bodySm.copyWith(
                           color: AppColors.onSurfaceVariant, height: 1.5),
                     ),

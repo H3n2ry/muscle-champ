@@ -803,7 +803,7 @@ class _BioimpedanceSheetState extends ConsumerState<_BioimpedanceSheet> {
 
               const SizedBox(height: 4),
               Text(
-                'L.of(context).perfil_preenchaValores',
+                L.of(context).perfil_preenchaValores,
                 style: AppTypography.bodySm
                     .copyWith(color: AppColors.onSurfaceVariant),
               ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/auth/politica_de_senha.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/legal/legal_documents.dart';
 import '../../../../core/legal/legal_texts.dart';
@@ -590,22 +591,14 @@ class _Step0AccountState extends ConsumerState<_Step0Account> {
   //
   // Conjunto de símbolos aceito pelo Supabase:
   //   !@#$%^&*()_+-=[]{};':"|<>?,./`~
-  static bool _hasMin8(String v)   => v.length >= 8;
-  static bool _hasLower(String v)  => v.contains(RegExp(r'[a-z]'));
-  static bool _hasUpper(String v)  => v.contains(RegExp(r'[A-Z]'));
-  static bool _hasNumber(String v) => v.contains(RegExp(r'[0-9]'));
-  static bool _hasSymbol(String v) =>
-      v.contains(RegExp('[!@#\\\$%^&*()_+\\-=\\[\\]{};\':"|<>?,./`~\\\\]'));
+  // As regras vivem em PoliticaDeSenha — a tela de redefinição usa as mesmas.
+  static bool _hasMin8(String v)   => PoliticaDeSenha.temMinimo(v);
+  static bool _hasLower(String v)  => PoliticaDeSenha.temMinuscula(v);
+  static bool _hasUpper(String v)  => PoliticaDeSenha.temMaiuscula(v);
+  static bool _hasNumber(String v) => PoliticaDeSenha.temNumero(v);
+  static bool _hasSymbol(String v) => PoliticaDeSenha.temSimbolo(v);
 
-  String? _validatePass(String? v) {
-    final s = v ?? '';
-    if (!_hasMin8(s))   return L.of(context).senha_errMin8;
-    if (!_hasLower(s))  return L.of(context).senha_errMinuscula;
-    if (!_hasUpper(s))  return L.of(context).senha_errMaiuscula;
-    if (!_hasNumber(s)) return L.of(context).senha_errNumero;
-    if (!_hasSymbol(s)) return L.of(context).senha_errSimbolo;
-    return null;
-  }
+  String? _validatePass(String? v) => mensagemDeSenha(context, v);
 
   @override
   Widget build(BuildContext context) {

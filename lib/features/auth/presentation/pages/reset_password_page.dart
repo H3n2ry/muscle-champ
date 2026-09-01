@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/auth/politica_de_senha.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -300,13 +301,14 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
                   ),
                 ),
                 const SizedBox(height: 8),
+                // Mesma política do cadastro. Aceitar 6 caracteres aqui deixava
+                // a pessoa enviar senha que o GoTrue recusa com 422, e a tela
+                // mostrava erro genérico sem dizer o que faltava.
                 MkTextField(
                   controller: _passwordCtrl,
                   label: '••••••••',
                   obscureText: true,
-                  validator: (v) => v == null || v.length < 6
-                      ? L.of(context).login_minimo6
-                      : null,
+                  validator: (v) => mensagemDeSenha(context, v),
                 ),
 
                 const SizedBox(height: 20),
@@ -319,12 +321,14 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
                   ),
                 ),
                 const SizedBox(height: 8),
+                // Só confere se bate com o campo acima. Repetir a política aqui
+                // faria a pessoa ver o mesmo erro duas vezes, um por campo.
                 MkTextField(
                   controller: _confirmCtrl,
                   label: '••••••••',
                   obscureText: true,
-                  validator: (v) => v == null || v.length < 6
-                      ? L.of(context).login_minimo6
+                  validator: (v) => (v ?? '') != _passwordCtrl.text
+                      ? L.of(context).recSenha_naoConfere
                       : null,
                 ),
 
