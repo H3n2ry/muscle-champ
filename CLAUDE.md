@@ -774,9 +774,36 @@ Enterprise-only. Three ways out, in order of cost:
 ⚠️ **Password reset now exists** (`/forgot-password` → `/reset-password`), so this
 is live, not hypothetical: someone who unsubscribed from an earlier confirmation
 email silently cannot recover their account, and nothing in the app or the auth
-logs explains why — the send simply never happens. Until option 2 ships, a
-support report of "I never get the reset code" means **check Brevo's blocklist
-first**.
+logs explains why — the send simply never happens. While SMTP is still the
+delivery path, a support report of "I never get the reset code" means **check
+Brevo's blocklist first**.
+
+### The hook is deployed but NOT wired up yet
+
+Option 2 above is written: `supabase/functions/enviar-email-auth/`, deployed with
+`verify_jwt: false`. It reads the Brevo key from the Vault via
+`get_brevo_api_key()` (migration `20260901_chave_brevo_no_vault.sql`) and posts to
+Brevo's transactional API, which does not add the header. Templates live in the
+function, so they are finally in version control.
+
+**Auth still sends over SMTP** until three things happen in the dashboard, in
+this order:
+
+1. `select vault.create_secret('xkeysib-...', 'brevo_api_key');` — the API key
+   from Brevo → SMTP & API → **API Keys** (not the SMTP key: different credential)
+2. Authentication → Hooks → **Send Email Hook** → HTTPS →
+   `https://jryetjysjiyuuoznaejc.supabase.co/functions/v1/enviar-email-auth` →
+   Generate Secret
+3. Set that secret as the function's `SEND_EMAIL_HOOK_SECRET` env var
+
+Until step 3, the function returns **500 and sends nothing** — it fails closed by
+design. Signature verification is the only barrier, since `verify_jwt` is off;
+without it, anyone who found the URL could send mail signed by the domain.
+
+⚠️ **Enabling the hook makes the dashboard email templates dead code.** The
+copy then lives in the function, and editing the template in the dashboard
+changes nothing. That surprise is worth remembering before someone spends an
+afternoon on it.
 
 Good news, verified twice by querying `auth.users`: a failed send rolls the
 signup back cleanly — **no orphaned unconfirmed rows**, on both the 429 and the
