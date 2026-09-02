@@ -46,6 +46,11 @@ class BarraLiquida extends StatefulWidget {
   final String rotuloCasa;
   final String rotuloPerfil;
 
+  /// Ícones das pontas. Vêm de fora, como os rótulos, para não haver uma
+  /// segunda definição de qual é o ícone da casa.
+  final IconData iconeCasa;
+  final IconData iconePerfil;
+
   // ── Geometria ───────────────────────────────────────────────────────────
   //
   // Pública de propósito. O holofote do tutorial precisa mirar os slots, e a
@@ -81,6 +86,8 @@ class BarraLiquida extends StatefulWidget {
     required this.destinos,
     required this.rotuloCasa,
     required this.rotuloPerfil,
+    required this.iconeCasa,
+    required this.iconePerfil,
     this.iconeCentral,
   });
 
@@ -317,16 +324,16 @@ class _BarraLiquidaState extends State<BarraLiquida>
     );
   }
 
-  /// ⚠️ Variantes SIMPLES de proposito (`home`, nao `home_rounded`).
+  /// ⚠️ Icone novo nao aparece so com deploy.
   ///
-  /// As `_rounded` sumiram em producao: o Flutter recorta a fonte MaterialIcons
-  /// para so os glifos usados, e glifo que nao esta no app inteiro depende do
-  /// asset ser regerado. Estas tres ja aparecem em outras telas, entao estao
-  /// garantidas na fonte. Trocar por uma variante nova exige `flutter clean`
-  /// antes de concluir que "o icone nao aparece".
+  /// O Flutter recorta a fonte MaterialIcons para conter so os glifos usados,
+  /// e o arquivo tem caminho fixo — o navegador de quem ja visitou continua com
+  /// a fonte antiga. Foi assim que `Icons.home`, que so existe aqui, passou
+  /// dias sem aparecer enquanto os outros icones (ja usados em outras telas)
+  /// funcionavam. Ver `tool/versionar_fonte_de_icones.dart`.
   IconData _iconeDoSlot(int i) {
-    if (i == 0) return Icons.home;
-    if (i == 2) return Icons.person;
+    if (i == 0) return widget.iconeCasa;
+    if (i == 2) return widget.iconePerfil;
     return widget.iconeCentral ?? Icons.add;
   }
 

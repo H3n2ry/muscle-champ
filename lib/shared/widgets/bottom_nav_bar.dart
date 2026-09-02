@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import '../../core/auth/completude_do_perfil.dart';
+import '../../core/router/abas.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../l10n/app_localizations.dart';
@@ -9,46 +10,58 @@ import 'barra_liquida.dart';
 import 'tutorial_overlay.dart';
 
 class MainScaffold extends ConsumerStatefulWidget {
-  final Widget child;
-  const MainScaffold({super.key, required this.child});
+  /// O shell do `StatefulShellRoute`: cada aba é um ramo com Navigator próprio,
+  /// empilhados num `IndexedStack`. É o que faz sair de uma aba e voltar
+  /// reencontrar a tela como ela estava, em vez de remontada do zero.
+  final StatefulNavigationShell shell;
+
+  const MainScaffold({super.key, required this.shell});
 
   @override
   ConsumerState<MainScaffold> createState() => _MainScaffoldState();
 }
 
 class _MainScaffoldState extends ConsumerState<MainScaffold> {
-
-  /// As tres secoes que vivem dentro do botao central.
+  /// As secoes que vivem dentro do botao central — derivadas de `kAbas`, nao
+  /// listadas de novo aqui.
   static List<DestinoRadial> _destinos(BuildContext c) => [
-        DestinoRadial(
-            rota: '/workout',
-            icone: Icons.fitness_center,
-            rotulo: L.of(c).navTreino),
-        DestinoRadial(
-            rota: '/diet', icone: Icons.restaurant, rotulo: L.of(c).navDieta),
-        DestinoRadial(
-            rota: '/ranking',
-            icone: Icons.emoji_events,
-            rotulo: L.of(c).navRanking),
+        for (final aba in abasDoCentro)
+          DestinoRadial(
+              rota: aba.rota,
+              icone: aba.icone,
+              rotulo: aba.rotulo(L.of(c))),
       ];
 
   /// 0 = casa · 1 = centro · 2 = perfil.
   ///
-  /// Treino, Dieta e Ranking devolvem 1: nao tem alvo proprio na barra, entao
-  /// o botao central representa "onde voce esta" enquanto se navega por eles.
-  int _indiceAtivo(String rota) {
-    if (rota.startsWith('/profile')) return 2;
-    if (rota.startsWith('/dashboard')) return 0;
-    return 1;
-  }
+  /// Treino, Dieta e Ranking caem no 1: nao tem alvo proprio na barra, entao o
+  /// botao central representa "onde voce esta" enquanto se navega por eles.
+  int get _indiceAtivo => slotDoRamo(widget.shell.currentIndex);
 
-  /// Icone que o botao central assume. Nulo na home e no perfil, onde ele
-  /// volta a ser o "+".
-  IconData? _iconeCentral(String rota, BuildContext c) {
+  /// Icone que o botao central assume. Nulo na home e no perfil, onde ele volta
+  /// a ser o "+".
+  IconData? _iconeCentral(BuildContext c) {
+    if (_indiceAtivo != 1) return null;
+    final rota = kAbas[widget.shell.currentIndex].rota;
     for (final d in _destinos(c)) {
-      if (rota.startsWith(d.rota)) return d.icone;
+      if (d.rota == rota) return d.icone;
     }
     return null;
+  }
+
+  /// Troca de aba pelo ramo, nao por `context.go`.
+  ///
+  /// `goBranch` é o que preserva o estado: ele traz de volta o Navigator
+  /// daquele ramo com a pilha que já estava lá. Um `context.go` para a mesma
+  /// rota funcionaria, mas descartaria a posição de rolagem e o que estivesse
+  /// meio preenchido.
+  void _irPara(String rota) {
+    final ramo = kAbas.indexWhere((a) => a.rota == rota);
+    if (ramo >= 0) {
+      widget.shell.goBranch(ramo);
+    } else {
+      context.go(rota);
+    }
   }
 
   /// Esconde a barra ao rolar para baixo, mostra ao rolar para cima.
@@ -90,8 +103,6 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
   @override
   Widget build(BuildContext context) {
     _ouveCompletude();
-    final rota = GoRouterState.of(context).matchedLocation;
-    final indiceAtivo = _indiceAtivo(rota);
     final tutorialState = ref.watch(tutorialProvider);
 
     // Convite ao Pro a cada abertura, para quem nao assina. Espera o tutorial
@@ -113,7 +124,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
         children: [
           NotificationListener<UserScrollNotification>(
             onNotification: _aoRolar,
-            child: widget.child,
+            child: widget.shell,
           ),
           Positioned.fill(
             child: AnimatedSlide(
@@ -126,12 +137,14 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
                 child: SafeArea(
                   top: false,
                   child: BarraLiquida(
-                    indiceAtivo: indiceAtivo,
-                    iconeCentral: _iconeCentral(rota, context),
+                    indiceAtivo: _indiceAtivo,
+                    iconeCentral: _iconeCentral(context),
                     destinos: _destinos(context),
-                    rotuloCasa: L.of(context).navInicio,
-                    rotuloPerfil: L.of(context).navPerfil,
-                    onNavegar: context.go,
+                    rotuloCasa: kAbas.first.rotulo(L.of(context)),
+                    rotuloPerfil: kAbas.last.rotulo(L.of(context)),
+                    iconeCasa: kAbas.first.icone,
+                    iconePerfil: kAbas.last.icone,
+                    onNavegar: _irPara,
                   ),
                 ),
               ),

@@ -9,16 +9,12 @@ import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/auth/presentation/pages/reset_password_page.dart';
-import '../../features/dashboard/presentation/pages/dashboard_page.dart';
-import '../../features/workout/presentation/pages/workout_page.dart';
-import '../../features/diet/presentation/pages/diet_page.dart';
+import 'abas.dart';
 import '../../features/diet/presentation/pages/calibration_page.dart';
-import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/edit_profile_page.dart';
 import '../../features/profile/presentation/pages/privacy_page.dart';
 import '../../features/profile/data/models/profile_model.dart';
 import '../../features/ranking/presentation/pages/perfil_publico_page.dart';
-import '../../features/ranking/presentation/pages/ranking_page.dart';
 import '../../features/subscription/data/models/plano.dart';
 import '../../features/subscription/presentation/pages/pagamento_page.dart';
 import '../../features/subscription/presentation/pages/paywall_page.dart';
@@ -137,14 +133,27 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => AssinaturaSucessoPage(
             plano: state.extra as Plano? ?? Planos.anual),
       ),
-      ShellRoute(
-        builder: (context, state, child) => MainScaffold(child: child),
-        routes: [
-          GoRoute(path: '/dashboard', builder: (_, __) => const DashboardPage()),
-          GoRoute(path: '/workout',   builder: (_, __) => const WorkoutPage()),
-          GoRoute(path: '/diet',      builder: (_, __) => const DietPage()),
-          GoRoute(path: '/ranking',   builder: (_, __) => const RankingPage()),
-          GoRoute(path: '/profile',   builder: (_, __) => const ProfilePage()),
+      // `StatefulShellRoute`, e não `ShellRoute`, porque cada aba tem o próprio
+      // Navigator e o próprio estado.
+      //
+      // Com `ShellRoute` existia UM Navigator e a página era trocada: sair da
+      // Dieta e voltar remontava a tela do zero — rolagem no topo, filtro
+      // limpo, refeição meio digitada perdida, e toda consulta refeita. Com as
+      // abas dentro de um `IndexedStack`, sair e voltar reencontra a tela como
+      // ela estava.
+      //
+      // A ordem vem de `kAbas`, que a barra de navegação também lê — assim não
+      // existe uma segunda ordem para sair de sincronia com esta.
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, shell) => MainScaffold(shell: shell),
+        branches: [
+          for (final aba in kAbas)
+            StatefulShellBranch(routes: [
+              GoRoute(
+                path: aba.rota,
+                builder: (context, _) => aba.construir(context),
+              ),
+            ]),
         ],
       ),
     ],

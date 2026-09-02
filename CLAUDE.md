@@ -265,7 +265,9 @@ lib/
 ├── main.dart                    # Supabase init, orientation lock, ProviderScope
 ├── app.dart                     # MaterialApp.router with AppTheme.dark()
 ├── core/
-│   ├── router/app_router.dart   # GoRouter with auth redirect guard
+│   ├── router/
+│   │   ├── app_router.dart      # GoRouter with auth redirect guard
+│   │   └── abas.dart            # as 5 abas: rota, página, ícone, rótulo
 │   ├── supabase/supabase_config.dart
 │   ├── groq/
 │   │   ├── groq_config.dart     # API key + model names
@@ -297,7 +299,22 @@ Each feature follows `data/models/`, `data/repositories/`, `presentation/provide
 
 **State management**: Riverpod `AsyncNotifierProvider.autoDispose` for mutable state; `FutureProvider.autoDispose` for read-only data; `StateNotifierProvider.autoDispose` for complex mutable state (AI diet plan, tutorial). Repositories are exposed via `Provider<XRepository>`.
 
-**Routing**: ShellRoute wraps the 5 main tabs (dashboard/workout/diet/ranking/profile) inside `MainScaffold` (bottom nav). Auth redirect is synchronous in `GoRouter.redirect`. Non-shell routes: `/login`, `/register`, `/confirm-email`, `/edit-profile`, `/notifications`.
+**Routing**: `StatefulShellRoute.indexedStack` wraps the 5 main tabs inside
+`MainScaffold`. Each tab is a branch with its own Navigator, so leaving a tab
+and coming back finds it as it was — scroll position, filters, a half-typed
+meal. With the plain `ShellRoute` it used to have, every switch remounted the
+page and re-ran its queries. Auth redirect is synchronous in
+`GoRouter.redirect`. Non-shell routes: `/login`, `/register`, `/confirm-email`,
+`/edit-profile`, `/notifications`.
+
+⚠️ **`kAbas` (`core/router/abas.dart`) is the single list of tabs** — route,
+page, icon and label. The router builds its branches from it and the nav bar
+reads it back; nothing else may keep its own copy of the order. The shell
+identifies the active tab by *index* while the bar thinks in *routes*, so a
+second list drifts silently: both sides keep compiling, the bar keeps lighting
+a slot, just the wrong one. `slotDoRamo()` does the index → slot conversion
+(the app has 5 tabs, the bar has 3 targets — the middle three share the center
+button) and `test/abas_test.dart` pins it.
 
 **Supabase**: Direct `Supabase.instance.client` calls in repositories — no abstraction layer. Ranking uses RPC functions (`get_global_ranking`, `get_friends_ranking`, `search_users`, `get_pending_requests`).
 
