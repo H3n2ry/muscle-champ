@@ -89,6 +89,31 @@
 /excluir-conta.html
   Cache-Control: no-cache, must-revalidate
 
+# ⚠️ A FONTE DE ICONES NAO PODE CACHEAR LONGO.
+#
+# `assets/fonts/MaterialIcons-Regular.otf` tem caminho FIXO, sem hash no nome,
+# mas conteudo VARIAVEL: o Flutter recorta a fonte para conter so os glifos que
+# o app usa. Adicionar um icone novo muda o arquivo e nao muda a URL.
+#
+# Com o `/assets/*` de 30 dias abaixo, isso custou uma tarde: icone novo nunca
+# aparecia em producao, `flutter clean` nao adiantava (a fonte nova era gerada e
+# nunca servida), e os icones antigos funcionavam porque ja estavam na copia
+# cacheada. Testes em URL de preview passavam — hostname diferente, cache vazio.
+#
+# Os manifests tem o mesmo formato de problema: caminho fixo, conteudo que muda
+# a cada build.
+/assets/fonts/*
+  Cache-Control: no-cache, must-revalidate
+
+/assets/AssetManifest.bin.json
+  Cache-Control: no-cache, must-revalidate
+
+/assets/AssetManifest.bin
+  Cache-Control: no-cache, must-revalidate
+
+/assets/FontManifest.json
+  Cache-Control: no-cache, must-revalidate
+
 # CanvasKit e assets versionados podem cachear longo
 /canvaskit/*
   Cache-Control: public, max-age=31536000, immutable

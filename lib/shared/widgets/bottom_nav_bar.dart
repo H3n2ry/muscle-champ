@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import '../../core/auth/completude_do_perfil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_typography.dart';
 import '../../l10n/app_localizations.dart';
 import '../../features/subscription/presentation/widgets/paywall_popup.dart';
+import 'barra_liquida.dart';
 import 'tutorial_overlay.dart';
 
 class MainScaffold extends ConsumerStatefulWidget {
@@ -18,28 +18,53 @@ class MainScaffold extends ConsumerStatefulWidget {
 
 class _MainScaffoldState extends ConsumerState<MainScaffold> {
 
-  // Só rota e ícone ficam aqui; o rótulo vem da tradução no build, porque
-  // uma lista `const` não pode chamar L.of(context).
-  static const _tabs = [
-    (path: '/dashboard', icon: Icons.bolt),
-    (path: '/workout',   icon: Icons.fitness_center),
-    (path: '/diet',      icon: Icons.restaurant),
-    (path: '/ranking',   icon: Icons.emoji_events),
-    (path: '/profile',   icon: Icons.person),
-  ];
-
-  static List<String> _labels(BuildContext c) => [
-        L.of(c).navInicio,
-        L.of(c).navTreino,
-        L.of(c).navDieta,
-        L.of(c).navRanking,
-        L.of(c).navPerfil,
+  /// As tres secoes que vivem dentro do botao central.
+  static List<DestinoRadial> _destinos(BuildContext c) => [
+        DestinoRadial(
+            rota: '/workout',
+            icone: Icons.fitness_center,
+            rotulo: L.of(c).navTreino),
+        DestinoRadial(
+            rota: '/diet', icone: Icons.restaurant, rotulo: L.of(c).navDieta),
+        DestinoRadial(
+            rota: '/ranking',
+            icone: Icons.emoji_events,
+            rotulo: L.of(c).navRanking),
       ];
 
-  int _currentIndex(BuildContext context) {
-    final location = GoRouterState.of(context).matchedLocation;
-    final idx = _tabs.indexWhere((t) => location.startsWith(t.path));
-    return idx < 0 ? 0 : idx;
+  /// 0 = casa · 1 = centro · 2 = perfil.
+  ///
+  /// Treino, Dieta e Ranking devolvem 1: nao tem alvo proprio na barra, entao
+  /// o botao central representa "onde voce esta" enquanto se navega por eles.
+  int _indiceAtivo(String rota) {
+    if (rota.startsWith('/profile')) return 2;
+    if (rota.startsWith('/dashboard')) return 0;
+    return 1;
+  }
+
+  /// Icone que o botao central assume. Nulo na home e no perfil, onde ele
+  /// volta a ser o "+".
+  IconData? _iconeCentral(String rota, BuildContext c) {
+    for (final d in _destinos(c)) {
+      if (rota.startsWith(d.rota)) return d.icone;
+    }
+    return null;
+  }
+
+  /// Esconde a barra ao rolar para baixo, mostra ao rolar para cima.
+  bool _barraVisivel = true;
+
+  bool _aoRolar(UserScrollNotification n) {
+    // So o eixo vertical da tela inteira interessa; listas horizontais dentro
+    // das paginas (carrossel de treinos) nao devem mexer na barra.
+    if (n.metrics.axis != Axis.vertical) return false;
+    final visivel = switch (n.direction) {
+      ScrollDirection.reverse => false,
+      ScrollDirection.forward => true,
+      ScrollDirection.idle => _barraVisivel,
+    };
+    if (visivel != _barraVisivel) setState(() => _barraVisivel = visivel);
+    return false;
   }
 
   /// Dispara a checagem de completude e leva para /completar-perfil quando
@@ -65,7 +90,8 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
   @override
   Widget build(BuildContext context) {
     _ouveCompletude();
-    final currentIndex = _currentIndex(context);
+    final rota = GoRouterState.of(context).matchedLocation;
+    final indiceAtivo = _indiceAtivo(rota);
     final tutorialState = ref.watch(tutorialProvider);
 
     // Convite ao Pro a cada abertura, para quem nao assina. Espera o tutorial
@@ -77,64 +103,41 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     }
 
     final scaffold = Scaffold(
-      body: widget.child,
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surfaceContainerLow,
-          border: Border(
-            top: BorderSide(color: AppColors.surfaceContainerHigh, width: 1),
+      // `extendBody` deixa o conteudo passar POR BAIXO da barra — sem isso o
+      // vidro nao teria o que borrar e o efeito sumiria.
+      extendBody: true,
+      // A barra vai no BODY, nao em `bottomNavigationBar`. O menu radial abre
+      // ACIMA dela, e um filho de bottomNavigationBar nao recebe toque fora da
+      // propria caixa — os botoes do arco apareciam e nao clicavam.
+      body: Stack(
+        children: [
+          NotificationListener<UserScrollNotification>(
+            onNotification: _aoRolar,
+            child: widget.child,
           ),
-        ),
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            height: 64,
-            child: Row(
-              children: List.generate(_tabs.length, (i) {
-                final active = i == currentIndex;
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () => context.go(_tabs[i].path),
-                    behavior: HitTestBehavior.opaque,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 4),
-                          decoration: active
-                              ? BoxDecoration(
-                                  color: AppColors.primary.withOpacity(0.12),
-                                  borderRadius: BorderRadius.circular(20),
-                                )
-                              : null,
-                          child: Icon(
-                            _tabs[i].icon,
-                            size: 22,
-                            color: active
-                                ? AppColors.primary
-                                : AppColors.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _labels(context)[i],
-                          style: AppTypography.labelSm.copyWith(
-                            fontSize: 9,
-                            color: active
-                                ? AppColors.primary
-                                : AppColors.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
+          Positioned.fill(
+            child: AnimatedSlide(
+              duration: const Duration(milliseconds: 240),
+              curve: Curves.easeOut,
+              offset: _barraVisivel ? Offset.zero : const Offset(0, 0.35),
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: _barraVisivel ? 1 : 0,
+                child: SafeArea(
+                  top: false,
+                  child: BarraLiquida(
+                    indiceAtivo: indiceAtivo,
+                    iconeCentral: _iconeCentral(rota, context),
+                    destinos: _destinos(context),
+                    rotuloCasa: L.of(context).navInicio,
+                    rotuloPerfil: L.of(context).navPerfil,
+                    onNavegar: context.go,
                   ),
-                );
-              }),
+                ),
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
 
