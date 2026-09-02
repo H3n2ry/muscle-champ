@@ -6,14 +6,29 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../l10n/app_localizations.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
+import 'barra_liquida.dart';
 
 // ── Spotlight target ───────────────────────────────────────────────────────
 
+/// ⚠️ Os alvos da barra são TRÊS, não cinco.
+///
+/// A barra tinha cinco abas ocupando a largura toda; virou três alvos
+/// centralizados, com Treino, Dieta e Ranking dentro do botão do meio. Os
+/// antigos `nav1`/`nav2`/`nav3` apontavam para 1,5/5, 2,5/5 e 3,5/5 da tela —
+/// posições que deixaram de existir. O tutorial não quebrou com erro: o
+/// holofote passou a iluminar o vazio, e só quem rodasse o onboarding de uma
+/// conta nova veria.
+///
+/// A geometria vem de `BarraLiquida`, não de constantes copiadas aqui. Copiar
+/// foi o que permitiu a barra mudar e o tutorial continuar achando que sabia
+/// onde ela estava.
 enum SpotTarget {
-  nav0, nav1, nav2, nav3, nav4, // bottom nav tabs
-  pageTop,                       // ~22% of page body height
-  pageMiddle,                    // ~50%
-  pageBottom,                    // ~75%
+  navCasa,     // slot 0
+  navCentro,   // slot 1 — abre Treino, Dieta e Ranking
+  navPerfil,   // slot 2
+  pageTop,     // ~22% of page body height
+  pageMiddle,  // ~50%
+  pageBottom,  // ~75%
 }
 
 // ── State ──────────────────────────────────────────────────────────────────
@@ -88,14 +103,27 @@ typedef _TStep = ({
   String Function(L) body,
 });
 
-// 12 steps across 5 sections (INÍCIO 0-1, TREINO 2-3, DIETA 4-7, RANKING 8-9, PERFIL 10-11)
+// 13 passos em 5 seções (INÍCIO 0-2, TREINO 3-4, DIETA 5-8, RANKING 9-10,
+// PERFIL 11-12).
+//
+// Treino, Dieta e Ranking não têm mais alvo próprio na barra — moram dentro do
+// botão central. Os passos delas iluminam esse botão, que é onde a pessoa
+// precisa tocar para chegar lá.
 final List<_TStep> _kSteps = [
   // ── INÍCIO ─────────────────────────────────────
   (
     route: '/dashboard',
-    target: SpotTarget.nav0,
+    target: SpotTarget.navCasa,
     title: (l) => l.tut_bemVindoTitulo,
     body: (l) => l.tut_bemVindoCorpo,
+  ),
+  (
+    // Sem este passo, três das cinco seções ficam invisíveis: quem não descobre
+    // o botão do meio não tem como chegar em Treino, Dieta nem Ranking.
+    route: '/dashboard',
+    target: SpotTarget.navCentro,
+    title: (l) => l.tut_menuTitulo,
+    body: (l) => l.tut_menuCorpo,
   ),
   (
     route: '/dashboard',
@@ -106,7 +134,7 @@ final List<_TStep> _kSteps = [
   // ── TREINO ─────────────────────────────────────
   (
     route: '/workout',
-    target: SpotTarget.nav1,
+    target: SpotTarget.navCentro,
     title: (l) => l.tut_treinosIaTitulo,
     body: (l) => l.tut_treinosIaCorpo,
   ),
@@ -119,7 +147,7 @@ final List<_TStep> _kSteps = [
   // ── DIETA ──────────────────────────────────────
   (
     route: '/diet',
-    target: SpotTarget.nav2,
+    target: SpotTarget.navCentro,
     title: (l) => l.tut_dietaTitulo,
     body: (l) => l.tut_dietaCorpo,
   ),
@@ -144,7 +172,7 @@ final List<_TStep> _kSteps = [
   // ── RANKING ────────────────────────────────────
   (
     route: '/ranking',
-    target: SpotTarget.nav3,
+    target: SpotTarget.navCentro,
     title: (l) => l.tut_rankingTitulo,
     body: (l) => l.tut_rankingCorpo,
   ),
@@ -157,7 +185,7 @@ final List<_TStep> _kSteps = [
   // ── PERFIL ─────────────────────────────────────
   (
     route: '/profile',
-    target: SpotTarget.nav4,
+    target: SpotTarget.navPerfil,
     title: (l) => l.tut_perfilTitulo,
     body: (l) => l.tut_perfilCorpo,
   ),
@@ -247,23 +275,26 @@ class _TutorialOverlayState extends State<TutorialOverlay>
   }
 
   Offset _spotCenter(SpotTarget target, Size size, EdgeInsets padding) {
-    const navH = 64.0;
-    final tabW = size.width / 5;
+    const navH = BarraLiquida.alturaBarra;
     final botPad = padding.bottom;
     final topPad = padding.top;
     final bodyH = size.height - topPad - navH - botPad;
 
+    // A bolha do slot ativo sobe para fora da barra, então o centro do holofote
+    // fica entre a barra e a bolha — mirar só a barra deixava metade da bolha
+    // no escuro.
+    final yNav = size.height -
+        botPad -
+        (navH / 2 + BarraLiquida.centroDaBolhaAcimaDaBase) / 2;
+    double xSlot(int i) => BarraLiquida.centroDoSlot(i, size.width);
+
     switch (target) {
-      case SpotTarget.nav0:
-        return Offset(tabW * 0.5, size.height - botPad - navH / 2);
-      case SpotTarget.nav1:
-        return Offset(tabW * 1.5, size.height - botPad - navH / 2);
-      case SpotTarget.nav2:
-        return Offset(tabW * 2.5, size.height - botPad - navH / 2);
-      case SpotTarget.nav3:
-        return Offset(tabW * 3.5, size.height - botPad - navH / 2);
-      case SpotTarget.nav4:
-        return Offset(tabW * 4.5, size.height - botPad - navH / 2);
+      case SpotTarget.navCasa:
+        return Offset(xSlot(0), yNav);
+      case SpotTarget.navCentro:
+        return Offset(xSlot(1), yNav);
+      case SpotTarget.navPerfil:
+        return Offset(xSlot(2), yNav);
       case SpotTarget.pageTop:
         return Offset(size.width / 2, topPad + bodyH * 0.22);
       case SpotTarget.pageMiddle:
@@ -273,8 +304,10 @@ class _TutorialOverlayState extends State<TutorialOverlay>
     }
   }
 
+  // 38 cobria uma aba de barra chapada. Agora precisa alcançar a barra E a
+  // bolha que sobe dela.
   double _spotRadius(SpotTarget target) =>
-      target.name.startsWith('nav') ? 38.0 : 52.0;
+      target.name.startsWith('nav') ? 46.0 : 52.0;
 
   @override
   Widget build(BuildContext context) {

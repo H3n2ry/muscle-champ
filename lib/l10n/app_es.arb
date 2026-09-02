@@ -584,6 +584,8 @@
   "erro_verifiqueConexao": "Revisa tu conexión e inténtalo de nuevo.",
   "tut_bemVindoTitulo": "¡Bienvenido a Muscle Champ!",
   "tut_bemVindoCorpo": "Tu hub de fitness gamificado. Gana puntos entrenando y comiendo bien, y sube en el ranking superando a tus amigos.",
+  "tut_menuTitulo": "Menú de navegación",
+  "tut_menuCorpo": "Toca el botón del medio: gira y abre Entrenamiento, Dieta y Ranking a su alrededor. Inicio y Perfil quedan en los extremos, siempre a mano.",
   "tut_pontosTitulo": "Puntos, Rango y Racha",
   "tut_pontosCorpo": "Mira tus puntos acumulados, tu posición en el ranking global y entre amigos, y tu racha de días activos.",
   "tut_treinosIaTitulo": "Entrenamientos con IA",

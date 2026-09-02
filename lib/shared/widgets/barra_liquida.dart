@@ -46,6 +46,34 @@ class BarraLiquida extends StatefulWidget {
   final String rotuloCasa;
   final String rotuloPerfil;
 
+  // ── Geometria ───────────────────────────────────────────────────────────
+  //
+  // Pública de propósito. O holofote do tutorial precisa mirar os slots, e a
+  // única alternativa seria uma cópia destas constantes lá — foi exatamente
+  // assim que ele quebrou quando a barra passou de cinco alvos ocupando a tela
+  // inteira para três centralizados: o tutorial continuou dividindo a largura
+  // por cinco e passou a apontar para o vazio, sem erro nenhum.
+  static const double alturaBarra = 64;
+  static const double diametroBolha = 52;
+  static const double margemLateral = 20;
+  static const double larguraMaxima = 440;
+  static const int slots = 3;
+
+  /// Centro horizontal do slot `i` (0 = casa · 1 = centro · 2 = perfil) numa
+  /// tela de `larguraTela`.
+  static double centroDoSlot(int i, double larguraTela) {
+    final larguraBarra =
+        math.min(larguraTela - margemLateral * 2, larguraMaxima);
+    final sobra = (larguraTela - larguraBarra) / 2;
+    return sobra + larguraBarra / slots * (i + 0.5);
+  }
+
+  /// Distância do centro da bolha do slot ativo até a base da barra. A bolha
+  /// sobe para fora da barra, então mirar só a altura da barra a deixa metade
+  /// de fora do holofote.
+  static const double centroDaBolhaAcimaDaBase =
+      alturaBarra - diametroBolha / 2 - 4 + diametroBolha / 2;
+
   const BarraLiquida({
     super.key,
     required this.indiceAtivo,
@@ -68,10 +96,12 @@ class _BarraLiquidaState extends State<BarraLiquida>
     reverseDuration: const Duration(milliseconds: 220),
   );
 
-  static const double _alturaBarra = 64;
-  static const double _diametroBolha = 52;
-  static const double _margemLateral = 20;
-  static const double _larguraMaxima = 440;
+  // Apelidos para as constantes públicas do widget — a fonte da verdade está
+  // lá em cima, para o tutorial poder ler a mesma coisa.
+  static const double _alturaBarra = BarraLiquida.alturaBarra;
+  static const double _diametroBolha = BarraLiquida.diametroBolha;
+  static const double _margemLateral = BarraLiquida.margemLateral;
+  static const double _larguraMaxima = BarraLiquida.larguraMaxima;
 
   bool get _aberto => _ctrl.value > 0.5;
 
@@ -97,7 +127,7 @@ class _BarraLiquidaState extends State<BarraLiquida>
           constraints.maxWidth - _margemLateral * 2,
           _larguraMaxima,
         );
-        final larguraSlot = larguraBarra / 3;
+        final larguraSlot = larguraBarra / BarraLiquida.slots;
         final sobra = (constraints.maxWidth - larguraBarra) / 2;
 
         return AnimatedBuilder(
@@ -175,7 +205,7 @@ class _BarraLiquidaState extends State<BarraLiquida>
   Widget _vidro(double larguraBarra, double larguraSlot, double sobra) {
     // A bolha sobe metade para fora da barra, então o Stack precisa dessa
     // folga em cima — sem ela o círculo é cortado.
-    final folgaTopo = _diametroBolha / 2 + 12;
+    const folgaTopo = _diametroBolha / 2 + 12;
 
     return SizedBox(
       height: _alturaBarra + folgaTopo,

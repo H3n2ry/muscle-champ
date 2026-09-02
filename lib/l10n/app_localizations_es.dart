@@ -1586,6 +1586,13 @@ class LEs extends L {
       'Tu hub de fitness gamificado. Gana puntos entrenando y comiendo bien, y sube en el ranking superando a tus amigos.';
 
   @override
+  String get tut_menuTitulo => 'Menú de navegación';
+
+  @override
+  String get tut_menuCorpo =>
+      'Toca el botón del medio: gira y abre Entrenamiento, Dieta y Ranking a su alrededor. Inicio y Perfil quedan en los extremos, siempre a mano.';
+
+  @override
   String get tut_pontosTitulo => 'Puntos, Rango y Racha';
 
   @override

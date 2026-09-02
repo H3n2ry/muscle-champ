@@ -3003,6 +3003,18 @@ abstract class L {
   /// **'Seu hub de fitness gamificado. Ganhe pontos treinando e comendo bem, e suba no ranking superando seus amigos.'**
   String get tut_bemVindoCorpo;
 
+  /// No description provided for @tut_menuTitulo.
+  ///
+  /// In pt, this message translates to:
+  /// **'Menu de navegação'**
+  String get tut_menuTitulo;
+
+  /// No description provided for @tut_menuCorpo.
+  ///
+  /// In pt, this message translates to:
+  /// **'Toque no botão do meio: ele gira e abre Treino, Dieta e Ranking em volta. Início e Perfil ficam sempre à mão, nas pontas.'**
+  String get tut_menuCorpo;
+
   /// No description provided for @tut_pontosTitulo.
   ///
   /// In pt, this message translates to:

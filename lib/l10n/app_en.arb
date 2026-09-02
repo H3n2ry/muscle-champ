@@ -584,6 +584,8 @@
   "erro_verifiqueConexao": "Check your connection and try again.",
   "tut_bemVindoTitulo": "Welcome to Muscle Champ!",
   "tut_bemVindoCorpo": "Your gamified fitness hub. Earn points by training and eating well, and climb the ranking past your friends.",
+  "tut_menuTitulo": "Navigation menu",
+  "tut_menuCorpo": "Tap the middle button: it spins open and lays out Workout, Diet and Ranking around it. Home and Profile stay at the edges, always within reach.",
   "tut_pontosTitulo": "Points, Rank and Streak",
   "tut_pontosCorpo": "See your accumulated points, your global and friends ranking position, and your active-day streak.",
   "tut_treinosIaTitulo": "AI Workouts",

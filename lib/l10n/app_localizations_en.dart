@@ -1569,6 +1569,13 @@ class LEn extends L {
       'Your gamified fitness hub. Earn points by training and eating well, and climb the ranking past your friends.';
 
   @override
+  String get tut_menuTitulo => 'Navigation menu';
+
+  @override
+  String get tut_menuCorpo =>
+      'Tap the middle button: it spins open and lays out Workout, Diet and Ranking around it. Home and Profile stay at the edges, always within reach.';
+
+  @override
   String get tut_pontosTitulo => 'Points, Rank and Streak';
 
   @override

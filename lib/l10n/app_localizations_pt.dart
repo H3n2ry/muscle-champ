@@ -1581,6 +1581,13 @@ class LPt extends L {
       'Seu hub de fitness gamificado. Ganhe pontos treinando e comendo bem, e suba no ranking superando seus amigos.';
 
   @override
+  String get tut_menuTitulo => 'Menu de navegação';
+
+  @override
+  String get tut_menuCorpo =>
+      'Toque no botão do meio: ele gira e abre Treino, Dieta e Ranking em volta. Início e Perfil ficam sempre à mão, nas pontas.';
+
+  @override
   String get tut_pontosTitulo => 'Pontos, Rank e Streak';
 
   @override
