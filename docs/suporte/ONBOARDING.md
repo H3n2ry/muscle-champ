@@ -22,7 +22,7 @@ Nesta ordem:
 | Android Studio | Mais recente | https://developer.android.com/studio |
 | Android SDK | API 34 | Android Studio → SDK Manager |
 | Android Command-line Tools | Mais recente | SDK Manager → SDK Tools → Android SDK Command-line Tools |
-| Node.js | 20+ | Para Vercel CLI (optional para web deploy) |
+| Node.js | 20+ | Para o Wrangler (CLI do Cloudflare Pages), necessário no deploy web |
 | Git | Qualquer | — |
 
 ---

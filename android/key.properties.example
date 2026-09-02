@@ -1,0 +1,35 @@
+# Modelo do android/key.properties — COPIE para `key.properties` e preencha.
+#
+# O arquivo real e o .jks estao no .gitignore e devem continuar assim. Quem tem
+# o keystore consegue assinar em nome do Muscle Champ, ou seja, publicar uma
+# atualizacao falsa na Play Store.
+#
+# ⚠️ PERDER O KEYSTORE E IRREVERSIVEL. A Play Store amarra o app a essa chave;
+# sem ela nao ha como publicar atualizacao, nunca mais — a unica saida seria
+# republicar como app novo, perdendo instalacoes, avaliacoes e ranking. Guarde
+# uma copia fora desta maquina (gerenciador de senhas, cofre, HD externo).
+#
+# Como gerar (uma vez, no PowerShell; o keytool vem com o JDK do Android Studio):
+#
+#   & "C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" `
+#     -genkey -v -keystore "$env:USERPROFILE\musclechamp-release.jks" `
+#     -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 `
+#     -alias musclechamp
+#
+# Ele pergunta uma senha e alguns dados (nome, organizacao, cidade, pais). O
+# `-validity 10000` sao ~27 anos: a Play exige validade ate pelo menos 2033, e
+# uma chave que expira e uma chave perdida.
+#
+# Depois de gerar, o SHA-1 (necessario para o Google Sign-In no Android):
+#
+#   & "C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" `
+#     -list -v -keystore "$env:USERPROFILE\musclechamp-release.jks" `
+#     -alias musclechamp
+#
+# ⚠️ NAO coloque o .jks dentro da pasta do repositorio. Um `git add -f` distraido
+# ou uma limpeza de .gitignore o expoe. O caminho abaixo aponta para fora.
+
+storePassword=SUA_SENHA_DO_KEYSTORE
+keyPassword=SUA_SENHA_DA_CHAVE
+keyAlias=musclechamp
+storeFile=C:\\Users\\Henry\\musclechamp-release.jks

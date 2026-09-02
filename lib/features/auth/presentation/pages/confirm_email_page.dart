@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../shared/widgets/mk_otp_box.dart';
 import '../../data/repositories/auth_repository.dart';
 
 class ConfirmEmailPage extends ConsumerStatefulWidget {
@@ -252,7 +252,7 @@ class _ConfirmEmailPageState extends ConsumerState<ConfirmEmailPage> {
                   8,
                   (i) => Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: _OtpBox(
+                    child: MkOtpBox(
                       controller: _controllers[i],
                       focusNode: _focusNodes[i],
                       hasError: _errorMsg != null,
@@ -378,67 +378,5 @@ class _ConfirmEmailPageState extends ConsumerState<ConfirmEmailPage> {
   }
 }
 
-// ── Widget de caixinha individual ─────────────────────────────────────────────
-
-class _OtpBox extends StatelessWidget {
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final bool hasError;
-  final ValueChanged<String> onChanged;
-
-  const _OtpBox({
-    required this.controller,
-    required this.focusNode,
-    required this.hasError,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 38,
-      height: 52,
-      child: TextFormField(
-        controller: controller,
-        focusNode: focusNode,
-        textAlign: TextAlign.center,
-        keyboardType: TextInputType.text,
-        maxLength: 8, // Permite 8 para capturar cola, tratado no onChanged
-        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9A-Za-z]'))],
-        style: const TextStyle(
-          fontSize: 22,
-          fontWeight: FontWeight.w700,
-          color: AppColors.onSurface,
-          letterSpacing: 0,
-        ),
-        decoration: InputDecoration(
-          counterText: '',
-          filled: true,
-          fillColor: AppColors.surfaceContainerLow,
-          contentPadding: EdgeInsets.zero,
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: hasError
-                  ? AppColors.error
-                  : AppColors.outlineVariant,
-            ),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: hasError ? AppColors.error : AppColors.primary,
-              width: 2,
-            ),
-          ),
-          disabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide:
-                BorderSide(color: AppColors.outlineVariant),
-          ),
-        ),
-        onChanged: onChanged,
-      ),
-    );
-  }
-}
+// A caixinha do código vive em shared/widgets/mk_otp_box.dart — a tela de
+// redefinição de senha usa a mesma.

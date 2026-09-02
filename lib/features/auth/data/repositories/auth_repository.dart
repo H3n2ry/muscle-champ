@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/auth/completude_do_perfil.dart';
 import '../../../../core/legal/legal_texts.dart';
 import '../models/user_model.dart';
 
@@ -16,6 +18,15 @@ class UnderageException implements Exception {
   const UnderageException();
   @override
   String toString() => LegalTexts.underageMessage;
+}
+
+/// Lançado quando a senha nova enviada na recuperação é igual à atual.
+///
+/// Vale uma exceção própria porque o tratamento é diferente de qualquer outra
+/// falha: o código de recuperação já foi consumido, a sessão está aberta, e a
+/// pessoa só precisa escolher outra senha — não pedir um código novo.
+class SamePasswordException implements Exception {
+  const SamePasswordException();
 }
 
 /// Lançado quando falta um consentimento obrigatório para operar o serviço.
@@ -117,7 +128,13 @@ class AuthRepository {
     return _fetchProfile(user.id);
   }
 
-  Future<void> logout() => _client.auth.signOut();
+  Future<void> logout() async {
+    // Sem limpar, a proxima conta herdaria a resposta de completude da anterior
+    // ate a primeira consulta terminar — e o redirect decidiria com dado
+    // errado nesse intervalo.
+    PerfilIncompleto.limpar();
+    await _client.auth.signOut();
+  }
 
   /// Confirma o e-mail usando o código OTP de 6 dígitos enviado pelo Supabase.
   Future<void> verifyOtp({
@@ -137,6 +154,84 @@ class AuthRepository {
       type: OtpType.signup,
       email: email,
     );
+  }
+
+  // ── Login social ───────────────────────────────────────────────────────────
+
+  /// Inicia o login com Google.
+  ///
+  /// ⚠️ Isto cria a conta SEM data de nascimento e SEM consentimento. O trigger
+  /// `handle_new_user` lê essas coisas dos metadados do `signUp()`, e o OAuth
+  /// não manda nenhum — a conta nasce com `birth_date` NULL, consentimentos
+  /// `false` e `document_version` 'unknown'.
+  ///
+  /// Quem fecha esse buraco é [completudeDoPerfilProvider] + a tela
+  /// `/completar-perfil`, que barram o acesso até a pessoa informar a idade
+  /// (LegalTexts.minimumAge) e aceitar os obrigatórios. **Mexer neste método
+  /// sem manter aquele gate reabre a entrada de menor de 16 tratando dado de
+  /// saúde sem base legal.**
+  ///
+  /// No web o Supabase redireciona a aba inteira e volta pelo callback; no
+  /// Android abre a conta já logada no aparelho, porque o Client ID nativo está
+  /// registrado no provider.
+  Future<void> signInWithGoogle() async {
+    await _client.auth.signInWithOAuth(
+      OAuthProvider.google,
+      // Sem isto o Supabase manda de volta para o Site URL configurado no
+      // painel, que pode não ser onde a pessoa estava.
+      redirectTo: kIsWeb ? null : 'br.com.musclechamp://login-callback',
+    );
+  }
+
+  // ── Recuperação de senha ───────────────────────────────────────────────────
+
+  /// Dispara o e-mail de recuperação com o código OTP.
+  ///
+  /// Não retorna nada e não distingue e-mail existente de inexistente — de
+  /// propósito. O Supabase responde igual nos dois casos para não virar um
+  /// oráculo de "esta pessoa tem conta aqui", e a UI precisa manter a mesma
+  /// resposta. Não usar `checkEmailExists` neste fluxo.
+  ///
+  /// Depende do template "Reset Password" no painel do Supabase conter
+  /// `{{ .Token }}`. O template padrão manda `{{ .ConfirmationURL }}` (link), e
+  /// com ele nenhum código chega ao usuário.
+  Future<void> sendPasswordReset(String email) async {
+    await _client.auth.resetPasswordForEmail(email);
+  }
+
+  /// Troca o código de recuperação por uma sessão autenticada.
+  ///
+  /// Separado de [updatePassword] porque **o código é de uso único**: assim que
+  /// isto retorna, ele está queimado. Se a gravação da senha falhar depois
+  /// (senha igual à anterior, rede caindo), refazer esta etapa com o mesmo
+  /// código dá 403 — a tela precisa reaproveitar a sessão em vez de recomeçar.
+  Future<void> verifyRecoveryCode({
+    required String email,
+    required String token,
+  }) async {
+    await _client.auth.verifyOTP(
+      email: email,
+      token: token,
+      type: OtpType.recovery,
+    );
+  }
+
+  /// Grava a senha nova na sessão aberta por [verifyRecoveryCode].
+  ///
+  /// Lança [SamePasswordException] quando a senha nova é igual à atual — o
+  /// Supabase devolve 422 nesse caso, e é o erro mais provável de todos, já que
+  /// quem esqueceu a senha costuma tentar primeiro a que achava que era.
+  Future<void> updatePassword(String newPassword) async {
+    try {
+      await _client.auth.updateUser(UserAttributes(password: newPassword));
+    } on AuthException catch (e) {
+      final msg = e.message.toLowerCase();
+      if (msg.contains('should be different') ||
+          msg.contains('same_password')) {
+        throw const SamePasswordException();
+      }
+      rethrow;
+    }
   }
 
   Future<UserModel> _fetchProfile(String userId) async {

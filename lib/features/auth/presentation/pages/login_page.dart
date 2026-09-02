@@ -4,9 +4,11 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../shared/widgets/language_selector.dart';
+import '../../../../shared/widgets/logo_google.dart';
 import '../../../../shared/widgets/mk_error_banner.dart';
 import '../../../../shared/widgets/mk_text_field.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../data/repositories/auth_repository.dart';
 import '../providers/auth_provider.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -21,6 +23,26 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _passwordCtrl = TextEditingController();
   final _formKey      = GlobalKey<FormState>();
   String? _errorMessage;
+  bool _entrandoComGoogle = false;
+
+  /// Dispara o OAuth. No web isto redireciona a aba inteira, entao o `finally`
+  /// pode nunca rodar — o estado de carregando so importa no Android, onde o
+  /// fluxo volta para esta tela.
+  Future<void> _entrarComGoogle() async {
+    setState(() {
+      _entrandoComGoogle = true;
+      _errorMessage = null;
+    });
+    try {
+      await ref.read(authRepositoryProvider).signInWithGoogle();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _errorMessage = L.of(context).comum_algoDeuErrado);
+      debugPrint('signInWithGoogle falhou: $e');
+    } finally {
+      if (mounted) setState(() => _entrandoComGoogle = false);
+    }
+  }
 
   @override
   void initState() {
@@ -219,13 +241,33 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               : null,
                     ),
 
+                    // ── Esqueci minha senha ───────────────────────
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () => context.push('/forgot-password'),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(
+                          L.of(context).recSenha_linkLogin,
+                          style: AppTypography.bodyMd.copyWith(
+                            color: AppColors.primary,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ),
+
                     // ── Erro inline ───────────────────────────────
                     MkErrorBanner(
                       message: _errorMessage,
                       onDismiss: () => setState(() => _errorMessage = null),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
 
                     // ── Login button ───────────────────────────────
                     SizedBox(
@@ -283,6 +325,44 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               fontSize: 15,
                               letterSpacing: 2,
                             )),
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // ── Entrar com Google ──────────────────────────
+                    // Cria a conta SEM data de nascimento e SEM consentimento
+                    // (o trigger le isso dos metadados do signUp, que o OAuth
+                    // nao manda). Quem segura e o gate em MainScaffold, que
+                    // manda para /completar-perfil antes de liberar o app.
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: OutlinedButton.icon(
+                        onPressed: _entrandoComGoogle ? null : _entrarComGoogle,
+                        icon: _entrandoComGoogle
+                            ? SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppColors.onSurfaceVariant,
+                                ),
+                              )
+                            : const LogoGoogle(size: 20),
+                        label: Text(
+                          L.of(context).login_entrarComGoogle,
+                          style: AppTypography.labelMd
+                              .copyWith(fontSize: 14, letterSpacing: 1),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.onSurface,
+                          side: const BorderSide(
+                              color: AppColors.surfaceContainerHigh),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
                       ),
                     ),
 

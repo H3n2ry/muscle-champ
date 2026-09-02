@@ -35,7 +35,7 @@ Entre em contato diretamente:
 - ✅ Bucket `avatars` com path `{userId}/avatar.*` — usuário só pode escrever no próprio caminho
 
 ### Comunicação
-- ✅ HTTPS em todos os endpoints (Supabase, Groq, Vercel)
+- ✅ HTTPS em todos os endpoints (Supabase, Groq, Cloudflare Pages)
 - ✅ Sem comunicação HTTP plaintext
 
 ### Dados

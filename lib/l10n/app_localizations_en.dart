@@ -513,6 +513,9 @@ class LEn extends L {
   String get login_entrar => 'SIGN IN';
 
   @override
+  String get login_entrarComGoogle => 'Sign in with Google';
+
+  @override
   String get login_criarConta => 'CREATE ACCOUNT';
 
   @override
@@ -1323,6 +1326,75 @@ class LEn extends L {
 
   @override
   String get conf_naoRecebeu => 'Didn’t get the code? Resend';
+
+  @override
+  String get recSenha_titulo1 => 'FORGOT';
+
+  @override
+  String get recSenha_titulo2 => 'YOUR PASSWORD?';
+
+  @override
+  String get recSenha_explicacao =>
+      'Enter your account email. We’ll send you an 8-digit code to create a new password.';
+
+  @override
+  String get recSenha_email => 'EMAIL';
+
+  @override
+  String get recSenha_enviarCodigo => 'SEND CODE';
+
+  @override
+  String get recSenha_voltarLogin => 'Back to login';
+
+  @override
+  String get recSenha_linkLogin => 'Forgot my password';
+
+  @override
+  String recSenha_seExistir(String email) {
+    return 'If an account exists for $email, the code is on its way. Check your spam folder too.';
+  }
+
+  @override
+  String get recSenha_novaTitulo1 => 'NEW';
+
+  @override
+  String get recSenha_novaTitulo2 => 'PASSWORD';
+
+  @override
+  String get recSenha_digiteCodigo => 'Enter the 8-digit code sent to:';
+
+  @override
+  String get recSenha_novaSenha => 'NEW PASSWORD';
+
+  @override
+  String get recSenha_confirmarSenha => 'CONFIRM PASSWORD';
+
+  @override
+  String get recSenha_salvar => 'SAVE PASSWORD';
+
+  @override
+  String get recSenha_naoConfere => 'The passwords don’t match.';
+
+  @override
+  String get recSenha_codigoInvalido =>
+      'Invalid or expired code. Request a new one.';
+
+  @override
+  String get recSenha_sucesso => 'Password changed. Welcome back!';
+
+  @override
+  String get recSenha_erroSalvar =>
+      'Couldn’t save the new password. Try again.';
+
+  @override
+  String get recSenha_digite8 => 'Enter all 8 digits of the code.';
+
+  @override
+  String get recSenha_senhaIgual =>
+      'The new password must be different from your current one. Pick another — your code is still valid.';
+
+  @override
+  String get recSenha_codigoOk => 'Code verified';
 
   @override
   String get login_credenciaisInvalidas =>

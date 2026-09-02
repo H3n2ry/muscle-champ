@@ -139,7 +139,7 @@ Com 10 usuários × 4 fotos/dia ≈ 23.600 tokens/dia (~5% da cota gratuita Groq
 |--------|---------|-------|
 | Android APK | `flutter build apk --release` | `build/app/outputs/flutter-apk/app-release.apk` |
 | Android AAB | `flutter build appbundle --release` | `build/app/outputs/bundle/release/app-release.aab` |
-| Web | `flutter build web --release` | `build/web/` → deploy via Vercel |
+| Web | `flutter build web --release` | `build/web/` → deploy via Cloudflare Pages |
 
 ## Dependências notáveis
 

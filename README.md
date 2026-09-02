@@ -2,7 +2,7 @@
 
 App fitness gamificado para Android e Web. Registre treinos, acompanhe sua dieta com IA e dispute rankings com amigos.
 
-**Live:** https://muscle-champ.vercel.app
+**Live:** https://musclechamp.com.br
 
 ## Funcionalidades
 
@@ -21,7 +21,7 @@ App fitness gamificado para Android e Web. Registre treinos, acompanhe sua dieta
 | Navegação | GoRouter |
 | Backend | Supabase (Auth + PostgreSQL + Storage) |
 | IA | Groq API — LLaMA 3.3 70B (texto) + Qwen 3.6 27B (visão) |
-| Hospedagem web | Vercel |
+| Hospedagem web | Cloudflare Pages → `musclechamp.com.br` |
 
 ## Setup
 
@@ -29,7 +29,7 @@ App fitness gamificado para Android e Web. Registre treinos, acompanhe sua dieta
 
 - Flutter 3.44+
 - Android Studio com SDK 34+ e Command-line Tools instalados
-- Node.js (para Vercel CLI)
+- Node.js (para o Wrangler, CLI do Cloudflare Pages)
 
 ### Configuração local
 
@@ -62,11 +62,13 @@ O APK é gerado em `build/app/outputs/flutter-apk/app-release.apk`.
 
 ### Build Web + Deploy
 
-```powershell
+```bash
 flutter build web --release
-cd build/web
-vercel --prod --yes --scope "af-dev"
+npx wrangler pages deploy build/web --project-name=muscle-champ --branch=main
 ```
+
+O deploy vai para `musclechamp.com.br` (alias: `muscle-champ.pages.dev`).
+Na primeira vez, `npx wrangler login` abre um OAuth no navegador.
 
 ## Estrutura do projeto
 

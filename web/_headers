@@ -7,6 +7,62 @@
 #
 # A regra: pontos de entrada sempre revalidam; o resto pode cachear por muito
 # tempo, porque tem hash no nome ou é atualizado junto com o bootstrap.
+#
+# ⚠️ ESTE ARQUIVO SOZINHO NÃO BASTA no domínio próprio. O tráfego de
+# musclechamp.com.br passa pelo proxy da zona Cloudflare, e o "Browser Cache TTL"
+# da zona reescreve o Cache-Control na saída — o `no-cache` daqui virava
+# `max-age=14400` (4h) e cada usuário recorrente ficava com o build anterior por
+# até quatro horas depois do deploy. Em pages.dev o arquivo era respeitado, o que
+# fazia parecer defeito do domínio novo.
+#
+# Para este arquivo valer: Cloudflare → zona musclechamp.com.br → Caching →
+# Configuration → Browser Cache TTL → "Respect Existing Headers".
+#
+# Conferir depois de mexer:
+#   curl -sI https://musclechamp.com.br/main.dart.js | grep -i cache-control
+
+# ── Segurança ────────────────────────────────────────────────────────────────
+#
+# HSTS. O domínio já redireciona http → https com 301, mas o 301 só acontece
+# DEPOIS de uma requisição em claro: na primeira visita de cada navegador existe
+# uma janela em que alguém na mesma rede intercepta antes do redirect. Este
+# cabeçalho faz o navegador nunca mais tentar HTTP neste domínio.
+#
+# `includeSubDomains` cobre os subdomínios. Não afeta registro DNS — os CNAME de
+# DKIM do Brevo (brevo1/brevo2._domainkey) continuam resolvendo normalmente,
+# porque HSTS só governa tráfego HTTP. Mas se um dia existir subdomínio servindo
+# HTTP puro, ele para de abrir; nesse caso, remover a diretiva.
+#
+# `preload` foi deixado de FORA de propósito: entrar na lista de preload dos
+# navegadores é praticamente irreversível (a remoção leva meses e depende de
+# aprovação externa), e não vale travar isso antes do app estar publicado.
+#
+# Conferir:
+#   curl -sI https://musclechamp.com.br/ | grep -i strict-transport
+# CSP — em Report-Only ate o app inteiro ser navegado sem violacao.
+#
+# Um CSP errado no Flutter web nao degrada: deixa a tela branca. Report-Only
+# reporta no console sem bloquear, e ja pegou duas coisas que teriam derrubado
+# o app se este cabecalho tivesse subido valendo de primeira:
+#
+# 1. O CanvasKit — o renderizador — e baixado de
+#    www.gstatic.com/flutter-canvaskit/, NAO da pasta /canvaskit/ que o build
+#    gera. Bloquear gstatic deixa a tela branca, sem erro visivel ao usuario.
+#    Precisa estar em script-src E em connect-src (o .js e o .wasm).
+# 2. O beacon do Cloudflare Web Analytics vem de static.cloudflareinsights.com,
+#    injetado pela zona — nao aparece em lugar nenhum do repositorio.
+#
+# O resto: CanvasKit compila WebAssembly ('wasm-unsafe-eval'), o Flutter injeta
+# estilo inline, e o google_fonts baixa Space Grotesk e Inter em runtime de
+# fonts.gstatic.com — as fontes NAO estao empacotadas, so o MaterialIcons esta.
+#
+# ⚠️ Falta exercitar as telas autenticadas: dashboard, dieta (FOTO usa camera e
+# blob), treino, ranking, perfil. Trocar para `Content-Security-Policy` so
+# depois de navegar todas sem violacao no console.
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Frame-Options: DENY
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://www.gstatic.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https://jryetjysjiyuuoznaejc.supabase.co; connect-src 'self' https://jryetjysjiyuuoznaejc.supabase.co https://www.gstatic.com https://fonts.googleapis.com https://fonts.gstatic.com https://cloudflareinsights.com; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; object-src 'none'
 
 /index.html
   Cache-Control: no-cache, must-revalidate
@@ -31,6 +87,31 @@
   Cache-Control: no-cache, must-revalidate
 
 /excluir-conta.html
+  Cache-Control: no-cache, must-revalidate
+
+# ⚠️ A FONTE DE ICONES NAO PODE CACHEAR LONGO.
+#
+# `assets/fonts/MaterialIcons-Regular.otf` tem caminho FIXO, sem hash no nome,
+# mas conteudo VARIAVEL: o Flutter recorta a fonte para conter so os glifos que
+# o app usa. Adicionar um icone novo muda o arquivo e nao muda a URL.
+#
+# Com o `/assets/*` de 30 dias abaixo, isso custou uma tarde: icone novo nunca
+# aparecia em producao, `flutter clean` nao adiantava (a fonte nova era gerada e
+# nunca servida), e os icones antigos funcionavam porque ja estavam na copia
+# cacheada. Testes em URL de preview passavam — hostname diferente, cache vazio.
+#
+# Os manifests tem o mesmo formato de problema: caminho fixo, conteudo que muda
+# a cada build.
+/assets/fonts/*
+  Cache-Control: no-cache, must-revalidate
+
+/assets/AssetManifest.bin.json
+  Cache-Control: no-cache, must-revalidate
+
+/assets/AssetManifest.bin
+  Cache-Control: no-cache, must-revalidate
+
+/assets/FontManifest.json
   Cache-Control: no-cache, must-revalidate
 
 # CanvasKit e assets versionados podem cachear longo

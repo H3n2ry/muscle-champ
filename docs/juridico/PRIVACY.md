@@ -2,9 +2,13 @@
 ## Muscle Champ
 
 > **Status:** Rascunho finalizado. Revisar com advogado antes de publicar.
-> **Versão dos documentos:** `2026-08-17` — precisa bater com `LegalTexts.documentVersion`.
-> **Publicado em:** `web/privacidade.html` → `https://muscle-champ.vercel.app/privacidade.html`
-> **URL futura:** `https://musclechamp.com.br/privacidade` (aguarda domínio próprio)
+> **Versão dos documentos:** `2026-08-31` — precisa bater com `LegalTexts.documentVersion`.
+> **Mudança nesta versão:** hospedagem migrou do Vercel para o Cloudflare Pages;
+> passou a declarar tratamento de endereço IP pelo operador de hospedagem.
+> **Publicado em:** `web/privacidade.html` → `https://musclechamp.com.br/privacidade`
+> **Sem `.html`:** o Cloudflare Pages responde 308 de `/privacidade.html` para a
+> forma sem extensão. A URL publicada no Play Console deve ser a canônica, para
+> não depender de um redirect continuar configurado.
 >
 > ⚠️ **A versão canônica publicada é o HTML.** Ao alterar este arquivo, replicar em
 > `web/privacidade.html` e subir `LegalTexts.documentVersion` se a mudança for material.
@@ -13,7 +17,7 @@
 
 # Política de Privacidade — Muscle Champ
 
-**Última atualização:** 17 de agosto de 2026
+**Última atualização:** 31 de agosto de 2026
 
 Aplicável a usuários no Brasil (LGPD) e no EEE/Reino Unido (GDPR e UK GDPR).
 
@@ -69,7 +73,7 @@ Para dúvidas sobre privacidade ou para exercer seus direitos, entre em contato:
 |---------|-------------------|-----------|------------------------|
 | **Supabase** (Brasil/EUA) | Todos os dados do usuário | Armazenamento e autenticação | https://supabase.com/privacy |
 | **Groq** (EUA) | Fotos de alimentos (temporário, não armazenado) | Análise nutricional por IA | https://groq.com/privacy |
-| **Vercel** (global) | Nenhum dado pessoal | Hospedagem do app web | https://vercel.com/legal/privacy-policy |
+| **Cloudflare** (global) | Endereço IP e metadados de requisição | Hospedagem e entrega do app web | https://www.cloudflare.com/privacypolicy/ |
 | **Outros usuários** | Nome, avatar, pontuação | Ranking e sistema de amizades | — |
 
 **Não vendemos dados pessoais.**
@@ -156,6 +160,7 @@ Alguns dados são processados fora do Brasil:
 |---------|--------|----------|
 | Supabase (AWS sa-east-1, São Paulo) | Armazenamento principal | Servidor no Brasil |
 | Groq (EUA) | Análise de fotos de alimentos por IA | Dado transiente, não armazenado |
+| Cloudflare (rede global) | Hospedagem e entrega do app web | Apenas endereço IP e metadados de requisição; nenhum dado da conta |
 
 ---
 

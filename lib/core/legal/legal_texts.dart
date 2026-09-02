@@ -8,15 +8,30 @@ class LegalTexts {
   LegalTexts._();
 
   /// Versão dos documentos legais. Formato ISO (data da última revisão).
-  static const String documentVersion = '2026-08-17';
+  ///
+  /// `2026-08-31`: hospedagem migrou do Vercel para o Cloudflare Pages. Mudou o
+  /// operador declarado na política e passou a declarar tratamento de endereço
+  /// IP — a linha anterior dizia "nenhum dado pessoal", o que não vale para um
+  /// proxy que intermedia todo o tráfego. Consentimentos gravados na versão
+  /// anterior passam a aparecer como vencidos na tela de privacidade.
+  static const String documentVersion = '2026-08-31';
 
   // ── URLs públicas ────────────────────────────────────────────────────────
-  // TODO(legal): trocar pelo domínio próprio quando musclechamp.com.br existir.
   // O Google Play exige que a Política de Privacidade esteja numa URL pública
   // e estável, e que exista uma URL de exclusão de conta acessível sem login.
-  static const String privacyUrl  = 'https://muscle-champ.vercel.app/privacidade.html';
-  static const String termsUrl    = 'https://muscle-champ.vercel.app/termos.html';
-  static const String deletionUrl = 'https://muscle-champ.vercel.app/excluir-conta.html';
+  //
+  // Histórico de dois hosts perdidos: apontavam para `muscle-champ.vercel.app`
+  // (aposentado, só devolve 307) e depois para `muscle-champ.pages.dev`. Agora
+  // no domínio próprio — o único endereço que não depende de um fornecedor
+  // continuar existindo, que é o ponto de "estável" na exigência do Play.
+  //
+  // ⚠️ Sem `.html`. O Cloudflare Pages responde 308 de `/privacidade.html` para
+  // `/privacidade`; usar a forma canônica evita o salto e não deixa a URL
+  // publicada no Play Console depender de um redirect continuar configurado.
+  // Verificado em 2026-08-28: os três respondem 200 direto.
+  static const String privacyUrl  = 'https://musclechamp.com.br/privacidade';
+  static const String termsUrl    = 'https://musclechamp.com.br/termos';
+  static const String deletionUrl = 'https://musclechamp.com.br/excluir-conta';
 
   /// Canal para exercício de direitos do titular (LGPD Art. 18 / GDPR Art. 15-22).
   /// Precisa bater com o e-mail publicado em docs/juridico/PRIVACY.md.

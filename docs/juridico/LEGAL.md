@@ -50,7 +50,7 @@
 - [x] Criar página web com Política de Privacidade — `PRIVACY.md` preenchido (Henry de Araujo Fernandes)
 - [x] Páginas públicas geradas: `web/privacidade.html`, `web/termos.html`, `web/excluir-conta.html`
 - [x] Exibir link dentro do app — cadastro (passo 3) e Perfil → Privacidade e dados
-- [ ] Migrar para domínio próprio `https://musclechamp.com.br/privacidade` (aguarda compra do domínio)
+- [x] Migrar para domínio próprio — ✅ 28/08/2026: `musclechamp.com.br` conectado ao projeto Cloudflare Pages e `LegalTexts` apontando para lá. Os três respondem 200 na forma sem `.html` (`/privacidade`, `/termos`, `/excluir-conta`), que é a canônica — o Pages redireciona a versão com extensão via 308
 - [ ] Vincular no Play Console (obrigatório para apps que coletam dados)
 
 ### Consentimento
@@ -119,7 +119,7 @@ Exibir no onboarding ou nas funcionalidades relevantes:
 |---------|-------------|-----------|
 | Supabase (AWS us-east-1 ou sa-east-1) | Todos os dados do usuário | Cláusulas contratuais padrão |
 | Groq (EUA) | Fotos de alimentos (transiente, não armazenado) | Consentimento específico |
-| Vercel (Edge Network global) | Dados do app (estático) | Apenas código — sem dados pessoais |
+| Cloudflare (rede global) | Arquivos estáticos do app + **endereço IP e metadados de requisição** de quem acessa | Legítimo interesse (entrega e segurança do site) |
 
 **Ação recomendada:** Verificar região do projeto Supabase em Settings → General. Migrar para `sa-east-1` (São Paulo) se possível para minimizar transferência internacional.
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/legal/legal_documents.dart';
@@ -144,7 +144,7 @@ class _PrivacyPageState extends ConsumerState<PrivacyPage> {
                 icon: Icons.download_outlined,
                 label: L.of(context).privacidade_baixarDados,
                 detail:
-                    'L.of(context).priv_exportaTudo',
+                    L.of(context).priv_exportaTudo,
                 busy: _exporting,
                 onTap: _export,
               ),
@@ -152,7 +152,7 @@ class _PrivacyPageState extends ConsumerState<PrivacyPage> {
                 icon: Icons.delete_forever_outlined,
                 label: L.of(context).privacidade_excluirConta,
                 detail:
-                    'L.of(context).priv_apagaConta',
+                    L.of(context).priv_apagaConta,
                 danger: true,
                 busy: _deleting,
                 onTap: _confirmDelete,
@@ -170,7 +170,7 @@ class _PrivacyPageState extends ConsumerState<PrivacyPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'L.of(context).priv_faleComEncarregado',
+                      L.of(context).priv_faleComEncarregado,
                       style: AppTypography.bodySm,
                     ),
                     const SizedBox(height: 8),
@@ -363,7 +363,7 @@ class _ConsentTile extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
-                'L.of(context).priv_aceitoNaVersao(status!.documentVersion)',
+                L.of(context).priv_aceitoNaVersao(status!.documentVersion),
                 style: AppTypography.bodySm.copyWith(color: AppColors.warning),
               ),
             ),

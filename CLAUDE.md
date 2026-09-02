@@ -4,19 +4,79 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build & Run Commands
 
-All commands run from `C:\Users\Jean\Desktop\muscle camp\project\app`.
+All commands run from the repo root (`C:\Users\Henry\Desktop\muscle-champ`).
 
-> **Note**: Flutter is installed at `C:\flutter\bin`. If `flutter` is not found in PowerShell, use Git Bash:
-> ```bash
-> export PATH="/c/flutter/bin:/c/Program Files/nodejs:/c/Users/Jean/AppData/Roaming/npm:$PATH"
-> ```
+> **Note**: Flutter is at `C:\Users\Henry\flutter\bin`.
 
 ### Environment setup (required for Android builds)
+
+Verified on this machine 2026-08-28 with `flutter doctor -v`. The SDK is **not**
+under `AppData\Local\Android` (the usual default) and there is no standalone
+JDK — the only Java is the one bundled with Android Studio:
+
 ```powershell
-$env:ANDROID_HOME = "C:\Users\Jean\AppData\Local\Android\Sdk"
+$env:ANDROID_HOME = "C:\Users\Henry\Android\Sdk"
 $env:JAVA_HOME    = "C:\Program Files\Android\Android Studio\jbr"
-$env:PATH         = "$env:JAVA_HOME\bin;$env:ANDROID_HOME\cmdline-tools\latest\bin;$env:ANDROID_HOME\platform-tools;$env:PATH"
+$env:PATH         = "$env:JAVA_HOME\bin;$env:ANDROID_HOME\platform-tools;$env:PATH"
 ```
+
+Without `JAVA_HOME` set, `flutter doctor` reports *"No Java Development Kit
+(JDK) found"* and every Gradle task fails. Android SDK 36 / build-tools 36.0.0 /
+JBR 25.0.2.
+
+⚠️ **From Git Bash, use Windows-style paths and do NOT put `$JAVA_HOME/bin` on
+`PATH`.** This works:
+
+```bash
+export JAVA_HOME="C:/Program Files/Android/Android Studio/jbr"
+export ANDROID_HOME="C:/Users/Henry/Android/Sdk"
+export PATH="/c/Users/Henry/flutter/bin:$PATH"
+flutter build apk --release
+```
+
+Exporting the POSIX form (`/c/Program Files/...`) and prepending `$JAVA_HOME/bin`
+to `PATH` corrupts `PATH` for the PowerShell that `flutter.bat` spawns, and the
+build dies at startup with a message that names none of this:
+
+```
+Set-Content : O fluxo não era legível.
+  update_engine_version.ps1:94  Set-Content -Path .../engine.realm -Value ""
+Error: Unable to determine engine version...
+```
+
+That message sent me hunting a file lock for six builds. The tells that it is
+**not** a lock: `flutter build web` succeeds in the same session seconds later,
+and writing `engine.realm` by hand works. Gradle reads `JAVA_HOME` directly and
+never needs `java` on `PATH`, so there is no reason to add it.
+
+⚠️ **No emulator is installed and no device is usually plugged in.** `flutter
+build apk` works; `flutter run` and any on-device verification need either a
+phone connected over USB with debugging enabled, or
+`sdkmanager "emulator" "system-images;android-36;google_apis;x86_64"` first.
+
+### Android-only paths — exercised on a real phone 2026-08-28
+
+These four exist only on Android (on web they are stubbed or absent), so they
+had never run until this date. All four passed on the owner's phone from the
+debug-signed release APK:
+
+| Path | Where | Code |
+|---|---|---|
+| Camera → macros | Dieta → refeição → FOTO | `diet_page.dart:3533` |
+| Camera → hand calibration | Dieta → FOTO → calibrar | `calibration_page.dart:223` |
+| Data export (LGPD) | Perfil → Privacidade → Exportar | `privacy_repository.dart:57` |
+| External legal links | Perfil → Privacidade | `privacy_page.dart:33` |
+
+The APK declares **no `CAMERA` permission**, and that is correct, not an
+oversight: `image_picker` hands off to the system camera through an intent, so
+declaring it would only add a runtime prompt for nothing. If a build ever starts
+asking for camera permission, something changed for the worse.
+
+⚠️ **Gradle warns that `image_picker_android`, `share_plus`,
+`shared_preferences_android` and `url_launcher_android` apply the Kotlin Gradle
+Plugin the old way, and that future Flutter versions will fail to build.**
+Nothing breaks today; it breaks the day the SDK is upgraded. The fix is bumping
+those four packages.
 
 ### Common commands
 ```powershell
@@ -90,16 +150,45 @@ flutter build web --release
 npx wrangler pages deploy build/web --project-name=muscle-champ --branch=main
 ```
 
-⚠️ **Never deploy without confirming the build succeeded.** `flutter build web`
-fails intermittently on Windows with `Unable to determine engine version`
-(a lock on `bin/cache/engine.realm`, usually a leftover `dart`/`flutter run`
-process). The deploy command happily ships whatever is already in `build/web`,
-so a failed build silently republishes the previous version. Check for
-`✓ Built build\web` first, or compare hashes afterwards:
+⚠️ **Never deploy without confirming the build succeeded.** `flutter build`
+fails on Windows with `Unable to determine engine version`. The deploy command
+happily ships whatever is already in `build/web`, so a failed build silently
+republishes the previous version. Check for `✓ Built build\web` first, or
+compare hashes afterwards:
 
 ```bash
-curl -s -o /tmp/served.js https://muscle-champ.pages.dev/main.dart.js && sha256sum /tmp/served.js build/web/main.dart.js
+curl -s -o /tmp/served.js https://musclechamp.com.br/main.dart.js && sha256sum /tmp/served.js build/web/main.dart.js
 ```
+
+Same hash and the deploy is live — **whatever the browser shows**. Compare hashes
+before debugging a "deploy that did not go out"; the answer is almost always
+caching, and the next section says where.
+
+### ⚠️ The zone's Browser Cache TTL overrides `web/_headers`
+
+`web/_headers` sets `no-cache, must-revalidate` on the entry points
+(`index.html`, `main.dart.js`, `flutter_bootstrap.js`, `flutter_service_worker.js`,
+`version.json`) precisely so a deploy is visible immediately. **On the custom
+domain that file is not the last word.** Traffic to `musclechamp.com.br` goes
+through the proxied Cloudflare zone, and the zone's *Browser Cache TTL* setting
+rewrites the header on the way out:
+
+```
+muscle-champ.pages.dev/main.dart.js → Cache-Control: no-cache, must-revalidate
+musclechamp.com.br/main.dart.js     → Cache-Control: max-age=14400, must-revalidate
+```
+
+Same file, same project, same deploy. 14400s is **4 hours**, and it appears
+nowhere in `_headers` — it is the zone default. Every returning visitor keeps the
+previous bundle for up to four hours after any deploy, including a hotfix. Only a
+browser that never opened the site sees the new build.
+
+**Fix:** Cloudflare → zone `musclechamp.com.br` → Caching → Configuration →
+Browser Cache TTL → **Respect Existing Headers**.
+
+The tell is that `pages.dev` shows the new version and the custom domain does not.
+That looks like a broken custom domain and is not: the files are byte-identical,
+verified by hash. Check `curl -sI` for the header before touching the deploy.
 
 ### If build fails with path errors
 ```powershell
@@ -581,8 +670,8 @@ colour picker.
 |---------|---------|--------|
 | Supabase | Auth + PostgreSQL + Storage + Edge Functions + Vault | `supabase_config.dart` / `secrets.dart` (project `jryetjysjiyuuoznaejc`) |
 | Groq | LLM inference (via `groq-proxy` Edge Function) | key in Supabase Vault, never in client |
-| Cloudflare Pages | Web hosting (destino) | Project: `muscle-champ` → `muscle-champ.pages.dev` |
-| Vercel | Web hosting (legado, sair antes de vender) | Project: `muscle-champ`, scope: `af-dev` |
+| Cloudflare Pages | Web hosting (destino) | Project: `muscle-champ` → `musclechamp.com.br` (alias: `muscle-champ.pages.dev`) |
+| Vercel | **RETIRED 2026-08-26** — serves only a 307 to the Pages site. Do not deploy. | Archived config in `tools/vercel-retirado/` |
 | GitHub Actions | Keepalive, backup, AI healthcheck | `.github/workflows/` |
 
 **Workflows** (all run on GitHub's infra, only once pushed):
@@ -610,34 +699,147 @@ during a spike is healthy, and failing there would cry wolf — a genuinely dead
 still fails via `x-model-fallback`. Sending the primary from the proxy avoids the
 workflow keeping its own copy of `MODEL_CHAINS`, which would drift on the first swap.
 
-## ⚠️ Signup is capped at ~2 accounts/hour (blocker)
+## Signup email runs through Brevo SMTP (resolved 2026-08-28)
 
-Auth still uses Supabase's **built-in email service** (`noreply@mail.app.supabase.io`),
-which Supabase documents as test-only and rate-limits hard. Confirmed in the auth
-logs on 2026-08-24:
+Auth used to run on Supabase's **built-in email service**
+(`noreply@mail.app.supabase.io`), which Supabase documents as test-only and caps
+at ~2 signups/hour. Confirmed in the auth logs on 2026-08-24:
 
 ```
 error_code: "over_email_send_rate_limit"   path: /signup   status: 429
 ```
 
-Two signups went through (17:51, 18:09), then 18:36 / 18:39 / 18:39 / 18:41 all
-429'd. **No amount of app-side work raises this** — it is a server-side sending
-cap, and it means the app currently cannot onboard more than a couple of users
-per hour.
+Now on custom SMTP via **Brevo**, sending from `noreply@musclechamp.com.br` on
+the owned domain. Email rate limit raised 2/h → 30/h in Auth → Rate Limits.
+Verified end to end on 2026-08-28: `/signup` returns 200 and the confirmation
+code arrives signed by the domain.
 
-**Fix**: configure custom SMTP in Authentication → Emails → SMTP Settings
-(Resend, Brevo, SES…), then raise the limit in Auth → Rate Limits. Needs
-dashboard access and provider credentials.
+**The config lives in the dashboard, not the repo.** Host `smtp-relay.brevo.com`,
+port 587, username = the Brevo account email, password = an SMTP key generated in
+Brevo → SMTP & API. That key is a secret and never lands in the repository.
+Supabase does not echo it back to the settings page after saving, so a blank
+password field means *hidden*, not *lost* — do not re-save the form blank to
+"check" whether it stuck.
 
-Good news, verified by querying `auth.users`: the 429 rolls the signup back
-cleanly — **no orphaned unconfirmed rows**. Without that, a retry would hit
-"email já cadastrado" and lock the person out permanently.
+### Three traps this hit, none of them obvious
 
-The client distinguishes this from a user-caused rate limit
-(`cad_limiteEmails` / `conf_limiteEmails`). The old copy said "Muitas
+**1. A pre-existing SPF that blocked every sender.** The domain carried
+`v=spf1 -all`, which Cloudflare writes when a domain is marked as not sending
+email. It authorizes *nobody*, so every Brevo send would have failed SPF even
+with DKIM and DMARC perfect. Now `v=spf1 include:spf.brevo.com -all`. A domain
+may have only **one** SPF record — a second one is a `permerror` — so this had to
+be an edit of the existing record, not a new one.
+
+**2. Two DMARC records.** `_dmarc` held both Cloudflare's `p=reject` and Brevo's
+`p=none`. Per RFC 7489, a resolver that finds multiple `v=DMARC1` records ignores
+all of them: the domain effectively had no DMARC while appearing to have two.
+Deleted Cloudflare's, kept Brevo's `p=none` so failures get reported rather than
+bounced while the setup settles.
+
+**3. `525 "5.7.1 Unauthorized IP address"` reads like a credential error and is
+not.** Brevo refuses SMTP connections from IPs outside its authorized list, and
+Supabase sends from its own infrastructure. A wrong key returns
+`535 Authentication failed` instead — so a 525 actually proves the credentials
+worked.
+
+⚠️ **This line used to claim the fix was "lifting the IP restriction in Brevo →
+Security". That was wrong**, and the correction matters. Brevo → Security → IPs
+autorizados has **two independent switches**, one for API keys and one for SMTP
+keys, and on 2026-09-01 both still read *Ativada*. What actually unblocked SMTP
+on 28/08 was Brevo **auto-authorizing** the address that connected — the list
+shows `54.94.127.52` (Amazon) added that day with método *Automático*.
+
+So SMTP was never on a lifted restriction; it was resting on one pinned IP. Since
+Supabase's outbound addresses rotate — the API path produced four different IPv6
+addresses across four attempts minutes apart — that arrangement breaks the day the
+address changes, with the same 525 and no warning. Both switches are off as of
+2026-09-01. If signup ever starts failing with 525 again, check whether one of
+them came back on.
+
+The two DKIM CNAMEs (`brevo1._domainkey`, `brevo2._domainkey`) must stay **DNS
+only** in Cloudflare. Proxied — orange cloud — they resolve to Cloudflare instead
+and Brevo cannot validate them.
+
+### The List-Unsubscribe trap (solved — see next section)
+
+Brevo attaches a `List-Unsubscribe` header, so Gmail renders an "Unsubscribe"
+button on the confirmation email. On a transactional auth message that is a
+footgun: a user who clicks it lands on Brevo's blocklist and then silently stops
+receiving confirmation codes, with nothing in the app to explain why.
+
+**There is no setting for this.** Brevo states it does not strip the header from
+anything sent over SMTP, because campaigns and transactional mail share that path
+and it cannot tell them apart. The header-free alternative (`list-help`) is
+Enterprise-only. Three ways out, in order of cost:
+
+1. **Live with it and watch the blocklist** (Contacts → Blocklist). Tolerable
+   today: the only transactional mail is the signup code, and nobody unsubscribes
+   from a code they just asked for.
+2. **Move to the [Send Email Hook](https://supabase.com/docs/guides/auth/auth-hooks/send-email-hook)**
+   — Auth calls an Edge Function, which calls Brevo's *transactional API*, and the
+   API does not add the header. Same pattern as `groq-proxy`, and it drags the
+   email templates out of the dashboard into version control, which is the exact
+   reason that function was committed in the first place. Deploy with
+   `--no-verify-jwt`: Auth calls it server-side, with no user JWT.
+3. Switch provider — costs redoing the DKIM records.
+
+⚠️ **Password reset now exists** (`/forgot-password` → `/reset-password`), so this
+is live, not hypothetical: someone who unsubscribed from an earlier confirmation
+email silently cannot recover their account, and nothing in the app or the auth
+logs explains why — the send simply never happens. While SMTP is still the
+delivery path, a support report of "I never get the reset code" means **check
+Brevo's blocklist first**.
+
+### RESOLVED 2026-09-01 — Auth email goes through the Send Email Hook
+
+Option 2 shipped. `supabase/functions/enviar-email-auth/` is deployed with
+`verify_jwt: false`, reads the Brevo key from the Vault via `get_brevo_api_key()`
+(migration `20260901_chave_brevo_no_vault.sql`), and posts to Brevo's
+**transactional API**, which does not add the header. Verified end to end: the
+recovery email arrives with no Unsubscribe button.
+
+The three things wired in the dashboard, for the record:
+
+1. `select vault.create_secret('xkeysib-...', 'brevo_api_key');` — the API key
+   from Brevo → SMTP & API → **API Keys** (not the SMTP key: different credential)
+2. Authentication → Hooks → **Send Email Hook** → HTTPS →
+   `https://jryetjysjiyuuoznaejc.supabase.co/functions/v1/enviar-email-auth` →
+   Generate Secret
+3. That secret as the function's `SEND_EMAIL_HOOK_SECRET` env var
+
+Without step 3 the function returns **500 and sends nothing** — it fails closed by
+design. Signature verification is the only barrier, since `verify_jwt` is off;
+without it, anyone who found the URL could send mail signed by the domain.
+
+**Two things bit us while wiring this up, both silent:**
+
+⚠️ **Enabling the hook reset the email rate limit from 30/h back to 2/h.** No
+warning on screen; it only showed up in the auth logs as
+`env GOTRUE_RATE_LIMIT_EMAIL_SENT changed, updating Email limiter from 30 to 2`.
+That is the exact blocker the whole Brevo migration existed to remove, quietly
+restored. **After touching any Auth hook, re-check Authentication → Rate Limits.**
+
+⚠️ **Brevo's IP restriction blocks the API path separately from SMTP.** The hook
+failed with `401 unauthorized` and *"unrecognised IP address"* on every attempt,
+each from a different IPv6. Fixed with **Desativar para chaves API** in Brevo →
+Security → IPs autorizados. That button disables *IP blocking for API keys* — it
+does not disable the key itself, which the wording makes easy to misread.
+
+⚠️ **The dashboard email templates are now dead code.** The copy lives in the
+function; editing the template in the dashboard changes nothing. Worth
+remembering before someone spends an afternoon on it. SMTP settings stay
+configured as a fallback — disabling the hook reverts to them immediately.
+
+Good news, verified twice by querying `auth.users`: a failed send rolls the
+signup back cleanly — **no orphaned unconfirmed rows**, on both the 429 and the
+500. Without that, a retry would hit "email já cadastrado" and lock the person
+out permanently.
+
+The client still distinguishes a server-side send failure from a user-caused
+rate limit (`cad_limiteEmails` / `conf_limiteEmails`). The old copy said "Muitas
 tentativas… espere alguns minutos", which blamed a user who did nothing — the
-quota was spent by someone else's signup — and named the wrong window (it is
-hourly). Copy is a bandage; custom SMTP is the fix.
+quota was spent by someone else's signup — and named the wrong window (it was
+hourly).
 
 ## Security (hardened 2026-06)
 
@@ -789,13 +991,21 @@ to be reachable without login. Keep them in sync with `docs/juridico/`.
 ## Pre-Play Store Checklist
 
 From `docs/juridico/LEGAL.md` — pending before publishing:
-- [ ] **Apply the compliance migration to the Supabase project** (not yet applied)
 - [ ] Change `applicationId` from `com.example.muscle_camp` (in `android/app/build.gradle.kts`)
 - [ ] Generate release keystore (currently debug-signed)
-- [ ] Point the legal URLs at the owned domain once `musclechamp.com.br` exists
+- [x] Legal URLs on the owned domain — `musclechamp.com.br` is attached to the
+      Pages project; `LegalTexts` points at `/privacidade`, `/termos`,
+      `/excluir-conta` (no `.html` — Pages 308s the extension away, and the URL
+      filed with Play should not depend on a redirect staying configured)
 - [ ] Fill Play Console Data Safety form (declares health data + Groq photo sharing)
 - [ ] Decide on EU distribution — GDPR Art. 27 requires an EU representative, or
       restrict the EEA in Play Console
 - [x] Consent checkbox for health data in registration
 - [x] "Excluir minha conta" in profile + public deletion URL
 - [x] Privacy Policy link inside the app
+- [x] Compliance migration applied — verified 2026-08-28 against the live
+      database: the four privacy RPCs exist as `SECURITY DEFINER`, and
+      `user_consents` has RLS with exactly the two append-only policies and
+      real rows in it. This line used to say "not yet applied" and was simply
+      wrong; a false "pending" here is worse than no line, because it invites
+      re-applying a migration that already ran.

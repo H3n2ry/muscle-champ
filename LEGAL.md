@@ -76,5 +76,5 @@ O projeto Supabase (`jryetjysjiyuuoznaejc`) foi criado na região padrão. Verif
 |---------|---------------|---------------|
 | Supabase | https://supabase.com/terms | Dados armazenados em AWS; free tier sem SLA |
 | Groq | https://groq.com/terms | Verificar política de dados de entrada (imagens) |
-| Vercel | https://vercel.com/legal/terms | Free tier sem SLA; dados em Vercel Edge Network |
+| Cloudflare | https://www.cloudflare.com/terms/ | Free tier sem SLA; tráfego passa pela rede global da Cloudflare (proxy ativo) |
 | Google Play | https://play.google.com/about/developer-content-policy/ | Política de conteúdo e dados de saúde |
