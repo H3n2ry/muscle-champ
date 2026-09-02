@@ -95,6 +95,9 @@ flutter analyze                      # Static analysis (pre-existing errors in d
 npx wrangler pages deploy build/web --project-name=muscle-champ --branch=main
 ```
 
+⚠️ Só isto **não basta** se o build for novo — falta versionar a fonte de ícones
+entre o build e o deploy. A sequência completa está em *Build + deploy completo*.
+
 First time only — `wrangler login` opens a browser OAuth flow, so a human has to
 do it:
 
@@ -147,8 +150,13 @@ Deleting the project outright is a dashboard action and is yours to take.
 ```bash
 flutter pub get
 flutter build web --release
+dart run tool/versionar_fonte_de_icones.dart
 npx wrangler pages deploy build/web --project-name=muscle-champ --branch=main
 ```
+
+⚠️ **O passo do meio não é opcional** — ver *A fonte de ícones tem caminho fixo
+e conteúdo variável*, logo abaixo. Ele roda entre o build e o deploy: antes não
+existe o que versionar, depois já foi publicado.
 
 ⚠️ **Never deploy without confirming the build succeeded.** `flutter build`
 fails on Windows with `Unable to determine engine version`. The deploy command
@@ -162,7 +170,58 @@ curl -s -o /tmp/served.js https://musclechamp.com.br/main.dart.js && sha256sum /
 
 Same hash and the deploy is live — **whatever the browser shows**. Compare hashes
 before debugging a "deploy that did not go out"; the answer is almost always
-caching, and the next section says where.
+caching, and the next two sections say where.
+
+### ⚠️ A fonte de ícones tem caminho fixo e conteúdo variável
+
+`assets/fonts/MaterialIcons-Regular.otf` é **recortada** a cada build para
+conter só os glifos que o app usa (1,6 MB → 21 KB, 98,7%). Adicionar um ícone
+muda o arquivo e **não muda a URL** — e para o navegador, mesma URL significa
+mesmo arquivo.
+
+Com a regra de 30 dias que `web/_headers` tinha em `/assets/*`, isso custou o
+dia 02/09/2026 inteiro: o ícone novo não aparecia em produção, `flutter clean`
+não adiantava (a fonte nova era gerada e nunca servida), e os ícones antigos
+funcionavam porque já estavam na cópia cacheada. Nenhum erro no console, nenhum
+layout quebrado — só um retângulo vazio.
+
+**O que despistou, três vezes:** todo teste em URL de preview passava. Hostname
+diferente, cache de borda vazio. Isso me fez concluir que o código estava certo
+e o navegador de quem reportou é que estava velho — exatamente o contrário do
+que estava acontecendo. **Ao investigar "não subiu", teste sempre no domínio
+final**, nunca no `*.pages.dev` do deploy.
+
+Duas defesas, de propósito:
+
+| Defesa | Onde | O que cobre |
+|---|---|---|
+| `/assets/*` revalida | `web/_headers` | o caso normal |
+| hash do conteúdo na URL | `tool/versionar_fonte_de_icones.dart` | quando o cabeçalho não vale |
+
+O cabeçalho sozinho resolveria, mas ele **não é a última palavra no domínio
+próprio**: o *Browser Cache TTL* da zona reescreve o `Cache-Control` na saída e
+já apagou esse `no-cache` uma vez (seção anterior). É configuração de painel,
+fora do repositório, que ninguém revisa em PR. A URL versionada não depende de
+cabeçalho nenhum — cache vazio para uma URL inédita é propriedade do navegador,
+não política que alguém desliga sem querer.
+
+⚠️ **Uma regra só em `/assets/*`, de propósito.** O Cloudflare Pages **soma** os
+cabeçalhos de todas as regras que casam, em vez de aplicar a mais específica.
+Um `/assets/fonts/*` convivendo com um `/assets/*` produzia literalmente
+`cache-control: no-cache, must-revalidate, public, max-age=2592000`. Na prática
+o `no-cache` venceu, mas depender de qual metade o navegador escolhe não é
+cache, é sorte.
+
+⚠️ **Para quem já tinha cache, nenhuma das duas defesas alcança** — o navegador
+guardou o `FontManifest.json` antigo, que aponta para a URL antiga, e os dois
+ficam presos um no outro até o TTL vencer. Só `Ctrl+Shift+R` ou limpar o cache.
+Vale para as contas de teste depois de qualquer mudança nessas regras; quem
+chega novo já pega tudo certo.
+
+`assets/images/logo.png` é da mesma família (caminho fixo, conteúdo variável) e
+está coberto pela mesma regra do `_headers`, mas **não** pelo versionamento — o
+`AssetManifest.bin` é binário e o script não mexe nele. Trocar a logo depende do
+cabeçalho estar valendo.
 
 ### ⚠️ The zone's Browser Cache TTL overrides `web/_headers`
 
