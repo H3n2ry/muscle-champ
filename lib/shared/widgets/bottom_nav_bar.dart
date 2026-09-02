@@ -42,28 +42,29 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     return idx < 0 ? 0 : idx;
   }
 
-  /// Impede usar o app com perfil incompleto.
+  /// Dispara a checagem de completude e leva para /completar-perfil quando
+  /// falta algo.
   ///
-  /// Mora aqui, e nao no `redirect` do GoRouter, porque a checagem consulta o
-  /// banco e o `redirect` e SINCRONO — nao da para aguardar ali dentro. Como o
-  /// MainScaffold embrulha as cinco abas, toda entrada no app passa por este
-  /// ponto.
+  /// O `ref.listen` so reage a MUDANCA de estado — diferente de navegar direto
+  /// do `build`, que foi a primeira versao e entrou em laco: cada rebuild
+  /// agendava outra navegacao, e a navegacao causava rebuild.
   ///
-  /// So dispara quando a resposta chegou (`valueOrNull`): enquanto carrega, o
-  /// app aparece normalmente. O custo e um piscar para quem esta incompleto —
-  /// preferivel a segurar a interface inteira num spinner por causa de uma
-  /// condicao que quase ninguem tem.
-  void _guardaPerfilIncompleto() {
-    final completude = ref.watch(completudeDoPerfilProvider).valueOrNull;
-    if (completude == null || completude.completo) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) context.go('/completar-perfil');
+  /// Quem impede voltar para as abas depois e o `redirect` do GoRouter, lendo
+  /// `PerfilIncompleto.valor`. Este listen so cobre o primeiro momento, quando
+  /// a resposta do banco ainda nao existia e o redirect nao tinha o que decidir.
+  void _ouveCompletude() {
+    ref.listen<AsyncValue<CompletudeDoPerfil>>(completudeDoPerfilProvider,
+        (_, proximo) {
+      final c = proximo.valueOrNull;
+      if (c != null && !c.completo && mounted) {
+        context.go('/completar-perfil');
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    _guardaPerfilIncompleto();
+    _ouveCompletude();
     final currentIndex = _currentIndex(context);
     final tutorialState = ref.watch(tutorialProvider);
 

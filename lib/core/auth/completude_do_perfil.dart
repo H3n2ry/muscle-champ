@@ -46,6 +46,25 @@ class CompletudeDoPerfil {
   );
 }
 
+/// Espelho síncrono do resultado, para o `redirect` do GoRouter.
+///
+/// O `redirect` **não pode aguardar** — é síncrono por assinatura — e a
+/// completude vem de uma consulta ao banco. Sem este espelho, a única saída
+/// seria navegar de dentro do `build` de um widget, que foi a primeira
+/// tentativa aqui e entrou em laço: cada rebuild agendava outra navegação.
+///
+/// `null` significa "ainda não sei" — nesse estado o redirect não decide nada e
+/// deixa o app seguir. Quem preenche é o [completudeDoPerfilProvider].
+class PerfilIncompleto {
+  PerfilIncompleto._();
+
+  static bool? valor;
+
+  /// Chamar no logout: sem isso, a próxima conta herdaria a resposta da
+  /// anterior até a primeira consulta terminar.
+  static void limpar() => valor = null;
+}
+
 /// Lê do banco o que falta na conta logada.
 ///
 /// `autoDispose` porque é estado de conta: cacheado na raiz sobreviveria a um
@@ -62,7 +81,13 @@ final completudeDoPerfilProvider =
         .from('user_consents')
         .select('consent_type, granted, document_version, granted_at')
         .eq('user_id', uid)
-        .order('granted_at'),
+        // `ascending: true` EXPLÍCITO. O padrão do postgrest-dart é
+        // DECRESCENTE, e omitir isto quebrou o gate de um jeito difícil de ver:
+        // a redução abaixo guarda a última linha de cada tipo, que em ordem
+        // decrescente é a mais ANTIGA — a linha `granted: false` que o trigger
+        // cria no cadastro OAuth. Resultado: perfil completo lido como
+        // incompleto, e a pessoa presa num anel entre o app e esta tela.
+        .order('granted_at', ascending: true),
   ]);
 
   final goals = resultados[0] as Map<String, dynamic>?;
@@ -87,8 +112,10 @@ final completudeDoPerfilProvider =
     return linha['document_version'] != LegalTexts.documentVersion;
   });
 
-  return CompletudeDoPerfil(
+  final resultado = CompletudeDoPerfil(
     faltaDataDeNascimento: goals?['birth_date'] == null,
     faltaConsentimento: faltaConsentimento,
   );
+  PerfilIncompleto.valor = !resultado.completo;
+  return resultado;
 });

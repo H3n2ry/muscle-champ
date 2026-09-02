@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/auth/completude_do_perfil.dart';
 import '../../../../core/legal/legal_texts.dart';
 import '../models/user_model.dart';
 
@@ -127,7 +128,13 @@ class AuthRepository {
     return _fetchProfile(user.id);
   }
 
-  Future<void> logout() => _client.auth.signOut();
+  Future<void> logout() async {
+    // Sem limpar, a proxima conta herdaria a resposta de completude da anterior
+    // ate a primeira consulta terminar — e o redirect decidiria com dado
+    // errado nesse intervalo.
+    PerfilIncompleto.limpar();
+    await _client.auth.signOut();
+  }
 
   /// Confirma o e-mail usando o código OTP de 6 dígitos enviado pelo Supabase.
   Future<void> verifyOtp({

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../auth/completude_do_perfil.dart';
 import '../../features/auth/presentation/pages/completar_perfil_page.dart';
 import '../../features/auth/presentation/pages/confirm_email_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
@@ -44,8 +45,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isResetPassword =
           state.matchedLocation.startsWith('/reset-password');
 
+      // Perfil incompleto (conta criada por OAuth: sem data de nascimento e sem
+      // consentimento). A decisao vive aqui, e nao no build de um widget,
+      // porque navegar durante o build entrava em laco.
+      //
+      // `PerfilIncompleto.valor` e null enquanto a consulta nao voltou — nesse
+      // estado nao se decide nada, para nao expulsar quem esta so carregando.
+      final isCompletarPerfil =
+          state.matchedLocation.startsWith('/completar-perfil');
+
       if (!isLoggedIn && !isAuthRoute && !isResetPassword) return '/login';
       if (isLoggedIn && isAuthRoute) return '/dashboard';
+
+      if (isLoggedIn && PerfilIncompleto.valor == true && !isCompletarPerfil) {
+        return '/completar-perfil';
+      }
+      // Ja completou: sair da tela e voltar para o app.
+      if (isLoggedIn && PerfilIncompleto.valor == false && isCompletarPerfil) {
+        return '/dashboard';
+      }
       return null;
     },
     routes: [

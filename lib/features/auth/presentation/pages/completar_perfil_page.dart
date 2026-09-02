@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/auth/completude_do_perfil.dart';
+import '../../../../core/legal/legal_documents.dart';
 import '../../../../core/legal/legal_texts.dart';
+import '../../../../shared/widgets/legal_document_sheet.dart';
 import '../../../../core/legal/privacy_repository.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -71,6 +73,30 @@ class _CompletarPerfilPageState extends ConsumerState<CompletarPerfilPage> {
     return 'maintain';
   }
 
+  /// Alterna um consentimento, abrindo o documento quando existe.
+  ///
+  /// Mesmo comportamento do cadastro por e-mail: Termos e Privacidade só podem
+  /// ser marcados depois de abrir e rolar até o fim. Sem isso o consentimento
+  /// não é informado — e consentimento não informado não vale (GDPR Art.
+  /// 4(11) / LGPD Art. 5 XII). A primeira versão desta tela mostrava só o
+  /// rótulo, sem nenhuma forma de ler o que estava sendo aceito.
+  ///
+  /// Desmarcar nunca abre documento: só faz sentido exigir leitura para aceitar.
+  Future<void> _alternar(ConsentItem item) async {
+    final marcado = _consents[item.type] ?? false;
+    final doc = LegalDocuments.forConsent(item.type);
+
+    if (doc == null || marcado) {
+      setState(() => _consents[item.type] = !marcado);
+      return;
+    }
+
+    final aceitou = await LegalDocumentSheet.show(context, doc);
+    if (aceitou == true && mounted) {
+      setState(() => _consents[item.type] = true);
+    }
+  }
+
   Future<void> _salvar() async {
     setState(() => _erro = null);
 
@@ -120,6 +146,18 @@ class _CompletarPerfilPageState extends ConsumerState<CompletarPerfilPage> {
         }
       }
 
+      // Marca o espelho ANTES de navegar. `ref.invalidate` sozinho não serve
+      // aqui por dois motivos, e os dois travavam a tela:
+      //
+      //   1. Ele agenda a re-consulta, não espera por ela. O `context.go`
+      //      abaixo rodaria com o espelho ainda em `true`, e o redirect
+      //      devolveria a pessoa para cá — preso num anel.
+      //   2. O provider é autoDispose e nada o observa nesta tela, então o
+      //      invalidate nem refaz a consulta.
+      //
+      // Acabamos de gravar tudo que faltava, então o valor é conhecido: não há
+      // por que perguntar ao banco antes de sair.
+      PerfilIncompleto.valor = false;
       ref.invalidate(completudeDoPerfilProvider);
       if (!mounted) return;
       context.go('/dashboard');
@@ -224,13 +262,30 @@ class _CompletarPerfilPageState extends ConsumerState<CompletarPerfilPage> {
                 for (final item in LegalTexts.signupConsents)
                   CheckboxListTile(
                     value: _consents[item.type],
-                    onChanged: (v) =>
-                        setState(() => _consents[item.type] = v ?? false),
+                    onChanged: (_) => _alternar(item),
                     controlAffinity: ListTileControlAffinity.leading,
                     contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      item.required ? '${item.label} *' : item.label,
-                      style: AppTypography.bodyMd,
+                    title: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            item.required ? '${item.label} *' : item.label,
+                            style: AppTypography.bodyMd.copyWith(
+                              // Sublinhado só no que abre documento, para o
+                              // toque parecer o que é: um link.
+                              decoration:
+                                  LegalDocuments.forConsent(item.type) != null
+                                      ? TextDecoration.underline
+                                      : null,
+                            ),
+                          ),
+                        ),
+                        if (LegalDocuments.forConsent(item.type) != null) ...[
+                          const SizedBox(width: 6),
+                          Icon(Icons.article_outlined,
+                              size: 14, color: AppColors.onSurfaceVariant),
+                        ],
+                      ],
                     ),
                     subtitle: Text(
                       item.detail,
