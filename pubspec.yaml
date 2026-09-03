@@ -47,6 +47,13 @@ dependencies:
   url_launcher: ^6.3.0   # abrir Política de Privacidade e Termos
   share_plus: ^10.0.0    # entregar o JSON de exportação de dados
 
+  # Interop com o navegador, usado só por lib/core/auth/url_de_oauth_web.dart
+  # para limpar o `?code=` que o retorno do Google deixa na URL. Vinha
+  # transitivo; direto porque é código do app que depende dele.
+  # `package:web` e não `dart:html`: o dart:html não compila para wasm, e o
+  # build já roda o dry run de wasm.
+  web: ^1.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

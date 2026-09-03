@@ -775,6 +775,48 @@ during a spike is healthy, and failing there would cry wolf — a genuinely dead
 still fails via `x-model-fallback`. Sending the primary from the proxy avoids the
 workflow keeping its own copy of `MODEL_CHAINS`, which would drift on the first swap.
 
+## Login com Google (`signInWithGoogle`)
+
+Fluxo PKCE do Supabase. Na web o retorno cai em `musclechamp.com.br/?code=…`;
+no Android, no deep link `br.com.musclechamp://login-callback`.
+
+Conta criada por OAuth chega **sem data de nascimento e sem consentimento** —
+o Google não fornece nenhum dos dois e os dois são obrigatórios (idade mínima 16
+e LGPD). Quem entra assim é levado para `/completar-perfil` pelo `redirect` do
+GoRouter, que lê `PerfilIncompleto.valor`. A decisão vive no redirect, e não no
+`build` de um widget, porque navegar durante o build entrava em laço.
+
+⚠️ **O SHA-1 da chave de release amarra o login com Google no Android.** Se o
+que está cadastrado no Google Cloud Console for o SHA-1 da chave de *debug*, o
+login funciona na sua máquina e falha para todo mundo que instalar da Play
+Store. Conferir o certificado do APK assinado com
+`apksigner verify --print-certs` — lê o arquivo pronto, não pede senha.
+
+### ⚠️ O `supabase_flutter` não limpa o `?code=` da URL
+
+Verificado na 2.12.4: não existe um `replaceState` na biblioteca inteira. E ela
+reprocessa a URL a **cada carregamento** — `_startDeeplinkObserver` chama
+`getInitialLink()`, vê que ainda há `?code=` e tenta trocar de novo. Na segunda
+vez o verificador PKCE já foi consumido e apagado do `localStorage`:
+
+```
+Uncaught Error: Code verifier could not be found in local storage.
+```
+
+A pessoa continua logada — a sessão da primeira troca está guardada — mas todo
+F5 naquela URL repete o erro, e o código fica no histórico do navegador e em
+qualquer link copiado dali.
+
+`limparParametrosDeOAuthDaUrl()` (`core/auth/url_de_oauth.dart`) roda logo
+depois do `Supabase.initialize`, que é quem faz a troca válida
+(`_startDeeplinkObserver` faz `await _handleInitialUri()`, então quando o
+`initialize` retorna a troca já aconteceu).
+
+⚠️ **Mexe só na query string, nunca no fragmento.** O app usa hash routing, então
+`#/dashboard` é a rota atual e apagá-la jogaria a pessoa para fora da tela em que
+está. Dá para mexer só na query porque o fluxo é PKCE; o implícito, que usaria o
+fragmento, não está em uso. `test/limpeza_da_url_test.dart` prende isso.
+
 ## Signup email runs through Brevo SMTP (resolved 2026-08-28)
 
 Auth used to run on Supabase's **built-in email service**
