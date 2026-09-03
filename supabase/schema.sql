@@ -1,4 +1,4 @@
--- Esquema completo do banco, extraído da PRODUÇÃO em 2026-08-27.
+-- Esquema completo do banco, conferido contra a PRODUÇÃO em 2026-09-03.
 --
 -- Existe porque a pasta migrations/ nunca foi um registro completo: produção
 -- tinha 27 migrações e o repositório guardava 8. Reconstruir o banco a partir
@@ -13,7 +13,20 @@
 -- Para regenerar depois de mexer no esquema, rode a consulta descrita em
 -- CLAUDE.md (secão "Banco de dados") e substitua este arquivo inteiro.
 --
--- O "set check_function_bodies = off;
+-- ⚠️ O `set check_function_bodies = off;` logo abaixo NÃO é decoração e não
+-- pode virar comentário. O script cria as FUNÇÕES antes das TABELAS (há coluna
+-- com `default app_today()`, então a função precisa existir primeiro), e o
+-- Postgres valida o corpo de função em linguagem SQL na hora de criar — várias
+-- referenciam tabelas que só nascem mais adiante neste mesmo arquivo. É o mesmo
+-- recurso que o pg_dump usa.
+--
+-- Ficou comentado de 27/08 a 03/09/2026: ao colar o script gerado embaixo do
+-- cabeçalho, esta linha e a última do texto acima viraram uma só. O arquivo
+-- seguiu parecendo completo e não reconstruía o banco. Não foi pego antes
+-- porque aplicar o arquivo inteiro numa base vazia nunca foi testado — só o
+-- pedaço de tabelas + RLS + políticas, num schema descartável.
+
+set check_function_bodies = off;
 
 -- ===== FUNCOES =====
 
@@ -517,6 +530,16 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.get_brevo_api_key()
+ RETURNS text
+ LANGUAGE sql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+  select decrypted_secret from vault.decrypted_secrets where name = 'brevo_api_key' limit 1;
 $function$
 ;
 
@@ -1368,6 +1391,8 @@ revoke all on function public.fn_award_workout_points() from public;
 grant execute on function public.fn_award_workout_points() to anon;
 grant execute on function public.fn_award_workout_points() to authenticated;
 grant execute on function public.fn_award_workout_points() to service_role;
+revoke all on function public.get_brevo_api_key() from public;
+grant execute on function public.get_brevo_api_key() to service_role;
 revoke all on function public.get_cota_ia() from public;
 grant execute on function public.get_cota_ia() to authenticated;
 grant execute on function public.get_cota_ia() to service_role;

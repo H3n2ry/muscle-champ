@@ -968,6 +968,51 @@ To check for drift at any time, compare the applied migration list against
 `ls supabase/migrations/`. A name in one and not the other means the repo can no
 longer rebuild the database.
 
+### Conferir `schema.sql` sem regenerar
+
+O passo 3 foi pulado duas vezes porque regenerar é caro: 80 KB para colar à mão
+por causa de uma função. Esta consulta diz **se** há desvio, e onde, em segundos
+— rode-a e só regenere se ela acusar algo:
+
+```sql
+select
+  (select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+     where n.nspname='public' and p.prokind='f')                        as funcoes,
+  (select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace
+     where n.nspname='public' and c.relkind='r')                        as tabelas,
+  (select count(*) from pg_policy pol join pg_class c on c.oid=pol.polrelid
+     join pg_namespace n on n.oid=c.relnamespace where n.nspname='public') as politicas,
+  (select count(*) from pg_trigger t join pg_class c on c.oid=t.tgrelid
+     join pg_namespace n on n.oid=c.relnamespace
+     where n.nspname='public' and not t.tgisinternal)                   as triggers,
+  (select count(*) from pg_constraint con join pg_class c on c.oid=con.conrelid
+     join pg_namespace n on n.oid=c.relnamespace where n.nspname='public') as constraints,
+  (select count(*) from pg_indexes where schemaname='public'
+     and indexname not in (select conname from pg_constraint where contype in ('p','u'))) as indices;
+```
+
+Os mesmos números, do lado do repositório:
+
+```bash
+S=supabase/schema.sql
+grep -ciE '^create or replace function public\.' $S   # funcoes
+grep -ciE '^create table if not exists public\.' $S   # tabelas
+grep -ciE '^create policy' $S                          # politicas
+grep -ciE '^create trigger' $S                         # triggers
+grep -ciE '^alter table public\..* add constraint' $S # constraints
+grep -ciE '^create (unique )?index' $S                 # indices
+```
+
+Bateu tudo, não há desvio. Divergiu em uma seção só, com poucos itens, dá para
+inserir à mão o que o gerador emitiria para aqueles itens — foi o que se fez em
+03/09/2026 com `get_brevo_api_key`, conferindo depois que as seis contagens
+voltaram a bater. Divergiu em várias, regenere.
+
+⚠️ **O `grep` das funções precisa ser case-insensitive.** `pg_get_functiondef`
+emite `CREATE OR REPLACE FUNCTION` em maiúsculas e o resto do arquivo é
+minúsculo; um `grep` sem `-i` devolve zero e parece que o arquivo está vazio de
+funções.
+
 Two things the generator gets right that are easy to miss:
 
 - **Function grants.** Postgres gives `PUBLIC` EXECUTE on every new function,
@@ -978,11 +1023,20 @@ Two things the generator gets right that are easy to miss:
   which would have failed on all 29 policies. The comment in `gerar_schema.sql`
   says so, because it is an easy mistake to repeat.
 
-Verification is real, not assumed: the table + RLS + policy portion was applied
-to a throwaway `_verif` schema inside a transaction (63 statements, no errors)
-and rolled back. What is **not** verified is the whole file applying to an empty
-database in one pass — that needs a spare database (Supabase branching would
-do it).
+Verification is partial, and the gap has already cost something. The table +
+RLS + policy portion was applied to a throwaway `_verif` schema inside a
+transaction (63 statements, no errors) and rolled back. What is **not** verified
+is the whole file applying to an empty database in one pass — that needs a spare
+database (Supabase branching would do it).
+
+⚠️ **Essa lacuna escondeu um defeito por uma semana.** De 27/08 a 03/09/2026 o
+`set check_function_bodies = off;` existiu apenas **dentro de um comentário**:
+ao colar o script gerado embaixo do cabeçalho, a última linha do texto e a
+primeira instrução viraram uma linha só. O arquivo continuou parecendo completo
+— 1.432 linhas, todas as seções no lugar — e não reconstruía o banco, porque o
+script cria funções antes de tabelas e o Postgres valida corpo de função SQL na
+criação. Nenhuma conferência por contagem pegaria isso; só aplicar o arquivo
+inteiro pegaria.
 
 ## Supabase Tables
 
