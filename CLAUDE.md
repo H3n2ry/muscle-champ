@@ -1163,8 +1163,21 @@ to be reachable without login. Keep them in sync with `docs/juridico/`.
 ## Pre-Play Store Checklist
 
 From `docs/juridico/LEGAL.md` — pending before publishing:
-- [ ] Change `applicationId` from `com.example.muscle_camp` (in `android/app/build.gradle.kts`)
-- [ ] Generate release keystore (currently debug-signed)
+- [x] `applicationId` é `br.com.musclechamp` (commit `2bbfa4a`, 01/09/2026), com o
+      `namespace` igual. ⚠️ Trocar isso de novo cria um app **novo** na Play:
+      quem instalou não recebe atualização.
+- [ ] **Assinar o release de verdade** — falta só o `android/key.properties`.
+      O keystore existe (`C:/Users/Henry/musclechamp-release.jks`, alias
+      `musclechamp`, criado 01/09/2026, fora do repositório de propósito) e o
+      `build.gradle.kts` já escolhe a chave de release quando o arquivo existe.
+      O arquivo foi criado em 03/09 com `storeFile` e `keyAlias` preenchidos e
+      as **duas senhas como placeholder** — só quem gerou o keystore pode pô-las.
+      ⚠️ Enquanto estiverem assim, `flutter build apk --release` **falha** com
+      senha incorreta em vez de cair no debug. É o comportamento certo: um APK
+      debug-signed que builda em silêncio foi como isso passou despercebido.
+      Depois de preencher, conferir com `apksigner verify --print-certs` (lê o
+      APK pronto, não pede senha) e comparar o SHA-1 com o que está cadastrado
+      no Google Cloud Console — ver *Login com Google*.
 - [x] Legal URLs on the owned domain — `musclechamp.com.br` is attached to the
       Pages project; `LegalTexts` points at `/privacidade`, `/termos`,
       `/excluir-conta` (no `.html` — Pages 308s the extension away, and the URL
