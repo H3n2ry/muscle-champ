@@ -343,6 +343,44 @@ The workout system is template-based. Users create reusable workout templates (n
 
 **Progression detection**: `completeTemplate()` in `workout_template_repository.dart` compares current exercise weights against last session weights. Returns `{'already_done': bool, 'progression': int}` (progression = count of exercises that increased weight).
 
+### Anotação e progressão por exercício (2026-09-11)
+
+Pedidos de quem usa. Dois quadrados na linha de cada exercício, dentro do
+`_DoWorkoutSheet`: **lápis** abre a anotação, **gráfico** abre a progressão.
+Ambos em `presentation/widgets/anotacao_e_progresso.dart`.
+
+**A anotação é presa ao exercício, não à sessão.** Serve para o que não muda
+entre treinos ("banco na altura 4", "pegada média"), então aparece toda vez e
+editar substitui. É a coluna `template_exercises.anotacao`; texto vazio grava
+`NULL`, porque "sem anotação" e "anotação em branco" não são estados diferentes
+para quem usa — e string vazia acenderia o lápis sem ter nada dentro.
+
+⚠️ **`TemplateExerciseModel.copyWith` usa sentinela para `anotacao`, não `??`.**
+Apagar o texto precisa gravar nulo, e `anotacao ?? this.anotacao` faria o
+contrário: passar nulo significaria "não mexe" e a anotação apagada voltaria na
+leitura seguinte. `test/anotacao_e_historico_test.dart` prende os dois casos.
+
+### ⚠️ Antes de 11/09/2026 nenhuma sessão passada era guardada
+
+`complete_workout_template` lia o peso antigo, contava a progressão para dar os
+pontos e então **sobrescrevia** `template_exercises.weight_kg`. O número anterior
+morria ali, e `workout_completions` registrava só que houve treino. O app sempre
+soube comparar duas sessões seguidas o bastante para pontuar, e jogava fora o
+histórico logo depois.
+
+A migração `20260911_anotacao_e_historico_por_exercicio.sql` cria
+`historico_de_exercicios` e insere nela **antes** do `UPDATE` que apaga.
+Invertida, a ordem gravaria o valor novo como se fosse o de hoje e o de hoje
+sumiria — que é exatamente o defeito que a migração existe para consertar.
+
+⚠️ **O gráfico nasce vazio para todo mundo**, inclusive para quem treina há
+meses. Não há como preencher para trás: o dado nunca existiu. A tela de vazio
+diz isso com todas as letras, senão parece defeito.
+
+A tabela **não tem política de escrita** — mesmo padrão de `cota_ia_diaria`.
+Histórico de progressão que o cliente pode fabricar não é histórico, e a pessoa
+estaria mentindo para si mesma, que é o único público deste gráfico.
+
 **Template card** shows `doneToday` state — turns green and shows "FEITO HOJE" button when completed today.
 
 ## Diet — 3-Mode Meal Entry (`diet/`)
@@ -1091,15 +1129,15 @@ All tables have RLS enabled. Full list:
 | `workouts` | Workout sessions (legacy) |
 | `exercises` | Individual exercises within a workout (legacy) |
 | `workout_templates` | Reusable named workout templates |
-| `template_exercises` | Exercises belonging to a template (name, sets, reps, weight_kg) |
-| `workout_completions` | Log of completed template workouts (date, template_id, progression_count) |
+| `template_exercises` | Exercícios de um template (name, sets, reps, weight_kg, `anotacao`). ⚠️ `weight_kg` é a carga ATUAL e é **sobrescrita** a cada treino concluído. |
+| `workout_completions` | Que houve treino naquele dia: `(user_id, template_id, completed_date)`. ⚠️ **Não** existe `progression_count` — esta linha já afirmou que existia e era falso. A contagem vira pontos e é descartada. |
+| `historico_de_exercicios` | Uma linha por exercício por sessão: peso, séries, reps, data. É o que o gráfico de progressão lê. Só leitura pelo cliente. |
 | `diet_logs` | Individual meal entries (macros, calories) |
 | `weight_logs` | Historical body weight entries |
 | `bioimpedance_logs` | Body composition measurements |
 | `water_logs` | Daily water intake entries (`amount_ml`, one row per tap) |
 | `points` | Gamification points log |
-| `friendships` | Friend relationships + pending requests |
-| `notifications` | In-app notifications |
+| `friendships` | Friend relationships + pending requests, e também a fonte da tela de notificações |
 
 ## Project-Level Docs
 

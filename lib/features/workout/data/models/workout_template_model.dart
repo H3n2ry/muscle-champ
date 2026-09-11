@@ -44,6 +44,12 @@ class TemplateExerciseModel {
   final double weightKg;
   final int orderIndex;
 
+  /// Anotação de execução, presa ao exercício e não à sessão: serve para o que
+  /// NÃO muda entre treinos ("banco na altura 4", "pegada média"), então
+  /// aparece toda vez. Nula quando nunca foi escrita — diferente de vazia, que
+  /// é o que sobra quando alguém apaga o texto.
+  final String? anotacao;
+
   const TemplateExerciseModel({
     required this.id,
     required this.templateId,
@@ -52,6 +58,7 @@ class TemplateExerciseModel {
     required this.reps,
     required this.weightKg,
     required this.orderIndex,
+    this.anotacao,
   });
 
   factory TemplateExerciseModel.fromJson(Map<String, dynamic> j) =>
@@ -63,13 +70,23 @@ class TemplateExerciseModel {
         reps:        (j['reps'] as num).toInt(),
         weightKg:    (j['weight_kg'] as num).toDouble(),
         orderIndex:  (j['order_index'] as num?)?.toInt() ?? 0,
+        anotacao:    j['anotacao'] as String?,
       );
+
+  /// ⚠️ `anotacao` usa sentinela, não `??`.
+  ///
+  /// Apagar o texto tem que gravar nulo, e `anotacao ?? this.anotacao` faria o
+  /// contrário: passar nulo significaria "não mexe", e a anotação apagada
+  /// voltaria sozinha na próxima leitura. Com `#manter`, omitir o parâmetro
+  /// mantém e passar `null` limpa.
+  static const _manter = Object();
 
   TemplateExerciseModel copyWith({
     String? name,
     int? sets,
     int? reps,
     double? weightKg,
+    Object? anotacao = _manter,
   }) =>
       TemplateExerciseModel(
         id:         id,
@@ -79,5 +96,8 @@ class TemplateExerciseModel {
         reps:       reps ?? this.reps,
         weightKg:   weightKg ?? this.weightKg,
         orderIndex: orderIndex,
+        anotacao:   identical(anotacao, _manter)
+            ? this.anotacao
+            : anotacao as String?,
       );
 }

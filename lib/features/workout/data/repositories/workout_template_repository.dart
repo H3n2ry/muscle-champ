@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../models/historico_de_exercicio_model.dart';
 import '../models/workout_template_model.dart';
 
 final workoutTemplateRepositoryProvider =
@@ -166,5 +167,47 @@ class WorkoutTemplateRepository {
     });
 
     return result as Map<String, dynamic>;
+  }
+
+  // ── Anotação do exercício ──────────────────────────────────────────
+  //
+  // Coluna comum em `template_exercises`, escrita direto: a tabela já tem
+  // política de dono para ALL, e o RLS recusa o que não for do usuário.
+  //
+  // Texto vazio vira NULL de propósito — "sem anotação" e "anotação em branco"
+  // não são estados diferentes para quem usa, e guardar string vazia faria o
+  // ícone do lápis parecer preenchido sem ter nada dentro.
+  Future<void> salvarAnotacao(String templateExerciseId, String texto) async {
+    final limpo = texto.trim();
+    await _client
+        .from('template_exercises')
+        .update({'anotacao': limpo.isEmpty ? null : limpo})
+        .eq('id', templateExerciseId);
+  }
+
+  // ── Histórico de carga e repetição ─────────────────────────────────
+  //
+  // Só leitura: quem grava é o `complete_workout_template`, e a tabela não tem
+  // política de escrita justamente para o cliente não conseguir fabricar
+  // progresso (ver a migração 20260911).
+  //
+  // Vem do mais ANTIGO para o mais novo — é a ordem em que o gráfico desenha, e
+  // inverter no Dart depois seria uma chance a mais de errar.
+  Future<List<HistoricoDeExercicio>> historicoDoExercicio(
+    String templateExerciseId, {
+    int limite = 30,
+  }) async {
+    final rows = await _client
+        .from('historico_de_exercicios')
+        .select()
+        .eq('template_exercise_id', templateExerciseId)
+        .order('data', ascending: false)
+        .limit(limite);
+
+    return (rows as List)
+        .map((r) => HistoricoDeExercicio.fromJson(r as Map<String, dynamic>))
+        .toList()
+        .reversed
+        .toList();
   }
 }

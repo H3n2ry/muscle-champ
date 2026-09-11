@@ -14,6 +14,7 @@ import '../../data/models/workout_template_model.dart';
 import '../../data/repositories/workout_template_repository.dart';
 import '../../data/datasources/exercise_library.dart';
 import '../providers/workout_template_provider.dart';
+import '../widgets/anotacao_e_progresso.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../subscription/data/models/cota_ia.dart';
 import '../../../subscription/presentation/providers/cota_ia_provider.dart';
@@ -2237,7 +2238,7 @@ class _WorkoutTimerState extends State<_WorkoutTimer> {
 
 // ── Do Exercise Row ───────────────────────────────────────────────────────────
 
-class _DoExerciseRow extends StatefulWidget {
+class _DoExerciseRow extends ConsumerStatefulWidget {
   final TemplateExerciseModel exercise;
   final ValueChanged<TemplateExerciseModel> onChange;
   final bool feito;
@@ -2252,10 +2253,10 @@ class _DoExerciseRow extends StatefulWidget {
   });
 
   @override
-  State<_DoExerciseRow> createState() => _DoExerciseRowState();
+  ConsumerState<_DoExerciseRow> createState() => _DoExerciseRowState();
 }
 
-class _DoExerciseRowState extends State<_DoExerciseRow> {
+class _DoExerciseRowState extends ConsumerState<_DoExerciseRow> {
   late final TextEditingController _weight;
   late final TextEditingController _sets;
   late final TextEditingController _reps;
@@ -2268,7 +2269,13 @@ class _DoExerciseRowState extends State<_DoExerciseRow> {
         text: w == 0 ? '' : w % 1 == 0 ? '${w.toInt()}' : '$w');
     _sets = TextEditingController(text: '${widget.exercise.sets}');
     _reps = TextEditingController(text: '${widget.exercise.reps}');
+    _anotacao = widget.exercise.anotacao;
   }
+
+  /// Espelho local da anotação. O exercício vem do `_DoWorkoutSheet`, que não
+  /// recarrega enquanto o treino está aberto — sem isto o lápis só mudaria de
+  /// cor na próxima vez que a tela fosse montada.
+  String? _anotacao;
 
   @override
   void dispose() {
@@ -2339,8 +2346,35 @@ class _DoExerciseRowState extends State<_DoExerciseRow> {
                   ),
                 ),
               ),
+              _quadrado(
+                icone: Icons.edit_outlined,
+                // Aceso quando há anotação: é o único jeito de saber que tem
+                // algo escrito sem abrir os exercícios um por um.
+                aceso: (_anotacao ?? '').isNotEmpty,
+                aoTocar: () async {
+                  final salvo = await mostrarAnotacao(context, ref,
+                      widget.exercise.copyWith(anotacao: _anotacao));
+                  if (salvo != null && mounted) {
+                    setState(() => _anotacao = salvo);
+                  }
+                },
+              ),
+              const SizedBox(width: 6),
+              _quadrado(
+                icone: Icons.show_chart,
+                aceso: false,
+                aoTocar: () => mostrarProgresso(context, ref, widget.exercise),
+              ),
             ],
           ),
+          if ((_anotacao ?? '').isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              _anotacao!,
+              style: AppTypography.bodySm
+                  .copyWith(color: AppColors.onSurfaceVariant),
+            ),
+          ],
           const SizedBox(height: 8),
           Row(
             children: [
@@ -2357,6 +2391,34 @@ class _DoExerciseRowState extends State<_DoExerciseRow> {
       ),
     );
   }
+
+  /// Alvo de 34px: é tocado com a mão suada, entre séries. Menor que isso
+  /// erra, e errar aqui abre a folha errada no meio do treino.
+  Widget _quadrado({
+    required IconData icone,
+    required bool aceso,
+    required VoidCallback aoTocar,
+  }) =>
+      GestureDetector(
+        onTap: aoTocar,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: aceso
+                ? AppColors.primary.withValues(alpha: 0.14)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(9),
+            border: Border.all(
+              color: aceso ? AppColors.primary : AppColors.outlineVariant,
+            ),
+          ),
+          child: Icon(icone,
+              size: 17,
+              color: aceso ? AppColors.primary : AppColors.onSurfaceVariant),
+        ),
+      );
 
   Widget _field(TextEditingController ctrl, String label,
           {bool decimal = false}) =>

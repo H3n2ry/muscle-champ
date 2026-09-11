@@ -201,6 +201,7 @@ AS $function$
 DECLARE
   v_progression int := 0;
   v_old_weight  decimal;
+  v_nome        text;
   v_ex          record;
   v_hoje        date := public.app_today();
 BEGIN
@@ -230,12 +231,18 @@ BEGIN
     SELECT * FROM jsonb_to_recordset(p_exercises)
       AS x(id uuid, weight_kg decimal, sets int, reps int)
   LOOP
-    SELECT te.weight_kg INTO v_old_weight
+    SELECT te.weight_kg, te.name INTO v_old_weight, v_nome
     FROM template_exercises te
     JOIN workout_templates wt ON wt.id = te.template_id
     WHERE te.id = v_ex.id AND wt.user_id = auth.uid();
 
     IF NOT FOUND THEN CONTINUE; END IF;
+
+    INSERT INTO historico_de_exercicios
+      (user_id, template_exercise_id, nome, peso_kg, series, reps, data)
+    VALUES
+      (auth.uid(), v_ex.id, v_nome, v_ex.weight_kg, v_ex.sets, v_ex.reps, v_hoje)
+    ON CONFLICT (template_exercise_id, data) DO NOTHING;
 
     IF v_ex.weight_kg > COALESCE(v_old_weight, 0) THEN
       v_progression := v_progression + 1;
@@ -1093,6 +1100,18 @@ create table if not exists public.goals (
   daily_water_ml integer
 );
 
+create table if not exists public.historico_de_exercicios (
+  id uuid not null default gen_random_uuid(),
+  user_id uuid not null,
+  template_exercise_id uuid not null,
+  nome text not null,
+  peso_kg numeric(6,2) not null,
+  series integer not null,
+  reps integer not null,
+  data date not null default app_today(),
+  created_at timestamp with time zone default now()
+);
+
 create table if not exists public.points (
   id uuid not null default gen_random_uuid(),
   user_id uuid,
@@ -1117,7 +1136,8 @@ create table if not exists public.template_exercises (
   sets integer not null default 3,
   reps integer not null default 10,
   weight_kg numeric(6,2) not null default 0,
-  order_index integer not null default 0
+  order_index integer not null default 0,
+  anotacao text
 );
 
 create table if not exists public.user_consents (
@@ -1197,6 +1217,10 @@ alter table public.goals add constraint goals_user_id_key UNIQUE (user_id);
 alter table public.goals add constraint goals_pkey PRIMARY KEY (id);
 alter table public.goals add constraint goals_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 alter table public.goals add constraint goals_goal_type_check CHECK ((goal_type = ANY (ARRAY['lose_weight'::text, 'gain_weight'::text, 'maintain'::text])));
+alter table public.historico_de_exercicios add constraint historico_de_exercicios_um_por_dia UNIQUE (template_exercise_id, data);
+alter table public.historico_de_exercicios add constraint historico_de_exercicios_pkey PRIMARY KEY (id);
+alter table public.historico_de_exercicios add constraint historico_de_exercicios_template_exercise_id_fkey FOREIGN KEY (template_exercise_id) REFERENCES template_exercises(id) ON DELETE CASCADE;
+alter table public.historico_de_exercicios add constraint historico_de_exercicios_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 alter table public.points add constraint points_pkey PRIMARY KEY (id);
 alter table public.points add constraint points_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 alter table public.points add constraint points_reason_check CHECK ((reason = ANY (ARRAY['workout_completed'::text, 'diet_goal_met'::text, 'load_progression'::text, 'weight_progression'::text])));
@@ -1230,6 +1254,7 @@ CREATE INDEX idx_cota_ia_dia ON public.cota_ia_diaria USING btree (dia);
 CREATE INDEX idx_diet_logs_user_date ON public.diet_logs USING btree (user_id, date DESC);
 CREATE INDEX idx_friendships_friend ON public.friendships USING btree (friend_id);
 CREATE INDEX idx_friendships_user ON public.friendships USING btree (user_id);
+CREATE INDEX historico_de_exercicios_linha_do_tempo ON public.historico_de_exercicios USING btree (template_exercise_id, data DESC);
 CREATE INDEX idx_points_user ON public.points USING btree (user_id, created_at DESC);
 CREATE INDEX idx_user_consents_user_type ON public.user_consents USING btree (user_id, consent_type, granted_at DESC);
 CREATE INDEX idx_water_logs_user_date ON public.water_logs USING btree (user_id, date);
@@ -1246,6 +1271,7 @@ alter table public.diet_logs enable row level security;
 alter table public.exercises enable row level security;
 alter table public.friendships enable row level security;
 alter table public.goals enable row level security;
+alter table public.historico_de_exercicios enable row level security;
 alter table public.points enable row level security;
 alter table public.profiles enable row level security;
 alter table public.template_exercises enable row level security;
@@ -1285,6 +1311,8 @@ create policy friendships_insert on public.friendships as PERMISSIVE for INSERT 
 create policy friendships_select on public.friendships as PERMISSIVE for SELECT to public
   using (((auth.uid() = user_id) OR (auth.uid() = friend_id)));
 create policy "Acesso próprias metas" on public.goals as PERMISSIVE for ALL to public
+  using ((auth.uid() = user_id));
+create policy "own exercise history" on public.historico_de_exercicios as PERMISSIVE for SELECT to public
   using ((auth.uid() = user_id));
 create policy "Inserir pontos próprios" on public.points as PERMISSIVE for INSERT to authenticated
   with check ((auth.uid() = user_id));
