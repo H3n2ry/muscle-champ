@@ -38,7 +38,7 @@ App fitness gamificado para Android e Web. Registre treinos, acompanhe sua dieta
    flutter pub get
    ```
 
-2. O projeto já possui `local.properties` configurado para `C:\Users\Jean\AppData\Local\Android\Sdk`. Se estiver em outra máquina, atualize:
+2. O projeto usa `local.properties` apontando para o SDK, por exemplo `C:\Users\SEU_USUARIO\AppData\Local\Android\Sdk`. Se estiver em outra máquina, atualize:
    ```
    sdk.dir=SEU_CAMINHO\Android\Sdk
    flutter.sdk=SEU_CAMINHO\flutter
@@ -51,7 +51,7 @@ App fitness gamificado para Android e Web. Registre treinos, acompanhe sua dieta
 ### Build Android
 
 ```powershell
-$env:ANDROID_HOME = "C:\Users\Jean\AppData\Local\Android\Sdk"
+$env:ANDROID_HOME = "C:\Users\SEU_USUARIO\AppData\Local\Android\Sdk"
 $env:JAVA_HOME    = "C:\Program Files\Android\Android Studio\jbr"
 $env:PATH         = "$env:JAVA_HOME\bin;$env:ANDROID_HOME\cmdline-tools\latest\bin;$env:ANDROID_HOME\platform-tools;$env:PATH"
 

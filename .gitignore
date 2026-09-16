@@ -53,3 +53,8 @@ lib/core/secrets.dart
 
 # Cache local do Cloudflare Wrangler
 .wrangler/
+
+# Notas internas (ficam só na máquina)
+CLAUDE.md
+MEMORY.md
+MARKETING.md
