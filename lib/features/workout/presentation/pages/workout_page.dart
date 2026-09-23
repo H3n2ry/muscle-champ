@@ -13,6 +13,7 @@ import '../../../../shared/widgets/mk_snack.dart';
 import '../../data/models/workout_template_model.dart';
 import '../../data/repositories/workout_template_repository.dart';
 import '../../data/datasources/exercise_library.dart';
+import '../../data/models/reconciliacao_de_exercicios.dart';
 import '../providers/workout_template_provider.dart';
 import '../widgets/anotacao_e_progresso.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -1438,11 +1439,22 @@ class _TemplateSheetState extends ConsumerState<_TemplateSheet> {
                     onSubir: () => _moverExercicio(i, i - 1),
                     onDescer: () => _moverExercicio(i, i + 1),
                     onChange: (v) => setState(() {
-                      // Preserva o uid: _emit() devolve um Map novo sem ele.
-                      _exercises[i] = <String, dynamic>{
-                        ...v,
-                        '_uid': _exercises[i]['_uid'],
-                      };
+                      // `_emit()` devolve um Map NOVO a cada tecla, só com os
+                      // campos do formulário. O que ele deixa cair precisa ser
+                      // recolocado aqui.
+                      //
+                      // ⚠️ `id` é o caso grave. Sem ele, digitar uma letra no
+                      // nome fazia o exercício virar "linha nova" ao salvar —
+                      // INSERT com UUID novo e DELETE do antigo, levando junto
+                      // a anotação e todo o histórico de progressão, que aponta
+                      // para a linha com ON DELETE CASCADE. A reconciliação em
+                      // `updateExercises` não salva ninguém se o id não chega
+                      // lá.
+                      //
+                      // `_uid` só existe na tela: perdê-lo custava o foco do
+                      // campo no meio da digitação.
+                      _exercises[i] =
+                          preservarIdentidade(_exercises[i], v);
                     }),
                     onRemove: () =>
                         setState(() => _exercises.removeAt(i)),

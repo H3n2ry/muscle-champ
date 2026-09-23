@@ -78,3 +78,33 @@ class ReconciliacaoDeExercicios {
     );
   }
 }
+
+/// Campos que a linha carrega entre edições e que o formulário não devolve.
+///
+/// A tela de edição reconstrói o Map do exercício a **cada tecla digitada**,
+/// montando um novo só com `name`, `sets`, `reps` e `weight_kg`. Tudo que não
+/// esteja nesses quatro campos some silenciosamente — e "silenciosamente" é o
+/// problema: nada quebra, nada avisa, e a perda só aparece dias depois.
+///
+/// Já custou duas vezes:
+///
+///   * `_uid` — a chave do widget na lista. Perdê-lo fazia o Flutter destruir e
+///     recriar a linha, e o campo perdia o foco no meio da digitação.
+///   * `id` — a identidade da linha no banco. Perdê-lo fazia o exercício virar
+///     "linha nova" ao salvar: INSERT com UUID novo e DELETE do antigo, levando
+///     junto a anotação e todo o histórico de progressão.
+///
+/// [anterior] é o Map que estava na lista; [editado] é o que o formulário
+/// devolveu.
+Map<String, dynamic> preservarIdentidade(
+  Map<String, dynamic> anterior,
+  Map<String, dynamic> editado,
+) =>
+    <String, dynamic>{
+      ...editado,
+      for (final chave in camposDeIdentidade)
+        if (anterior.containsKey(chave)) chave: anterior[chave],
+    };
+
+/// As chaves que `preservarIdentidade` carrega adiante.
+const camposDeIdentidade = {'_uid', 'id'};

@@ -15,6 +15,54 @@ Map<String, dynamic> _ex(String? id, String nome, {double peso = 20}) => {
 ///
 /// Aconteceu de verdade: o histórico de 11/09 e 15/09/2026 sumiu assim.
 void main() {
+  group('preservarIdentidade — o que sobrevive a digitar', () {
+    // O formulário devolve um Map NOVO a cada tecla, só com os quatro campos
+    // que ele mostra. Sem recolocar o resto, digitar uma letra no nome fazia o
+    // exercício virar "linha nova" ao salvar, e com ele iam a anotação e todo o
+    // histórico de progressão.
+    final antes = <String, dynamic>{
+      '_uid': 'ex3',
+      'id': 'uuid-do-banco',
+      'name': 'Supino',
+      'sets': 3,
+      'reps': 10,
+      'weight_kg': 20.0,
+    };
+    final digitado = <String, dynamic>{
+      'name': 'Supino inclinado',
+      'sets': 3,
+      'reps': 8,
+      'weight_kg': 22.5,
+    };
+
+    test('o id do banco sobrevive', () {
+      expect(preservarIdentidade(antes, digitado)['id'], 'uuid-do-banco');
+    });
+
+    test('o uid da tela sobrevive — é o foco do campo', () {
+      expect(preservarIdentidade(antes, digitado)['_uid'], 'ex3');
+    });
+
+    test('o que foi digitado vence', () {
+      final r = preservarIdentidade(antes, digitado);
+      expect(r['name'], 'Supino inclinado');
+      expect(r['reps'], 8);
+      expect(r['weight_kg'], 22.5);
+    });
+
+    test('linha nova continua sem id — não inventa identidade', () {
+      final nova = <String, dynamic>{'_uid': 'ex9', 'name': ''};
+      expect(preservarIdentidade(nova, digitado).containsKey('id'), isFalse);
+      expect(preservarIdentidade(nova, digitado)['_uid'], 'ex9');
+    });
+
+    test('a lista de campos protegidos é a que o banco e a tela precisam', () {
+      // Se alguém acrescentar um campo que precise sobreviver à digitação,
+      // acrescentar aqui também — é o único lugar que decide isso.
+      expect(camposDeIdentidade, {'_uid', 'id'});
+    });
+  });
+
   group('reconciliação ao salvar a edição', () {
     test('quem já existia é ATUALIZADO, não recriado', () {
       // O caso que causou a perda: mexer em um exercício não pode custar a
