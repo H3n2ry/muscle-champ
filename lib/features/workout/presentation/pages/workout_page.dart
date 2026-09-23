@@ -1208,6 +1208,14 @@ class _TemplateSheetState extends ConsumerState<_TemplateSheet> {
           _exercises = list
               .map((e) => <String, dynamic>{
                     '_uid': _novoUid(),
+                    // ⚠️ O `id` do banco viaja junto e NÃO é enfeite.
+                    //
+                    // Sem ele, salvar a edição recriava toda linha com UUID
+                    // novo, e junto iam embora a `anotacao` (que mora nessa
+                    // linha) e todo o histórico de progressão (que aponta para
+                    // ela com ON DELETE CASCADE). Bastava reordenar ou corrigir
+                    // um nome para apagar meses de dado, sem aviso nenhum.
+                    'id': e.id,
                     'name': e.name,
                     'sets': e.sets,
                     'reps': e.reps,
