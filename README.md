@@ -63,12 +63,20 @@ O APK é gerado em `build/app/outputs/flutter-apk/app-release.apk`.
 ### Build Web + Deploy
 
 ```bash
-flutter build web --release
+flutter build web --release --no-web-resources-cdn
 npx wrangler pages deploy build/web --project-name=muscle-champ --branch=main
 ```
 
 O deploy vai para `musclechamp.com.br` (alias: `muscle-champ.pages.dev`).
 Na primeira vez, `npx wrangler login` abre um OAuth no navegador.
+
+> ⚠️ **`--no-web-resources-cdn` não é opcional.** Sem a flag, o Flutter baixa o
+> CanvasKit — o renderizador — de `www.gstatic.com` em tempo de boot, mesmo já
+> existindo uma cópia em `build/web/canvaskit/`. Com o gstatic inacessível (DNS
+> de operadora, rede corporativa, bloqueador), o app fica em branco para sempre,
+> sem erro na tela. A flag faz o CanvasKit vir do próprio domínio, e é o que
+> permite que `www.gstatic.com` fique fora do CSP em `web/_headers` — os dois
+> andam juntos, mexer em um pede conferir o outro.
 
 ## Estrutura do projeto
 

@@ -54,7 +54,7 @@
 
 ## Deploy Web (Cloudflare Pages)
 
-- [ ] `flutter build web --release`
+- [ ] `flutter build web --release --no-web-resources-cdn` (sem a flag o CanvasKit vem do gstatic e o CSP de `web/_headers` passa a barrá-lo → tela branca)
 - [ ] Confirmar `✓ Built build\web` — o deploy publica o que estiver em `build/web` mesmo se o build falhar, republicando a versão anterior em silêncio
 - [ ] Verificar que `build/web/` contém `index.html` e assets
 - [ ] `npx wrangler pages deploy build/web --project-name=muscle-champ --branch=main`

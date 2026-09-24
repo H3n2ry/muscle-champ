@@ -98,7 +98,7 @@ flutter build apk --release
 ### Web build falha com lock no iOS ephemeral
 ```powershell
 Remove-Item -Recurse -Force "ios/Flutter/ephemeral" -ErrorAction SilentlyContinue
-flutter build web --release
+flutter build web --release --no-web-resources-cdn
 ```
 
 ### Deploy web: subiu mas a tela não muda
