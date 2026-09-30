@@ -24,6 +24,26 @@ jobs:
         run: |
           set -uo pipefail
 
+          # ⚠️ O GitHub roda todo `run:` com `bash -e`, e o `set` acima NAO
+          # desliga isso — o log da execucao mostra `shell: /usr/bin/bash -e`.
+          #
+          # Com `-e`, qualquer comando que retorne != 0 mata o script na hora e
+          # sem imprimir nada. E `grep` retorna 1 quando nao acha. Foi assim que
+          # este workflow falhou 34 vezes seguidas desde o dia em que nasceu:
+          # numa resposta SAUDAVEL o cabecalho `x-model-fallback` nao existe,
+          # entao o grep dele voltava 1 e derrubava tudo antes do primeiro echo.
+          # Resposta boa morria numa linha, resposta ruim na outra — nao havia
+          # caminho que passasse.
+          #
+          # Um monitor que sempre falha e pior que monitor nenhum: vira e-mail
+          # diario que todo mundo aprende a ignorar, e no dia em que o modelo
+          # morrer de verdade o aviso chega no meio do ruido.
+
+          # Le um cabecalho da resposta. Ausente devolve vazio em vez de matar.
+          cabecalho() {
+            grep -i "^$1:" "$2" | tr -d '\r' | cut -d' ' -f2- || true
+          }
+
           # A anon key é pública por design (vai embutida no app).
           ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpyeWV0anlzaml5dXVvem5hZWpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzMDE5OTIsImV4cCI6MjA5NDg3Nzk5Mn0.XMl5qb30XRhBB4mhPU42l5mtUXKj15s5lr_dJggrzOA"
           URL="https://jryetjysjiyuuoznaejc.supabase.co/functions/v1/groq-proxy"
@@ -47,18 +67,29 @@ jobs:
           EOF
             )
 
+            : > /tmp/h_$task.txt
+            : > /tmp/b_$task.json
             code=$(curl -sS -D /tmp/h_$task.txt -o /tmp/b_$task.json \
               -w "%{http_code}" -X POST "$URL" \
               -H "Authorization: Bearer $ANON" \
               -H "Content-Type: application/json" \
-              -d "$body")
+              -d "$body" || true)
 
-            model=$(grep -i '^x-model-used:'     /tmp/h_$task.txt | tr -d '\r' | cut -d' ' -f2-)
-            fb=$(   grep -i '^x-model-fallback:' /tmp/h_$task.txt | tr -d '\r' | cut -d' ' -f2-)
-            primary=$(grep -i '^x-model-primary:' /tmp/h_$task.txt | tr -d '\r' | cut -d' ' -f2-)
+            model=$(cabecalho x-model-used /tmp/h_$task.txt)
+            fb=$(cabecalho x-model-fallback /tmp/h_$task.txt)
+            primary=$(cabecalho x-model-primary /tmp/h_$task.txt)
 
-            echo "HTTP        : $code"
+            echo "HTTP        : ${code:-<sem resposta>}"
             echo "modelo usado: ${model:-<ausente>}"
+
+            # 0) Sem codigo = nao chegou a falar com o servidor (rede, DNS,
+            #    projeto pausado). Separar isso de um HTTP de erro importa: o
+            #    que se faz a respeito e completamente diferente.
+            if [ -z "$code" ]; then
+              echo "::error::[$task] a requisicao nem completou — sem resposta HTTP. Rede, DNS ou projeto Supabase pausado."
+              failed=1
+              return
+            fi
 
             # 1) Precisa responder 200
             if [ "$code" != "200" ]; then
