@@ -96,6 +96,41 @@ privs as (
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and p.prokind = 'f'
   ) f
+),
+-- Permissões de TABELA. Sem este bloco, reconstruir o banco devolveria ALL em
+-- toda tabela para anon e authenticated — o padrão do Supabase — e perderia
+-- qualquer restrição feita à mão. A primeira foi em friendships (30/09/2026): o
+-- UPDATE é concedido só na coluna `status`, porque WITH CHECK não enxerga o
+-- valor antigo e o destinatário poderia aceitar o pedido trocando o user_id.
+-- Sem esta seção, o schema.sql reabriria esse ataque ao ser aplicado.
+--
+-- Por que a MAIORIA das tabelas sai com tudo concedido: é o padrão do
+-- Supabase, e quem protege a linha é a RLS. O revoke antes de cada grant faz o
+-- script reproduzir o estado, e não somar ao que já estiver lá.
+tprivs as (
+  select string_agg(linha, E'\n' order by tbl, ordem, linha) as s from (
+    select c.relname as tbl, 0 as ordem,
+           format('revoke all on public.%I from anon, authenticated;', c.relname) as linha
+      from pg_class c join pg_namespace n on n.oid = c.relnamespace
+     where n.nspname = 'public' and c.relkind = 'r'
+    union all
+    select c.relname, 1,
+           format('grant %s on public.%I to %I;',
+                  string_agg(a.privilege_type, ', ' order by a.privilege_type), c.relname, r.rolname)
+      from pg_class c join pg_namespace n on n.oid = c.relnamespace
+      cross join lateral aclexplode(c.relacl) a
+      join pg_roles r on r.oid = a.grantee
+     where n.nspname = 'public' and c.relkind = 'r' and r.rolname in ('anon', 'authenticated')
+     group by c.relname, r.rolname
+    union all
+    select c.relname, 2,
+           format('grant %s (%I) on public.%I to %I;', a.privilege_type, att.attname, c.relname, r.rolname)
+      from pg_class c join pg_namespace n on n.oid = c.relnamespace
+      join pg_attribute att on att.attrelid = c.oid and att.attacl is not null
+      cross join lateral aclexplode(att.attacl) a
+      join pg_roles r on r.oid = a.grantee
+     where n.nspname = 'public' and c.relkind = 'r' and r.rolname in ('anon', 'authenticated')
+  ) x
 )
 select
   E'set check_function_bodies = off;\n\n-- ===== FUNCOES =====\n\n' || funcs.s ||
@@ -105,6 +140,7 @@ select
   E'\n\n-- ===== RLS =====\n\n' || rls.s ||
   E'\n\n-- ===== POLITICAS =====\n\n' || pols.s ||
   E'\n\n-- ===== TRIGGERS =====\n\n' || trigs.s ||
-  E'\n\n-- ===== PERMISSOES DE FUNCAO =====\n\n' || privs.s || E'\n'
+  E'\n\n-- ===== PERMISSOES DE FUNCAO =====\n\n' || privs.s ||
+  E'\n\n-- ===== PERMISSOES DE TABELA =====\n\n' || tprivs.s || E'\n'
   as script
-from funcs, tabs, cons, idx, rls, pols, trigs, privs;
+from funcs, tabs, cons, idx, rls, pols, trigs, privs, tprivs;
