@@ -76,7 +76,7 @@ FALHOU=0
 
 cenario() {
   local nome="$1" esperado="$2" saida rc
-  saida=$(bash -e -c "$(declare -f curl jq); source '$BLOCO'" 2>&1)
+  saida=$(TOKEN_SERVICO_IA="$TOKEN_SERVICO_IA" bash -e -c "$(declare -f curl jq); source '$BLOCO'" 2>&1)
   rc=$?
   if [ "$rc" = "$esperado" ]; then
     printf '  ok    %-38s (saiu %s)\n' "$nome" "$rc"
@@ -90,6 +90,14 @@ cenario() {
 corpo_ok='{"choices":[{"message":{"content":"OK"},"finish_reason":"stop"}]}'
 
 echo "cenários:"
+
+# O workflow exige o token de serviço: sem ele, o proxy responde 401 desde
+# 30/09/2026. Os demais cenários rodam com um valor qualquer — o dublê do curl
+# não confere —, e este cobra que a ausência falhe com mensagem própria.
+TOKEN_SERVICO_IA="" CENARIO_CODE=200 CENARIO_BODY="$corpo_ok" \
+CENARIO_HEADERS=$'HTTP/2 200\r\nx-model-used: gpt-oss-120b\r\nx-model-primary: gpt-oss-120b\r\n' \
+cenario "sem o secret TOKEN_SERVICO_IA" 1
+export TOKEN_SERVICO_IA="token-de-teste"
 
 # ⚠️ O caso que derrubava tudo: saudável, e portanto SEM x-model-fallback.
 CENARIO_CODE=200 CENARIO_BODY="$corpo_ok" \

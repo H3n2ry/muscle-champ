@@ -33,10 +33,22 @@ void main() {
     'grava as respostas do modelo para os ${casosNutricionais.length} casos',
     () async {
       final url = Uri.parse('${Secrets.supabaseUrl}/functions/v1/groq-proxy');
-      // A anon key é pública por design (vai embutida no app) e o proxy a
-      // aceita — é assim que o ai-healthcheck.yml roda sem conta de teste.
+      // ⚠️ A anon key SOZINHA não passa mais. Até 30/09/2026 o proxy a aceitava,
+      // o que deixava qualquer pessoa usar a IA sem conta — ela vai embutida no
+      // app. Agora a anon key só atravessa o gateway (`verify_jwt`); quem
+      // autoriza é o token de serviço, o mesmo do ai-healthcheck.yml:
+      //
+      //   TOKEN_SERVICO_IA=... GRAVAR_NUTRICAO=1 flutter test test/nutricao_gravar_test.dart
+      //
+      // O token não passa pela cota — a bateria faz 32 chamadas seguidas.
+      final token = Platform.environment['TOKEN_SERVICO_IA'] ?? '';
+      if (token.isEmpty) {
+        fail('Defina TOKEN_SERVICO_IA. Sem ele o proxy responde 401 e a '
+            'fixture sairia gravada com 32 erros.');
+      }
       final headers = {
         'Authorization': 'Bearer ${Secrets.supabaseAnonKey}',
+        'x-token-servico': token,
         'Content-Type': 'application/json',
       };
 

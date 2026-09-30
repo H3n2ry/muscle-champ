@@ -42,16 +42,15 @@ class CotaIaController {
     return saldo.podeUsar;
   }
 
-  /// Registra o uso DEPOIS que a IA respondeu com sucesso.
+  /// Relê o saldo depois de uma chamada de IA, para o selo "2 de 3 hoje" não
+  /// ficar mostrando o número de antes.
   ///
-  /// A ordem importa: consumir antes gastaria o único uso do dia numa queda
-  /// de rede, e o usuário ficaria sem entender por que perdeu a foto.
-  Future<void> registrarUso(RecursoIa recurso) async {
-    final assinatura = await _ref.read(assinaturaProvider.future);
-    if (assinatura?.ativa ?? false) return; // Pro não tem contador
-    await _ref.read(cotaIaRepositoryProvider).consumir(recurso);
-    _ref.invalidate(saldosDeCotaProvider);
-  }
+  /// ⚠️ NÃO cobra nada. Até 30/09/2026 esta função se chamava `registrarUso`
+  /// e era ela quem cobrava a cota — o que queria dizer que quem chamasse o
+  /// proxy direto, sem passar pelo app, nunca era cobrado. Agora quem cobra é o
+  /// `groq-proxy`: reserva antes de chamar a Groq e devolve se falhar. Cobrar
+  /// aqui também contaria cada uso duas vezes.
+  void atualizarSaldo() => _ref.invalidate(saldosDeCotaProvider);
 }
 
 final cotaIaControllerProvider =

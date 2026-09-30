@@ -21,6 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Verificar modelos de texto e visão
+        env:
+          TOKEN_SERVICO_IA: ${{ secrets.TOKEN_SERVICO_IA }}
         run: |
           set -uo pipefail
 
@@ -44,7 +46,15 @@ jobs:
             grep -i "^$1:" "$2" | tr -d '\r' | cut -d' ' -f2- || true
           }
 
-          # A anon key é pública por design (vai embutida no app).
+          # A anon key é pública por design (vai embutida no app). SOZINHA ela não
+          # autoriza mais nada: só atravessa o gateway (`verify_jwt`). Quem autoriza
+          # é o token de serviço — até 30/09/2026 o proxy aceitava a anon key pura, e
+          # qualquer pessoa usava a IA sem conta.
+          TOKEN="${TOKEN_SERVICO_IA:-}"
+          if [ -z "$TOKEN" ]; then
+            echo "::error::Secret TOKEN_SERVICO_IA ausente no repositorio. Sem ele o proxy responde 401 — ver o comentario 'Quem esta chamando' no groq-proxy."
+            exit 1
+          fi
           ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpyeWV0anlzaml5dXVvem5hZWpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzMDE5OTIsImV4cCI6MjA5NDg3Nzk5Mn0.XMl5qb30XRhBB4mhPU42l5mtUXKj15s5lr_dJggrzOA"
           URL="https://jryetjysjiyuuoznaejc.supabase.co/functions/v1/groq-proxy"
 
@@ -72,6 +82,7 @@ jobs:
             code=$(curl -sS -D /tmp/h_$task.txt -o /tmp/b_$task.json \
               -w "%{http_code}" -X POST "$URL" \
               -H "Authorization: Bearer $ANON" \
+              -H "x-token-servico: $TOKEN" \
               -H "Content-Type: application/json" \
               -d "$body" || true)
 

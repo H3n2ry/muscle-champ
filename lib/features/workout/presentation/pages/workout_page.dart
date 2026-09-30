@@ -455,9 +455,8 @@ class _AiWorkoutSheetState extends ConsumerState<_AiWorkoutSheet> {
 
     try {
       final result = await GroqService.generateWorkout(group);
-      await ref
-          .read(cotaIaControllerProvider)
-          .registrarUso(RecursoIa.gerarTreino);
+      // A cota já foi cobrada pelo proxy (e devolvida, se tivesse falhado).
+      ref.read(cotaIaControllerProvider).atualizarSaldo();
       if (mounted) setState(() => _generated = result);
     } catch (e) {
       if (mounted) {
