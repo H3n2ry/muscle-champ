@@ -2,7 +2,8 @@
 --
 -- Conferido por MD5 do script INTEIRO, não por contagem: o `gerar_schema.sql`
 -- rodado em produção devolve exatamente o que está abaixo do cabeçalho (com
--- `` normalizado — duas funções antigas têm CRLF no corpo, e o git converte
+-- `
+` normalizado — duas funções antigas têm CRLF no corpo, e o git converte
 -- fim de linha no checkout). Contagem não enxerga corpo de função: foi assim
 -- que o desvio de 30/09 passou despercebido até esta conferência.
 --
@@ -1505,20 +1506,12 @@ revoke all on function public.export_my_data() from public;
 grant execute on function public.export_my_data() to authenticated;
 grant execute on function public.export_my_data() to service_role;
 revoke all on function public.fn_award_diet_points() from public;
-grant execute on function public.fn_award_diet_points() to anon;
-grant execute on function public.fn_award_diet_points() to authenticated;
 grant execute on function public.fn_award_diet_points() to service_role;
 revoke all on function public.fn_award_load_progression() from public;
-grant execute on function public.fn_award_load_progression() to anon;
-grant execute on function public.fn_award_load_progression() to authenticated;
 grant execute on function public.fn_award_load_progression() to service_role;
 revoke all on function public.fn_award_weight_progression() from public;
-grant execute on function public.fn_award_weight_progression() to anon;
-grant execute on function public.fn_award_weight_progression() to authenticated;
 grant execute on function public.fn_award_weight_progression() to service_role;
 revoke all on function public.fn_award_workout_points() from public;
-grant execute on function public.fn_award_workout_points() to anon;
-grant execute on function public.fn_award_workout_points() to authenticated;
 grant execute on function public.fn_award_workout_points() to service_role;
 revoke all on function public.get_brevo_api_key() from public;
 grant execute on function public.get_brevo_api_key() to service_role;
