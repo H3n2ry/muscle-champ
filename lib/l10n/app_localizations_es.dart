@@ -1279,6 +1279,23 @@ class LEs extends L {
   String get treino_atualizeCargas => 'Actualiza las cargas si hace falta';
 
   @override
+  String get treino_sairSemConcluirTitulo => '¿Salir sin terminar?';
+
+  @override
+  String get treino_sairSemConcluirCorpo =>
+      'Las cargas y repeticiones que cambiaste solo se guardan al terminar el entrenamiento. Si sales ahora, vuelven a lo que eran.\n\nLos ejercicios marcados como hechos siguen marcados.';
+
+  @override
+  String get treino_continuarTreino => 'SEGUIR ENTRENANDO';
+
+  @override
+  String get treino_sairSemSalvar => 'SALIR SIN GUARDAR';
+
+  @override
+  String get treino_erroConcluir =>
+      'No se pudo guardar el entrenamiento. Revisa la conexión e inténtalo de nuevo; no se perdió nada.';
+
+  @override
   String treino_exerciciosParen(int n) {
     return '$n ejercicio(s)';
   }

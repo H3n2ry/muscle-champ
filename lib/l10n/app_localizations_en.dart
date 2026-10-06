@@ -1269,6 +1269,23 @@ class LEn extends L {
   String get treino_atualizeCargas => 'Update the weights if needed';
 
   @override
+  String get treino_sairSemConcluirTitulo => 'Leave without finishing?';
+
+  @override
+  String get treino_sairSemConcluirCorpo =>
+      'The weights and reps you changed are only saved when the workout is finished. If you leave now, they go back to what they were.\n\nExercises marked as done stay marked.';
+
+  @override
+  String get treino_continuarTreino => 'KEEP TRAINING';
+
+  @override
+  String get treino_sairSemSalvar => 'LEAVE WITHOUT SAVING';
+
+  @override
+  String get treino_erroConcluir =>
+      'Couldn\'t save the workout. Check your connection and try again — nothing was lost.';
+
+  @override
   String treino_exerciciosParen(int n) {
     return '$n exercise(s)';
   }

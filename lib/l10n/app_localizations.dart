@@ -2481,6 +2481,36 @@ abstract class L {
   /// **'Atualize as cargas se necessário'**
   String get treino_atualizeCargas;
 
+  /// No description provided for @treino_sairSemConcluirTitulo.
+  ///
+  /// In pt, this message translates to:
+  /// **'Sair sem concluir?'**
+  String get treino_sairSemConcluirTitulo;
+
+  /// No description provided for @treino_sairSemConcluirCorpo.
+  ///
+  /// In pt, this message translates to:
+  /// **'As cargas e repetições que você mudou só são salvas quando o treino é concluído. Se sair agora, elas voltam ao que eram.\n\nOs exercícios marcados como feitos continuam marcados.'**
+  String get treino_sairSemConcluirCorpo;
+
+  /// No description provided for @treino_continuarTreino.
+  ///
+  /// In pt, this message translates to:
+  /// **'CONTINUAR TREINO'**
+  String get treino_continuarTreino;
+
+  /// No description provided for @treino_sairSemSalvar.
+  ///
+  /// In pt, this message translates to:
+  /// **'SAIR SEM SALVAR'**
+  String get treino_sairSemSalvar;
+
+  /// No description provided for @treino_erroConcluir.
+  ///
+  /// In pt, this message translates to:
+  /// **'Não deu para salvar o treino. Verifique a conexão e tente de novo — nada foi perdido.'**
+  String get treino_erroConcluir;
+
   /// No description provided for @treino_exerciciosParen.
   ///
   /// In pt, this message translates to:
