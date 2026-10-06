@@ -473,10 +473,12 @@ class _DashboardContent extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          _RankChip(
-                              icon: Icons.public,
-                              label: '#${data.globalRank} Global'),
-                          const SizedBox(height: 8),
+                          if (data.globalRank != null) ...[
+                            _RankChip(
+                                icon: Icons.public,
+                                label: '#${data.globalRank} Global'),
+                            const SizedBox(height: 8),
+                          ],
                           _RankChip(
                               icon: Icons.bolt,
                               label:

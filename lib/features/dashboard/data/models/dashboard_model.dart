@@ -1,7 +1,10 @@
 class DashboardModel {
   final int totalPoints;
-  final int globalRank;
-  final int friendsRank;
+
+  /// Posição no ranking, do servidor. Nula quando não deu para saber — a tela
+  /// então não mostra posição nenhuma, em vez de inventar um "#1".
+  final int? globalRank;
+  final int? friendsRank;
   final bool workoutDoneToday;
   final bool dietGoalMetToday;
   final double currentWeight;
@@ -20,8 +23,8 @@ class DashboardModel {
 
   const DashboardModel({
     required this.totalPoints,
-    required this.globalRank,
-    required this.friendsRank,
+    this.globalRank,
+    this.friendsRank,
     required this.workoutDoneToday,
     required this.dietGoalMetToday,
     required this.currentWeight,
@@ -37,8 +40,8 @@ class DashboardModel {
 
   factory DashboardModel.fromJson(Map<String, dynamic> json) => DashboardModel(
         totalPoints: (json['total_points'] as num).toInt(),
-        globalRank: (json['global_rank'] as num).toInt(),
-        friendsRank: (json['friends_rank'] as num).toInt(),
+        globalRank: (json['global_rank'] as num?)?.toInt(),
+        friendsRank: (json['friends_rank'] as num?)?.toInt(),
         workoutDoneToday: json['workout_done_today'] as bool,
         dietGoalMetToday: json['diet_goal_met_today'] as bool,
         currentWeight: (json['current_weight'] as num).toDouble(),

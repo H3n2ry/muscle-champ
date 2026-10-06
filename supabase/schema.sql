@@ -1,4 +1,4 @@
--- Esquema completo do banco, conferido contra a PRODUÇÃO em 2026-09-30.
+-- Esquema completo do banco, conferido contra a PRODUÇÃO em 2026-10-06.
 --
 -- Conferido por MD5 do script INTEIRO, não por contagem: o `gerar_schema.sql`
 -- rodado em produção devolve exatamente o que está abaixo do cabeçalho (com
@@ -613,22 +613,25 @@ $function$
 CREATE OR REPLACE FUNCTION public.get_friends_rank(p_user_id uuid)
  RETURNS integer
  LANGUAGE sql
- STABLE
+ STABLE SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
-  SELECT pos::INTEGER FROM (
-    SELECT u.id AS user_id,
-           ROW_NUMBER() OVER (ORDER BY COALESCE(SUM(p.amount),0) DESC) AS pos
-    FROM auth.users u
-    LEFT JOIN points p ON p.user_id = u.id
-    WHERE u.id = p_user_id
-       OR u.id IN (
-         SELECT friend_id FROM friendships WHERE user_id = p_user_id AND status='accepted'
-         UNION
-         SELECT user_id FROM friendships WHERE friend_id = p_user_id AND status='accepted'
-       )
-    GROUP BY u.id
-  ) r WHERE user_id = p_user_id;
+  select pos::integer from (
+    select pr.id,
+           row_number() over (
+             order by coalesce(sum(pt.amount), 0) desc, pr.created_at, pr.id
+           ) as pos
+      from profiles pr
+      left join points pt on pt.user_id = pr.id
+     where pr.id = auth.uid()
+        or pr.id in (
+          select friend_id from friendships where user_id = auth.uid() and status = 'accepted'
+          union
+          select user_id  from friendships where friend_id = auth.uid() and status = 'accepted'
+        )
+     group by pr.id
+  ) r
+  where r.id = auth.uid();
 $function$
 ;
 
@@ -638,38 +641,45 @@ CREATE OR REPLACE FUNCTION public.get_friends_ranking(p_user_id uuid)
  STABLE SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
-  SELECT
-    ROW_NUMBER() OVER (ORDER BY COALESCE(SUM(pt.amount),0) DESC)  AS rank_position,
-    pr.id                                                           AS user_id,
-    pr.name                                                         AS user_name,
-    pr.avatar_url                                                   AS avatar_url,
-    COALESCE(SUM(pt.amount),0)                                      AS total_points,
-    (pr.id = auth.uid())                                            AS is_current_user,
-    (pr.id <> auth.uid())                                           AS is_friend
-  FROM profiles pr
-  LEFT JOIN points pt ON pt.user_id = pr.id
-  WHERE pr.id = auth.uid()
-     OR pr.id IN (
-       SELECT friend_id FROM friendships WHERE user_id = auth.uid() AND status = 'accepted'
-       UNION
-       SELECT user_id  FROM friendships WHERE friend_id = auth.uid() AND status = 'accepted'
+  select
+    row_number() over (
+      order by coalesce(sum(pt.amount), 0) desc, pr.created_at, pr.id
+    )                                   as rank_position,
+    pr.id                               as user_id,
+    pr.name                             as user_name,
+    pr.avatar_url                       as avatar_url,
+    coalesce(sum(pt.amount), 0)         as total_points,
+    (pr.id = auth.uid())                as is_current_user,
+    (pr.id <> auth.uid())               as is_friend
+  from profiles pr
+  left join points pt on pt.user_id = pr.id
+  where pr.id = auth.uid()
+     or pr.id in (
+       select friend_id from friendships where user_id = auth.uid() and status = 'accepted'
+       union
+       select user_id  from friendships where friend_id = auth.uid() and status = 'accepted'
      )
-  GROUP BY pr.id, pr.name, pr.avatar_url
-  ORDER BY total_points DESC;
+  group by pr.id, pr.name, pr.avatar_url
+  order by rank_position;
 $function$
 ;
 
 CREATE OR REPLACE FUNCTION public.get_global_rank(p_user_id uuid)
  RETURNS integer
  LANGUAGE sql
- STABLE
+ STABLE SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
-  SELECT pos::INTEGER FROM (
-    SELECT user_id,
-           ROW_NUMBER() OVER (ORDER BY COALESCE(SUM(amount),0) DESC) AS pos
-    FROM points GROUP BY user_id
-  ) r WHERE user_id = p_user_id;
+  select pos::integer from (
+    select pr.id,
+           row_number() over (
+             order by coalesce(sum(pt.amount), 0) desc, pr.created_at, pr.id
+           ) as pos
+      from profiles pr
+      left join points pt on pt.user_id = pr.id
+     group by pr.id
+  ) r
+  where r.id = auth.uid();
 $function$
 ;
 
@@ -679,18 +689,20 @@ CREATE OR REPLACE FUNCTION public.get_global_ranking(p_user_id uuid)
  STABLE SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
-  SELECT
-    ROW_NUMBER() OVER (ORDER BY COALESCE(SUM(pt.amount),0) DESC)  AS rank_position,
-    pr.id                                                           AS user_id,
-    pr.name                                                         AS user_name,
-    pr.avatar_url                                                   AS avatar_url,
-    COALESCE(SUM(pt.amount),0)                                      AS total_points,
-    (pr.id = auth.uid())                                            AS is_current_user
-  FROM profiles pr
-  LEFT JOIN points pt ON pt.user_id = pr.id
-  GROUP BY pr.id, pr.name, pr.avatar_url
-  ORDER BY total_points DESC
-  LIMIT 100;
+  select
+    row_number() over (
+      order by coalesce(sum(pt.amount), 0) desc, pr.created_at, pr.id
+    )                                   as rank_position,
+    pr.id                               as user_id,
+    pr.name                             as user_name,
+    pr.avatar_url                       as avatar_url,
+    coalesce(sum(pt.amount), 0)         as total_points,
+    (pr.id = auth.uid())                as is_current_user
+  from profiles pr
+  left join points pt on pt.user_id = pr.id
+  group by pr.id, pr.name, pr.avatar_url
+  order by rank_position
+  limit 100;
 $function$
 ;
 
