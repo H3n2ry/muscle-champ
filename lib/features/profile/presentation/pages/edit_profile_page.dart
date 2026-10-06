@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/i18n/ler_decimal.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -54,11 +55,16 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   }
 
   double? get _liveBmi {
-    final h = double.tryParse(_heightCtrl.text);
-    final w = double.tryParse(_currentWeightCtrl.text);
+    final h = lerDecimal(_heightCtrl.text);
+    final w = lerDecimal(_currentWeightCtrl.text);
     if (h == null || w == null || h <= 0 || w <= 0) return null;
     final hm = h / 100.0;
     return w / (hm * hm);
+  }
+
+  static double? _positivo(String texto) {
+    final n = lerDecimal(texto);
+    return (n != null && n > 0) ? n : null;
   }
 
   Future<void> _save() async {
@@ -75,17 +81,20 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
         futures.add(repo.updateName(newName));
       }
 
-      final newHeight = double.tryParse(_heightCtrl.text) ?? 0;
+      // Campo que não vira número positivo (vazio, apagado) mantém o valor
+      // que já estava. Antes virava 0 e era gravado: só o peso atual tinha a
+      // guarda, e altura ou peso-alvo em branco iam para o banco como 0.
+      final newHeight = _positivo(_heightCtrl.text) ?? p.heightCm;
       if (newHeight != p.heightCm) {
         futures.add(repo.updateHeight(newHeight));
       }
 
-      final newCurrent = double.tryParse(_currentWeightCtrl.text) ?? 0;
-      if (newCurrent != p.currentWeight && newCurrent > 0) {
+      final newCurrent = _positivo(_currentWeightCtrl.text) ?? p.currentWeight;
+      if (newCurrent != p.currentWeight) {
         futures.add(repo.updateWeight(newCurrent));
       }
 
-      final newTarget = double.tryParse(_targetWeightCtrl.text) ?? 0;
+      final newTarget = _positivo(_targetWeightCtrl.text) ?? p.targetWeight;
       if (_goalType != p.goalType || newTarget != p.targetWeight) {
         futures.add(repo.updateGoal(_goalType, newTarget));
       }

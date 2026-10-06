@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../core/i18n/ler_decimal.dart';
 import '../../../../core/gamification/level_system.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -724,11 +725,11 @@ class _BioimpedanceSheetState extends ConsumerState<_BioimpedanceSheet> {
     setState(() => _saving = true);
     try {
       await ref.read(profileRepositoryProvider).saveBioimpedance(
-            bodyFatPct:   double.tryParse(_fatCtrl.text),
-            muscleMassKg: double.tryParse(_muscleCtrl.text),
+            bodyFatPct:   lerDecimal(_fatCtrl.text),
+            muscleMassKg: lerDecimal(_muscleCtrl.text),
             visceralFat:  int.tryParse(_visceralCtrl.text),
-            hydrationPct: double.tryParse(_hydroCtrl.text),
-            boneMassKg:   double.tryParse(_boneCtrl.text),
+            hydrationPct: lerDecimal(_hydroCtrl.text),
+            boneMassKg:   lerDecimal(_boneCtrl.text),
             bmrKcal:      int.tryParse(_bmrCtrl.text),
           );
       widget.onSaved();

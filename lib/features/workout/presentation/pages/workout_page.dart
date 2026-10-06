@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/i18n/ler_decimal.dart';
 import '../../../../core/legal/legal_texts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -1746,7 +1747,7 @@ class _ExerciseInputRowState extends State<_ExerciseInputRow> {
       'name': _name.text,
       'sets': int.tryParse(_sets.text) ?? 3,
       'reps': int.tryParse(_reps.text) ?? 10,
-      'weight_kg': double.tryParse(_weight.text) ?? 0.0,
+      'weight_kg': lerDecimal(_weight.text) ?? 0.0,
     });
   }
 
@@ -2377,7 +2378,7 @@ class _DoExerciseRowState extends ConsumerState<_DoExerciseRow> {
 
   void _emit() {
     widget.onChange(widget.exercise.copyWith(
-      weightKg: double.tryParse(_weight.text) ?? 0,
+      weightKg: lerDecimal(_weight.text) ?? 0,
       sets: int.tryParse(_sets.text) ?? widget.exercise.sets,
       reps: int.tryParse(_reps.text) ?? widget.exercise.reps,
     ));

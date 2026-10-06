@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/i18n/ler_decimal.dart';
 import '../../../../core/gamification/level_system.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -103,7 +104,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                           fontWeight: FontWeight.w700),
                       textAlign: TextAlign.center,
                       validator: (v) {
-                        final val = double.tryParse(v ?? '');
+                        final val = lerDecimal(v);
                         if (val == null || val <= 0) return L.of(context).dash_pesoInvalidoMsg;
                         return null;
                       },
@@ -167,8 +168,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                                       return;
                                     setSt(() => saving = true);
                                     try {
-                                      final weight =
-                                          double.parse(ctrl.text);
+                                      // O validador já garantiu que lê.
+                                      final weight = lerDecimal(ctrl.text)!;
                                       await ref
                                           .read(profileRepositoryProvider)
                                           .updateWeight(weight);
