@@ -39,13 +39,20 @@ npx wrangler pages deploy build/web --project-name=muscle-champ --branch=main --
 passo "conferência no domínio final"
 servido="$(mktemp)"
 trap 'rm -f "$servido"' EXIT
-curl -sS -o "$servido" https://musclechamp.com.br/main.dart.js
 local_h="$(sha256sum build/web/main.dart.js | cut -c1-16)"
-no_ar_h="$(sha256sum "$servido" | cut -c1-16)"
 echo "local : $local_h"
-echo "no ar : $no_ar_h"
-if [ "$local_h" != "$no_ar_h" ]; then
-  echo "DIVERGE — o domínio ainda serve outro bundle (cache de borda?)."
-  exit 1
-fi
-echo "publicado e conferido."
+# Logo depois do deploy o domínio ainda pode servir o bundle anterior por
+# alguns segundos — em 06/10/2026 a primeira leitura divergiu e a seguinte já
+# batia. Por isso tenta algumas vezes antes de acusar.
+for tentativa in 1 2 3 4 5 6; do
+  curl -sS -o "$servido" https://musclechamp.com.br/main.dart.js
+  no_ar_h="$(sha256sum "$servido" | cut -c1-16)"
+  echo "no ar : $no_ar_h (tentativa $tentativa)"
+  if [ "$local_h" = "$no_ar_h" ]; then
+    echo "publicado e conferido."
+    exit 0
+  fi
+  sleep 5
+done
+echo "DIVERGE — passados 30s, o domínio ainda serve outro bundle (cache de borda?)."
+exit 1
