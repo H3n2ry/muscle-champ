@@ -15,6 +15,8 @@ const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 // Histórico de desligamentos:
 //   17/07/2026 — meta-llama/llama-4-scout-17b-16e-instruct (visão)
 //   16/08/2026 — llama-3.3-70b-versatile (texto)
+//   14/09/2026 — qwen/qwen3.6-27b (visão e fallback de texto). Ninguém viu por
+//                seis semanas: o healthcheck caía antes, no 401 sem token.
 type ModelSpec = {
   id: string;
   /// Os dois modelos em uso raciocinam antes de responder, de formas diferentes:
@@ -23,7 +25,7 @@ type ModelSpec = {
   ///   consome todo o max_tokens pensando e devolve `content` VAZIO com
   ///   finish_reason "length": falha silenciosa, não erro. Aceita apenas
   ///   low | medium | high.
-  /// • qwen3.6-27b — raciocínio inline, dentro do `content`, entre tags
+  /// • qwen3.8-27b — raciocínio inline, dentro do `content`, entre tags
   ///   <think>. O JSON sai cortado ou nem sai. Aceita "none", que desliga.
   ///
   /// Valor do chamador sempre vence (ver loop principal).
@@ -41,12 +43,12 @@ const MODEL_CHAINS: Record<string, ModelSpec[]> = {
     { id: "openai/gpt-oss-120b", reasoningEffort: "low", tokenHeadroom: 2.5 },
     // "none" é indispensável aqui: como fallback de texto ninguém define o
     // parâmetro, e o qwen devolveria <think>...</think> no lugar do JSON.
-    { id: "qwen/qwen3.6-27b", reasoningEffort: "none" },
+    { id: "qwen/qwen3.8-27b", reasoningEffort: "none" },
   ],
 
-  // ⚠️ Sem fallback real: qwen3.6-27b é hoje o único multimodal que usamos.
+  // ⚠️ Sem fallback real: qwen3.8-27b é hoje o único multimodal que usamos.
   // Se ele for desligado, o modo FOTO cai até alguém apontar outro aqui.
-  vision: [{ id: "qwen/qwen3.6-27b", reasoningEffort: "none" }],
+  vision: [{ id: "qwen/qwen3.8-27b", reasoningEffort: "none" }],
 };
 
 // Subiu de 2048 para caber raciocínio + conteúdo do plano de dieta, que é a
