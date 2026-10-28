@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/historico_de_exercicio_model.dart';
+import '../models/reconciliacao_de_exercicios.dart';
 import '../models/workout_template_model.dart';
 
 final workoutTemplateRepositoryProvider =
@@ -104,27 +105,56 @@ class WorkoutTemplateRepository {
         .eq('id', templateId);
   }
 
-  // ── Atualizar exercícios do template (substitui todos) ─────────────
+  // ── Atualizar exercícios do template ───────────────────────────────
+  //
+  // ⚠️ Reconcilia; NÃO apaga tudo e reinsere.
+  //
+  // A versão anterior fazia `delete().eq('template_id')` seguido de insert, e
+  // cada linha voltava com UUID novo. Isso levava junto a `anotacao` (que mora
+  // na linha) e todo o `historico_de_exercicios` (que aponta para ela com ON
+  // DELETE CASCADE) — bastava reordenar ou corrigir um nome. Em silêncio: a
+  // tela salvava, dizia que deu certo, e o gráfico daquele exercício voltava a
+  // zero.
+  //
+  // Quem sai do template continua sendo apagado, e aí o cascade está certo.
   Future<void> updateExercises(
     String templateId,
     List<Map<String, dynamic>> exercises,
   ) async {
-    await _client
+    final existentes = await _client
         .from('template_exercises')
-        .delete()
+        .select('id')
         .eq('template_id', templateId);
 
-    if (exercises.isNotEmpty) {
-      await _client.from('template_exercises').insert(
-        exercises.asMap().entries.map((entry) => {
-          'template_id': templateId,
-          'name':        entry.value['name'] as String,
-          'sets':        entry.value['sets'] as int,
-          'reps':        entry.value['reps'] as int,
-          'weight_kg':   entry.value['weight_kg'] as double,
-          'order_index': entry.key,
-        }).toList(),
-      );
+    final plano = ReconciliacaoDeExercicios.calcular(
+      idsExistentes: {
+        for (final r in existentes as List) (r as Map)['id'] as String
+      },
+      enviados: exercises,
+    );
+
+    // Apagar primeiro: se um exercício saiu e outro entrou com o mesmo nome, a
+    // ordem inversa deixaria os dois convivendo por um instante.
+    if (plano.idsParaApagar.isNotEmpty) {
+      await _client
+          .from('template_exercises')
+          .delete()
+          .inFilter('id', plano.idsParaApagar);
+    }
+
+    // Um UPDATE por linha. São poucas (um template tem 5–10 exercícios) e o
+    // upsert em lote exigiria mandar `anotacao` junto para não sobrescrevê-la
+    // com nulo — ou seja, a tela de edição precisaria carregar um campo que ela
+    // nem mostra.
+    for (final e in plano.paraAtualizar) {
+      final id = e.remove('id') as String;
+      await _client.from('template_exercises').update(e).eq('id', id);
+    }
+
+    if (plano.paraInserir.isNotEmpty) {
+      await _client.from('template_exercises').insert([
+        for (final e in plano.paraInserir) {'template_id': templateId, ...e}
+      ]);
     }
   }
 

@@ -688,6 +688,7 @@ Não invente acompanhamentos que não foram citados/vistos.''';
       String muscleGroup) async {
     final body = jsonEncode({
       'task': 'text',
+      'recurso': 'treino',
       'temperature': 0.7,
       'response_format': {'type': 'json_object'},
       'messages': [
@@ -736,6 +737,7 @@ Regras:
   @visibleForTesting
   static String corpoDaRequisicaoDeMacros(String description) => jsonEncode({
         'task': 'text',
+        'recurso': 'texto',
         // temperature 0 + seed fixo: a mesma descrição sempre gera o mesmo
         // resultado, e descrições parecidas param de oscilar.
         'temperature': 0,
@@ -845,6 +847,7 @@ bebida_alcoolica, suplemento''';
 
     final body = jsonEncode({
       'task': 'text',
+      'recurso': 'dieta',
       'temperature': 0.3,
       'response_format': {'type': 'json_object'},
       'messages': [
@@ -955,6 +958,7 @@ Regras OBRIGATÓRIAS — respeite com precisão:
         : '';
     final body = jsonEncode({
       'task': 'vision',
+      'recurso': 'foto',
       'temperature': 0,
       'top_p': 1,
       'seed': 42,
@@ -1031,6 +1035,7 @@ Regras OBRIGATÓRIAS — respeite com precisão:
     final (optimized, mime) = _optimizeImage(base64Input);
     final body = jsonEncode({
       'task': 'vision',
+      'recurso': 'calibracao',
       'temperature': 0.1,
       'reasoning_effort': 'none',
       'max_tokens': 200,

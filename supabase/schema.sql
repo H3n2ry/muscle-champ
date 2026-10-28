@@ -1,4 +1,11 @@
--- Esquema completo do banco, conferido contra a PRODUÇÃO em 2026-09-03.
+-- Esquema completo do banco, conferido contra a PRODUÇÃO em 2026-10-06.
+--
+-- Conferido por MD5 do script INTEIRO, não por contagem: o `gerar_schema.sql`
+-- rodado em produção devolve exatamente o que está abaixo do cabeçalho (com
+-- `
+` normalizado — duas funções antigas têm CRLF no corpo, e o git converte
+-- fim de linha no checkout). Contagem não enxerga corpo de função: foi assim
+-- que o desvio de 30/09 passou despercebido até esta conferência.
 --
 -- Existe porque a pasta migrations/ nunca foi um registro completo: produção
 -- tinha 27 migrações e o repositório guardava 8. Reconstruir o banco a partir
@@ -272,26 +279,14 @@ CREATE OR REPLACE FUNCTION public.consumir_cota_ia(p_recurso text)
  SECURITY DEFINER
  SET search_path TO 'public', 'pg_temp'
 AS $function$
-declare
-  v_uid   uuid := auth.uid();
-  v_dia   date := app_today()::date;
-  v_usos  integer;
 begin
-  if v_uid is null then
+  if auth.uid() is null then
     raise exception 'nao autenticado';
   end if;
-
-  if p_recurso not in ('foto', 'texto', 'treino', 'dieta') then
-    raise exception 'recurso invalido: %', p_recurso;
-  end if;
-
-  insert into public.cota_ia_diaria (user_id, dia, recurso, usos)
-  values (v_uid, v_dia, p_recurso, 1)
-  on conflict (user_id, dia, recurso)
-    do update set usos = public.cota_ia_diaria.usos + 1
-  returning usos into v_usos;
-
-  return v_usos;
+  return coalesce((select usos from public.cota_ia_diaria
+                    where user_id = auth.uid()
+                      and dia = app_today()::date
+                      and recurso = p_recurso), 0);
 end;
 $function$
 ;
@@ -383,6 +378,29 @@ END;
 $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.devolver_cota_ia(p_user_id uuid, p_recurso text, p_motivo text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+begin
+  if p_motivo = 'falha' then
+    update public.cota_ia_diaria
+       set usos = greatest(usos - 1, 0)
+     where user_id = p_user_id and dia = app_today()::date and recurso = p_recurso;
+  elsif p_motivo = 'nao_reconheceu' then
+    update public.cota_ia_diaria
+       set usos = greatest(usos - 1, 0), devolucoes = devolucoes + 1
+     where user_id = p_user_id and dia = app_today()::date and recurso = p_recurso
+       and devolucoes < 1;
+  else
+    raise exception 'motivo invalido: %', p_motivo;
+  end if;
+end;
+$function$
+;
+
 CREATE OR REPLACE FUNCTION public.export_my_data()
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -448,95 +466,124 @@ $function$
 CREATE OR REPLACE FUNCTION public.fn_award_diet_points()
  RETURNS trigger
  LANGUAGE plpgsql
- SET search_path TO 'public'
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
 AS $function$
-DECLARE
-  v_total_cal   INTEGER;
-  v_goal_cal    INTEGER;
-  v_already_won BOOLEAN;
-BEGIN
-  SELECT COALESCE(SUM(calories), 0) INTO v_total_cal
-  FROM diet_logs WHERE user_id = NEW.user_id AND date = NEW.date;
+declare
+  v_total_cal   integer;
+  v_goal_cal    integer;
+  v_already_won boolean;
+begin
+  -- Só a meta de HOJE pontua. Antes a data vinha do cliente, e cada data
+  -- passada inventada era um "hoje" novo.
+  if NEW.date <> public.app_today() then
+    return NEW;
+  end if;
 
-  SELECT COALESCE(daily_calories, 2000) INTO v_goal_cal
-  FROM goals WHERE user_id = NEW.user_id;
+  select coalesce(sum(calories), 0) into v_total_cal
+    from public.diet_logs where user_id = NEW.user_id and date = NEW.date;
 
-  SELECT EXISTS (
-    SELECT 1 FROM points
-    WHERE user_id = NEW.user_id
-      AND reason = 'diet_goal_met'
-      AND created_at::date = NEW.date
-  ) INTO v_already_won;
+  select coalesce(daily_calories, 2000) into v_goal_cal
+    from public.goals where user_id = NEW.user_id;
 
-  IF NOT v_already_won
-     AND v_total_cal >= (v_goal_cal * 0.9)
-     AND v_total_cal <= (v_goal_cal * 1.1) THEN
-    INSERT INTO points (user_id, amount, reason, reference_id)
-    VALUES (NEW.user_id, 10, 'diet_goal_met', NEW.id);
-  END IF;
-  RETURN NEW;
-END;
+  -- "Já ganhou hoje" pelo relógio do servidor, no mesmo fuso de app_today().
+  select exists (
+    select 1 from public.points
+     where user_id = NEW.user_id
+       and reason = 'diet_goal_met'
+       and timezone('America/Sao_Paulo', created_at)::date = public.app_today()
+  ) into v_already_won;
+
+  if not v_already_won
+     and v_total_cal >= (v_goal_cal * 0.9)
+     and v_total_cal <= (v_goal_cal * 1.1) then
+    insert into public.points (user_id, amount, reason, reference_id)
+    values (NEW.user_id, 10, 'diet_goal_met', NEW.id);
+  end if;
+  return NEW;
+end;
 $function$
 ;
 
 CREATE OR REPLACE FUNCTION public.fn_award_load_progression()
  RETURNS trigger
  LANGUAGE plpgsql
- SET search_path TO 'public'
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
 AS $function$
-BEGIN
-  IF NEW.previous_weight IS NOT NULL AND NEW.weight > NEW.previous_weight THEN
-    INSERT INTO points (user_id, amount, reason, reference_id)
-    SELECT w.user_id, 5, 'load_progression', NEW.id
-    FROM workouts w WHERE w.id = NEW.workout_id;
-  END IF;
-  RETURN NEW;
-END;
+begin
+  if NEW.previous_weight is not null and NEW.weight > NEW.previous_weight then
+    insert into public.points (user_id, amount, reason, reference_id)
+    select w.user_id, 5, 'load_progression', NEW.id
+      from public.workouts w where w.id = NEW.workout_id;
+  end if;
+  return NEW;
+end;
 $function$
 ;
 
 CREATE OR REPLACE FUNCTION public.fn_award_weight_progression()
  RETURNS trigger
  LANGUAGE plpgsql
- SET search_path TO 'public'
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
 AS $function$
-DECLARE
-  v_goal_type   TEXT;
-  v_prev_weight DECIMAL;
-  v_progressing BOOLEAN := FALSE;
-BEGIN
-  SELECT goal_type, current_weight INTO v_goal_type, v_prev_weight
-  FROM goals WHERE user_id = NEW.user_id;
+declare
+  v_goal_type text;
+  v_anterior  decimal;
+begin
+  select goal_type into v_goal_type from public.goals where user_id = NEW.user_id;
+  if v_goal_type is null or v_goal_type not in ('lose_weight', 'gain_weight') then
+    return NEW;
+  end if;
 
-  IF v_prev_weight IS NULL THEN RETURN NEW; END IF;
+  -- Compara com a PESAGEM ANTERIOR, não com goals.current_weight. O app grava
+  -- as duas coisas em paralelo, então comparar com goals era uma corrida: se a
+  -- meta chegasse primeiro, a pesagem nunca parecia progresso.
+  select weight into v_anterior
+    from public.weight_logs
+   where user_id = NEW.user_id and date < NEW.date
+   order by date desc
+   limit 1;
+  if v_anterior is null then
+    return NEW;
+  end if;
 
-  IF v_goal_type = 'lose_weight' AND NEW.weight < v_prev_weight THEN
-    v_progressing := TRUE;
-  ELSIF v_goal_type = 'gain_weight' AND NEW.weight > v_prev_weight THEN
-    v_progressing := TRUE;
-  END IF;
+  if not ((v_goal_type = 'lose_weight' and NEW.weight <= v_anterior - 0.1)
+       or (v_goal_type = 'gain_weight' and NEW.weight >= v_anterior + 0.1)) then
+    return NEW;
+  end if;
 
-  IF v_progressing AND ABS(NEW.weight - v_prev_weight) >= 0.1 THEN
-    INSERT INTO points (user_id, amount, reason)
-    VALUES (NEW.user_id, 20, 'weight_progression');
-  END IF;
-  RETURN NEW;
-END;
+  -- No máximo uma vez por semana — é a cadência do lembrete de segunda-feira.
+  -- Sem isto, reenviar a pesagem (o gatilho dispara também em UPDATE) ou
+  -- inventar pesagens em datas passadas pontuava sem fim.
+  if exists (select 1 from public.points
+              where user_id = NEW.user_id
+                and reason = 'weight_progression'
+                and created_at >= date_trunc('week', now())) then
+    return NEW;
+  end if;
+
+  insert into public.points (user_id, amount, reason)
+  values (NEW.user_id, 20, 'weight_progression');
+  return NEW;
+end;
 $function$
 ;
 
 CREATE OR REPLACE FUNCTION public.fn_award_workout_points()
  RETURNS trigger
  LANGUAGE plpgsql
- SET search_path TO 'public'
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
 AS $function$
-BEGIN
-  IF NEW.completed = TRUE AND (OLD.completed IS NULL OR OLD.completed = FALSE) THEN
-    INSERT INTO points (user_id, amount, reason, reference_id)
-    VALUES (NEW.user_id, 10, 'workout_completed', NEW.id);
-  END IF;
-  RETURN NEW;
-END;
+begin
+  if NEW.completed = true and (OLD.completed is null or OLD.completed = false) then
+    insert into public.points (user_id, amount, reason, reference_id)
+    values (NEW.user_id, 10, 'workout_completed', NEW.id);
+  end if;
+  return NEW;
+end;
 $function$
 ;
 
@@ -566,22 +613,25 @@ $function$
 CREATE OR REPLACE FUNCTION public.get_friends_rank(p_user_id uuid)
  RETURNS integer
  LANGUAGE sql
- STABLE
+ STABLE SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
-  SELECT pos::INTEGER FROM (
-    SELECT u.id AS user_id,
-           ROW_NUMBER() OVER (ORDER BY COALESCE(SUM(p.amount),0) DESC) AS pos
-    FROM auth.users u
-    LEFT JOIN points p ON p.user_id = u.id
-    WHERE u.id = p_user_id
-       OR u.id IN (
-         SELECT friend_id FROM friendships WHERE user_id = p_user_id AND status='accepted'
-         UNION
-         SELECT user_id FROM friendships WHERE friend_id = p_user_id AND status='accepted'
-       )
-    GROUP BY u.id
-  ) r WHERE user_id = p_user_id;
+  select pos::integer from (
+    select pr.id,
+           row_number() over (
+             order by coalesce(sum(pt.amount), 0) desc, pr.created_at, pr.id
+           ) as pos
+      from profiles pr
+      left join points pt on pt.user_id = pr.id
+     where pr.id = auth.uid()
+        or pr.id in (
+          select friend_id from friendships where user_id = auth.uid() and status = 'accepted'
+          union
+          select user_id  from friendships where friend_id = auth.uid() and status = 'accepted'
+        )
+     group by pr.id
+  ) r
+  where r.id = auth.uid();
 $function$
 ;
 
@@ -591,38 +641,45 @@ CREATE OR REPLACE FUNCTION public.get_friends_ranking(p_user_id uuid)
  STABLE SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
-  SELECT
-    ROW_NUMBER() OVER (ORDER BY COALESCE(SUM(pt.amount),0) DESC)  AS rank_position,
-    pr.id                                                           AS user_id,
-    pr.name                                                         AS user_name,
-    pr.avatar_url                                                   AS avatar_url,
-    COALESCE(SUM(pt.amount),0)                                      AS total_points,
-    (pr.id = auth.uid())                                            AS is_current_user,
-    (pr.id <> auth.uid())                                           AS is_friend
-  FROM profiles pr
-  LEFT JOIN points pt ON pt.user_id = pr.id
-  WHERE pr.id = auth.uid()
-     OR pr.id IN (
-       SELECT friend_id FROM friendships WHERE user_id = auth.uid() AND status = 'accepted'
-       UNION
-       SELECT user_id  FROM friendships WHERE friend_id = auth.uid() AND status = 'accepted'
+  select
+    row_number() over (
+      order by coalesce(sum(pt.amount), 0) desc, pr.created_at, pr.id
+    )                                   as rank_position,
+    pr.id                               as user_id,
+    pr.name                             as user_name,
+    pr.avatar_url                       as avatar_url,
+    coalesce(sum(pt.amount), 0)         as total_points,
+    (pr.id = auth.uid())                as is_current_user,
+    (pr.id <> auth.uid())               as is_friend
+  from profiles pr
+  left join points pt on pt.user_id = pr.id
+  where pr.id = auth.uid()
+     or pr.id in (
+       select friend_id from friendships where user_id = auth.uid() and status = 'accepted'
+       union
+       select user_id  from friendships where friend_id = auth.uid() and status = 'accepted'
      )
-  GROUP BY pr.id, pr.name, pr.avatar_url
-  ORDER BY total_points DESC;
+  group by pr.id, pr.name, pr.avatar_url
+  order by rank_position;
 $function$
 ;
 
 CREATE OR REPLACE FUNCTION public.get_global_rank(p_user_id uuid)
  RETURNS integer
  LANGUAGE sql
- STABLE
+ STABLE SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
-  SELECT pos::INTEGER FROM (
-    SELECT user_id,
-           ROW_NUMBER() OVER (ORDER BY COALESCE(SUM(amount),0) DESC) AS pos
-    FROM points GROUP BY user_id
-  ) r WHERE user_id = p_user_id;
+  select pos::integer from (
+    select pr.id,
+           row_number() over (
+             order by coalesce(sum(pt.amount), 0) desc, pr.created_at, pr.id
+           ) as pos
+      from profiles pr
+      left join points pt on pt.user_id = pr.id
+     group by pr.id
+  ) r
+  where r.id = auth.uid();
 $function$
 ;
 
@@ -632,18 +689,20 @@ CREATE OR REPLACE FUNCTION public.get_global_ranking(p_user_id uuid)
  STABLE SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
-  SELECT
-    ROW_NUMBER() OVER (ORDER BY COALESCE(SUM(pt.amount),0) DESC)  AS rank_position,
-    pr.id                                                           AS user_id,
-    pr.name                                                         AS user_name,
-    pr.avatar_url                                                   AS avatar_url,
-    COALESCE(SUM(pt.amount),0)                                      AS total_points,
-    (pr.id = auth.uid())                                            AS is_current_user
-  FROM profiles pr
-  LEFT JOIN points pt ON pt.user_id = pr.id
-  GROUP BY pr.id, pr.name, pr.avatar_url
-  ORDER BY total_points DESC
-  LIMIT 100;
+  select
+    row_number() over (
+      order by coalesce(sum(pt.amount), 0) desc, pr.created_at, pr.id
+    )                                   as rank_position,
+    pr.id                               as user_id,
+    pr.name                             as user_name,
+    pr.avatar_url                       as avatar_url,
+    coalesce(sum(pt.amount), 0)         as total_points,
+    (pr.id = auth.uid())                as is_current_user
+  from profiles pr
+  left join points pt on pt.user_id = pr.id
+  group by pr.id, pr.name, pr.avatar_url
+  order by rank_position
+  limit 100;
 $function$
 ;
 
@@ -881,6 +940,22 @@ END;
 $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.limite_gratis_de_ia(p_recurso text)
+ RETURNS integer
+ LANGUAGE sql
+ IMMUTABLE
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+  select case p_recurso
+    when 'foto'       then 1
+    when 'texto'      then 3
+    when 'treino'     then 1
+    when 'dieta'      then 1
+    when 'calibracao' then 3
+  end;
+$function$
+;
+
 CREATE OR REPLACE FUNCTION public.next_template_order()
  RETURNS integer
  LANGUAGE sql
@@ -911,6 +986,43 @@ BEGIN
                  generate_subscripts(p_ids, 1) - 1 AS idx) pos
    WHERE t.id = pos.id AND t.user_id = v_uid;
 END;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.reservar_cota_ia(p_user_id uuid, p_recurso text)
+ RETURNS text
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+declare
+  v_limite integer := public.limite_gratis_de_ia(p_recurso);
+  v_usos   integer;
+begin
+  if p_user_id is null then
+    raise exception 'usuario ausente';
+  end if;
+  if v_limite is null then
+    raise exception 'recurso invalido: %', p_recurso;
+  end if;
+
+  if exists (select 1 from public.assinaturas
+              where user_id = p_user_id and expira_em > now()) then
+    return 'pro';
+  end if;
+
+  -- Upsert CONDICIONAL: o `where` do do-update faz o limite valer dentro da
+  -- mesma operação que incrementa. Duas chamadas simultâneas não passam juntas
+  -- pelo último saldo.
+  insert into public.cota_ia_diaria (user_id, dia, recurso, usos)
+  values (p_user_id, app_today()::date, p_recurso, 1)
+  on conflict (user_id, dia, recurso) do update
+    set usos = public.cota_ia_diaria.usos + 1
+    where public.cota_ia_diaria.usos < v_limite
+  returning usos into v_usos;
+
+  return case when v_usos is null then 'esgotada' else 'reservada' end;
+end;
 $function$
 ;
 
@@ -1048,7 +1160,8 @@ create table if not exists public.cota_ia_diaria (
   user_id uuid not null,
   dia date not null,
   recurso text not null,
-  usos integer not null default 0
+  usos integer not null default 0,
+  devolucoes integer not null default 0
 );
 
 create table if not exists public.diet_logs (
@@ -1298,24 +1411,23 @@ create policy "cota: dono le" on public.cota_ia_diaria as PERMISSIVE for SELECT 
   using ((auth.uid() = user_id));
 create policy "Acesso própria dieta" on public.diet_logs as PERMISSIVE for ALL to public
   using ((auth.uid() = user_id));
-create policy "Acesso próprios exercícios" on public.exercises as PERMISSIVE for ALL to public
+create policy "Ver próprios exercícios" on public.exercises as PERMISSIVE for SELECT to public
   using ((EXISTS ( SELECT 1
    FROM workouts w
   WHERE ((w.id = exercises.workout_id) AND (w.user_id = auth.uid())))));
-create policy "Acesso próprias amizades" on public.friendships as PERMISSIVE for ALL to public
+create policy "amizade: participante desfaz" on public.friendships as PERMISSIVE for DELETE to authenticated
   using (((auth.uid() = user_id) OR (auth.uid() = friend_id)));
-create policy friendships_delete on public.friendships as PERMISSIVE for DELETE to authenticated
-  using ((auth.uid() = user_id));
-create policy friendships_insert on public.friendships as PERMISSIVE for INSERT to authenticated
-  with check ((auth.uid() = user_id));
-create policy friendships_select on public.friendships as PERMISSIVE for SELECT to public
+create policy "amizade: pedido pendente em nome proprio" on public.friendships as PERMISSIVE for INSERT to authenticated
+  with check (((auth.uid() = user_id) AND (status = 'pending'::text) AND (friend_id <> auth.uid())));
+create policy "amizade: participantes leem" on public.friendships as PERMISSIVE for SELECT to authenticated
   using (((auth.uid() = user_id) OR (auth.uid() = friend_id)));
+create policy "amizade: so o destinatario responde" on public.friendships as PERMISSIVE for UPDATE to authenticated
+  using (((auth.uid() = friend_id) AND (status = 'pending'::text)))
+  with check (((auth.uid() = friend_id) AND (status = ANY (ARRAY['accepted'::text, 'rejected'::text]))));
 create policy "Acesso próprias metas" on public.goals as PERMISSIVE for ALL to public
   using ((auth.uid() = user_id));
 create policy "own exercise history" on public.historico_de_exercicios as PERMISSIVE for SELECT to public
   using ((auth.uid() = user_id));
-create policy "Inserir pontos próprios" on public.points as PERMISSIVE for INSERT to authenticated
-  with check ((auth.uid() = user_id));
 create policy "Ver próprios pontos" on public.points as PERMISSIVE for SELECT to public
   using ((auth.uid() = user_id));
 create policy "Criar próprio perfil" on public.profiles as PERMISSIVE for INSERT to public
@@ -1351,7 +1463,7 @@ create policy "own completions" on public.workout_completions as PERMISSIVE for 
 create policy "own templates" on public.workout_templates as PERMISSIVE for ALL to public
   using ((auth.uid() = user_id))
   with check ((auth.uid() = user_id));
-create policy "Acesso próprios treinos" on public.workouts as PERMISSIVE for ALL to public
+create policy "Ver próprios treinos" on public.workouts as PERMISSIVE for SELECT to public
   using ((auth.uid() = user_id));
 
 -- ===== TRIGGERS =====
@@ -1400,24 +1512,18 @@ grant execute on function public.copiar_treino(p_template_id uuid, p_nome text) 
 revoke all on function public.delete_my_account() from public;
 grant execute on function public.delete_my_account() to authenticated;
 grant execute on function public.delete_my_account() to service_role;
+revoke all on function public.devolver_cota_ia(p_user_id uuid, p_recurso text, p_motivo text) from public;
+grant execute on function public.devolver_cota_ia(p_user_id uuid, p_recurso text, p_motivo text) to service_role;
 revoke all on function public.export_my_data() from public;
 grant execute on function public.export_my_data() to authenticated;
 grant execute on function public.export_my_data() to service_role;
 revoke all on function public.fn_award_diet_points() from public;
-grant execute on function public.fn_award_diet_points() to anon;
-grant execute on function public.fn_award_diet_points() to authenticated;
 grant execute on function public.fn_award_diet_points() to service_role;
 revoke all on function public.fn_award_load_progression() from public;
-grant execute on function public.fn_award_load_progression() to anon;
-grant execute on function public.fn_award_load_progression() to authenticated;
 grant execute on function public.fn_award_load_progression() to service_role;
 revoke all on function public.fn_award_weight_progression() from public;
-grant execute on function public.fn_award_weight_progression() to anon;
-grant execute on function public.fn_award_weight_progression() to authenticated;
 grant execute on function public.fn_award_weight_progression() to service_role;
 revoke all on function public.fn_award_workout_points() from public;
-grant execute on function public.fn_award_workout_points() to anon;
-grant execute on function public.fn_award_workout_points() to authenticated;
 grant execute on function public.fn_award_workout_points() to service_role;
 revoke all on function public.get_brevo_api_key() from public;
 grant execute on function public.get_brevo_api_key() to service_role;
@@ -1465,12 +1571,17 @@ grant execute on function public.grant_consent(p_consent_type text, p_document_v
 grant execute on function public.grant_consent(p_consent_type text, p_document_version text, p_locale text) to service_role;
 revoke all on function public.handle_new_user() from public;
 grant execute on function public.handle_new_user() to service_role;
+revoke all on function public.limite_gratis_de_ia(p_recurso text) from public;
+grant execute on function public.limite_gratis_de_ia(p_recurso text) to authenticated;
+grant execute on function public.limite_gratis_de_ia(p_recurso text) to service_role;
 revoke all on function public.next_template_order() from public;
 grant execute on function public.next_template_order() to authenticated;
 grant execute on function public.next_template_order() to service_role;
 revoke all on function public.reorder_workout_templates(p_ids uuid[]) from public;
 grant execute on function public.reorder_workout_templates(p_ids uuid[]) to authenticated;
 grant execute on function public.reorder_workout_templates(p_ids uuid[]) to service_role;
+revoke all on function public.reservar_cota_ia(p_user_id uuid, p_recurso text) from public;
+grant execute on function public.reservar_cota_ia(p_user_id uuid, p_recurso text) to service_role;
 revoke all on function public.revoke_consent(p_consent_type text) from public;
 grant execute on function public.revoke_consent(p_consent_type text) to authenticated;
 grant execute on function public.revoke_consent(p_consent_type text) to service_role;
@@ -1483,3 +1594,61 @@ grant execute on function public.sou_conta_de_teste() to service_role;
 revoke all on function public.zerar_cota_ia() from public;
 grant execute on function public.zerar_cota_ia() to authenticated;
 grant execute on function public.zerar_cota_ia() to service_role;
+
+-- ===== PERMISSOES DE TABELA =====
+
+revoke all on public.assinaturas from anon, authenticated;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.assinaturas to anon;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.assinaturas to authenticated;
+revoke all on public.bioimpedance_logs from anon, authenticated;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.bioimpedance_logs to anon;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.bioimpedance_logs to authenticated;
+revoke all on public.contas_de_teste from anon, authenticated;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.contas_de_teste to anon;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.contas_de_teste to authenticated;
+revoke all on public.cota_ia_diaria from anon, authenticated;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.cota_ia_diaria to anon;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.cota_ia_diaria to authenticated;
+revoke all on public.diet_logs from anon, authenticated;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.diet_logs to anon;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.diet_logs to authenticated;
+revoke all on public.exercises from anon, authenticated;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.exercises to anon;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.exercises to authenticated;
+revoke all on public.friendships from anon, authenticated;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE on public.friendships to authenticated;
+grant MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE on public.friendships to anon;
+grant UPDATE (status) on public.friendships to authenticated;
+revoke all on public.goals from anon, authenticated;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.goals to anon;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.goals to authenticated;
+revoke all on public.historico_de_exercicios from anon, authenticated;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.historico_de_exercicios to anon;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.historico_de_exercicios to authenticated;
+revoke all on public.points from anon, authenticated;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.points to anon;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.points to authenticated;
+revoke all on public.profiles from anon, authenticated;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.profiles to anon;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.profiles to authenticated;
+revoke all on public.template_exercises from anon, authenticated;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.template_exercises to anon;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.template_exercises to authenticated;
+revoke all on public.user_consents from anon, authenticated;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.user_consents to anon;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.user_consents to authenticated;
+revoke all on public.water_logs from anon, authenticated;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.water_logs to anon;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.water_logs to authenticated;
+revoke all on public.weight_logs from anon, authenticated;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.weight_logs to anon;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.weight_logs to authenticated;
+revoke all on public.workout_completions from anon, authenticated;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.workout_completions to anon;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.workout_completions to authenticated;
+revoke all on public.workout_templates from anon, authenticated;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.workout_templates to anon;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.workout_templates to authenticated;
+revoke all on public.workouts from anon, authenticated;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.workouts to anon;
+grant DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE on public.workouts to authenticated;

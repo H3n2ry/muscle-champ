@@ -76,24 +76,24 @@ class DashboardRepository {
       defaultValue: [],
     );
 
-    // Ranking calculado localmente (evita falha de RPC)
-    int globalRank = 1;
-    int friendsRank = 1;
-    try {
-      final allPoints = await _client
-          .from('points')
-          .select('user_id, amount');
-      final Map<String, int> totals = {};
-      for (final p in allPoints as List) {
-        final uid = p['user_id'] as String;
-        totals[uid] = (totals[uid] ?? 0) + (p['amount'] as int);
-      }
-      final sorted = totals.entries.toList()
-        ..sort((a, b) => b.value.compareTo(a.value));
-      final idx = sorted.indexWhere((e) => e.key == userId);
-      globalRank = idx >= 0 ? idx + 1 : sorted.length + 1;
-      friendsRank = globalRank;
-    } catch (_) {}
+    // ⚠️ A posição vem do SERVIDOR, nunca de `points` lido aqui.
+    //
+    // Até 06/10/2026 isto lia `points` de todos os usuários e ordenava no app.
+    // Só que a RLS de `points` devolve apenas as linhas do próprio usuário: a
+    // lista chegava com uma entrada e TODO MUNDO via "#1 Global". Um
+    // `catch (_) {}` em volta escondia qualquer erro, e o padrão era 1.
+    //
+    // As RPCs usam a mesma ordenação da aba Ranking (pontos, depois quem
+    // entrou primeiro), então o "#N" daqui é a linha N de lá. Falhou, fica
+    // nulo e a tela não mostra posição — um "#1" de mentira era pior.
+    final globalRank = await _safe(
+      _client.rpc('get_global_rank', params: {'p_user_id': userId}),
+      defaultValue: null,
+    );
+    final friendsRank = await _safe(
+      _client.rpc('get_friends_rank', params: {'p_user_id': userId}),
+      defaultValue: null,
+    );
 
     final totalPoints = (pointsData as List)
         .fold<int>(0, (s, p) => s + (p['amount'] as int));
@@ -109,8 +109,8 @@ class DashboardRepository {
 
     return DashboardModel(
       totalPoints:       totalPoints,
-      globalRank:        globalRank,
-      friendsRank:       friendsRank,
+      globalRank:        (globalRank as num?)?.toInt(),
+      friendsRank:       (friendsRank as num?)?.toInt(),
       workoutDoneToday:  (todayWorkout as List).isNotEmpty,
       dietGoalMetToday:  (dietDoneToday as List).isNotEmpty,
       currentWeight:     (goalMap?['current_weight'] as num?)?.toDouble() ?? 0,

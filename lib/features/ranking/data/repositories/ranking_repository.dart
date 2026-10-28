@@ -39,13 +39,20 @@ class RankingRepository {
         .toList();
   }
 
+  /// ⚠️ `ignoreDuplicates`: se o pedido (ou a amizade) já existe, não faz nada.
+  ///
+  /// Antes era um upsert que SOBRESCREVIA em conflito — reenviar pedido a quem
+  /// já era amigo rebaixava a amizade de `accepted` para `pending`, e o amigo
+  /// sumia da lista até aceitar de novo. Desde 30/09/2026 isso também seria
+  /// recusado pelo banco: só o destinatário pode alterar um pedido, e só a
+  /// coluna `status` (ver 20260930c_amizade_so_quem_recebe_aceita.sql).
   Future<void> sendFriendRequest(String friendId) async {
     final userId = _client.auth.currentUser!.id;
     await _client.from('friendships').upsert({
       'user_id':   userId,
       'friend_id': friendId,
       'status':    'pending',
-    }, onConflict: 'user_id, friend_id');
+    }, onConflict: 'user_id,friend_id', ignoreDuplicates: true);
   }
 
   Future<void> acceptFriendRequest(String requestId) async {

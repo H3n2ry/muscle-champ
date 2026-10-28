@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
@@ -100,21 +100,114 @@ function parseRetryAfter(h: Headers, fallbackSecs: number): number {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// Cliente com service role, reaproveitado entre requisições da instância.
+let adminClient: SupabaseClient | null = null;
+function admin() {
+  adminClient ??= createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+  return adminClient;
+}
+
 // Cache da chave por instância (evita 1 query por request)
 let cachedKey: string | null = null;
 
 async function getGroqKey(): Promise<string> {
   if (cachedKey) return cachedKey;
-  const admin = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
-  const { data, error } = await admin.rpc("get_groq_api_key");
+  const { data, error } = await admin().rpc("get_groq_api_key");
   if (error || !data) {
     throw new Error(`Falha ao ler chave do Vault: ${error?.message}`);
   }
   cachedKey = data as string;
   return cachedKey;
+}
+
+// ─── Quem está chamando ─────────────────────────────────────────────────────
+//
+// ⚠️ `verify_jwt: true` NÃO basta. O gateway aceita qualquer JWT assinado pelo
+// projeto — inclusive a anon key, que é pública (vai embutida no app e estava
+// no workflow do repositório público). Até 30/09/2026 este proxy não olhava
+// mais nada, e qualquer pessoa, sem conta, usava a chave Groq do projeto com
+// prompt livre. Verificado: HTTP 200 com a anon key.
+//
+// Agora só passa:
+//   * usuário real — `getUser` valida o token no Auth e devolve o id;
+//   * o token de serviço, para o healthcheck e o gravador da bateria
+//     nutricional, que rodam sem usuário. Secret `TOKEN_SERVICO_IA` na função,
+//     cabeçalho `x-token-servico` na chamada. Sem o secret configurado, esse
+//     caminho simplesmente não existe.
+type Chamador = { tipo: "usuario"; id: string } | { tipo: "servico" };
+
+function iguaisEmTempoConstante(a: string, b: string): boolean {
+  const ea = new TextEncoder().encode(a);
+  const eb = new TextEncoder().encode(b);
+  if (ea.length !== eb.length) return false;
+  let diferenca = 0;
+  for (let i = 0; i < ea.length; i++) diferenca |= ea[i] ^ eb[i];
+  return diferenca === 0;
+}
+
+async function identificar(req: Request): Promise<Chamador | null> {
+  const tokenServico = Deno.env.get("TOKEN_SERVICO_IA");
+  const informado = req.headers.get("x-token-servico");
+  if (tokenServico && informado && iguaisEmTempoConstante(tokenServico, informado)) {
+    return { tipo: "servico" };
+  }
+
+  const jwt = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
+  if (!jwt) return null;
+  // A anon key não tem `sub`: o Auth recusa, e é exatamente o que queremos.
+  const { data, error } = await admin().auth.getUser(jwt);
+  if (error || !data?.user) return null;
+  return { tipo: "usuario", id: data.user.id };
+}
+
+// ─── Cota ───────────────────────────────────────────────────────────────────
+//
+// Cobrada AQUI, não no app. Antes o app chamava `consumir_cota_ia` depois do
+// sucesso — e pular essa chamada era pular a cota. Os limites moram em
+// `limite_gratis_de_ia` (SQL); ver a migração 20260930.
+//
+// Reserva ANTES de chamar a Groq: cobrar depois deixaria passar rajada, dez
+// chamadas paralelas chegando antes de qualquer uma ser cobrada.
+
+/// Recurso da chamada. Cliente antigo não manda o campo: cai no mais provável
+/// pela tarefa. Mentir aqui não adianta — todo recurso tem limite.
+function recursoDaChamada(payload: Record<string, unknown>, task: string): string {
+  const informado = payload.recurso;
+  delete payload.recurso; // protocolo do proxy, não da Groq
+  if (typeof informado === "string" && informado) return informado;
+  return task === "vision" ? "foto" : "texto";
+}
+
+async function devolverCota(uid: string, recurso: string, motivo: string) {
+  const { error } = await admin().rpc("devolver_cota_ia", {
+    p_user_id: uid,
+    p_recurso: recurso,
+    p_motivo: motivo,
+  });
+  // Não derruba a resposta: a pessoa já tem o resultado (ou o erro dela). O
+  // pior caso é um uso contado a mais, que o dia seguinte zera.
+  if (error) console.error(`[groq-proxy] falha ao devolver cota: ${error.message}`);
+}
+
+/// O modelo respondeu, mas disse que não conseguiu — a foto que ele não
+/// reconheceu. O app sempre devolveu esse caso; aqui ele fica limitado a uma
+/// devolução por dia no banco, porque com prompt livre dá para FORÇAR o modelo
+/// a responder `{"error": ...}` e ganhar a chamada de graça.
+function modeloRecusou(corpoGroq: string): boolean {
+  try {
+    const content = JSON.parse(corpoGroq)?.choices?.[0]?.message?.content;
+    if (typeof content !== "string") return false;
+    const ini = content.indexOf("{");
+    const fim = content.lastIndexOf("}");
+    if (ini < 0 || fim <= ini) return false;
+    const obj = JSON.parse(content.slice(ini, fim + 1));
+    return typeof obj?.error === "string" && obj.error.length > 0;
+  } catch {
+    return false;
+  }
 }
 
 Deno.serve(async (req: Request) => {
@@ -130,6 +223,11 @@ Deno.serve(async (req: Request) => {
     return json(413, { error: { message: "Payload muito grande" } });
   }
 
+  const chamador = await identificar(req);
+  if (!chamador) {
+    return json(401, { error: { message: "Faça login para usar a IA." } });
+  }
+
   let payload: Record<string, unknown>;
   try {
     payload = await req.json();
@@ -139,7 +237,7 @@ Deno.serve(async (req: Request) => {
 
   const task = payload.task as string | undefined;
   const chain = task ? MODEL_CHAINS[task] : undefined;
-  if (!chain) {
+  if (!task || !chain) {
     return json(400, {
       error: {
         message:
@@ -149,7 +247,56 @@ Deno.serve(async (req: Request) => {
   }
   // `task` é do protocolo do proxy, não da API da Groq.
   delete payload.task;
+  const recurso = recursoDaChamada(payload, task);
 
+  let reserva = "servico";
+  if (chamador.tipo === "usuario") {
+    const { data, error } = await admin().rpc("reservar_cota_ia", {
+      p_user_id: chamador.id,
+      p_recurso: recurso,
+    });
+    if (error) {
+      // Falha FECHADA: sem conseguir contar, não chama a Groq.
+      const invalido = error.message.includes("recurso invalido");
+      return json(invalido ? 400 : 503, {
+        error: {
+          message: invalido
+            ? `Recurso de IA inválido: ${recurso}`
+            : "Não foi possível verificar seu limite de IA. Tente de novo.",
+        },
+      });
+    }
+    reserva = data as string;
+    if (reserva === "esgotada") {
+      return json(402, {
+        error: {
+          message:
+            "Você já usou o limite gratuito de hoje. Assine o Pro para usar sem limite.",
+          code: "cota_esgotada",
+        },
+      });
+    }
+  }
+
+  const resposta = await chamarGroq(payload, task, chain);
+
+  // Todo caminho de falha de `chamarGroq` devolve status != 200 — rede, Vault,
+  // modelos aposentados, 429 persistente, erro da Groq. Um lugar só decide.
+  if (reserva === "reservada" && chamador.tipo === "usuario") {
+    if (resposta.status !== 200) {
+      await devolverCota(chamador.id, recurso, "falha");
+    } else if (modeloRecusou(await resposta.clone().text())) {
+      await devolverCota(chamador.id, recurso, "nao_reconheceu");
+    }
+  }
+  return resposta;
+});
+
+async function chamarGroq(
+  payload: Record<string, unknown>,
+  task: string,
+  chain: ModelSpec[],
+): Promise<Response> {
   // Guardados ANTES do loop: cada tentativa precisa partir do que o chamador
   // pediu, não do que a tentativa anterior deixou no payload.
   const requestedTokens = typeof payload.max_tokens === "number"
@@ -318,4 +465,4 @@ Deno.serve(async (req: Request) => {
 
   // Inalcançável: o loop sempre retorna ou cai no 429 acima.
   return json(502, { error: { message: "Erro no proxy Groq" } });
-});
+}

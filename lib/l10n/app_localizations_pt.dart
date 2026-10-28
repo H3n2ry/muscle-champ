@@ -1275,6 +1275,23 @@ class LPt extends L {
   String get treino_atualizeCargas => 'Atualize as cargas se necessário';
 
   @override
+  String get treino_sairSemConcluirTitulo => 'Sair sem concluir?';
+
+  @override
+  String get treino_sairSemConcluirCorpo =>
+      'As cargas e repetições que você mudou só são salvas quando o treino é concluído. Se sair agora, elas voltam ao que eram.\n\nOs exercícios marcados como feitos continuam marcados.';
+
+  @override
+  String get treino_continuarTreino => 'CONTINUAR TREINO';
+
+  @override
+  String get treino_sairSemSalvar => 'SAIR SEM SALVAR';
+
+  @override
+  String get treino_erroConcluir =>
+      'Não deu para salvar o treino. Verifique a conexão e tente de novo — nada foi perdido.';
+
+  @override
   String treino_exerciciosParen(int n) {
     return '$n exercício(s)';
   }

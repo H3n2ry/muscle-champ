@@ -2701,11 +2701,8 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
     });
     try {
       final result = await GroqService.calculateFoodMacros(desc);
-      // Só conta depois que deu certo: cobrar a cota numa queda de rede
-      // gastaria o uso do dia sem entregar nada.
-      await ref
-          .read(cotaIaControllerProvider)
-          .registrarUso(RecursoIa.macrosTexto);
+      // A cota já foi cobrada pelo proxy (e devolvida, se tivesse falhado).
+      ref.read(cotaIaControllerProvider).atualizarSaldo();
       if (mounted) setState(() => _aiResult = result);
     } catch (e) {
       if (mounted) {
@@ -2754,13 +2751,11 @@ class _SmartMealSheetState extends ConsumerState<_SmartMealSheet> {
         handLengthCm: cal?.lengthCm,
         handWidthCm: cal?.widthCm,
       );
-      // Resposta com 'error' é a IA dizendo que não reconheceu a foto —
-      // não entregou valor, então não consome a foto do dia.
-      if (!result.containsKey('error')) {
-        await ref
-            .read(cotaIaControllerProvider)
-            .registrarUso(RecursoIa.fotoRefeicao);
-      }
+      // Atualiza nos DOIS casos. "Não reconheceu" devolve a foto do dia, mas
+      // o proxy só faz isso uma vez por dia — com prompt livre, a devolução
+      // sem teto virava chamada de graça. Então o saldo pode ter mudado
+      // mesmo com 'error'.
+      ref.read(cotaIaControllerProvider).atualizarSaldo();
       if (mounted) {
         if (result.containsKey('error')) {
           setState(() => _photoError = result['error'] as String);
@@ -4132,12 +4127,8 @@ Future<void> _gerarPlanoComCota(
     return;
   }
   await gerar();
-  // O notifier engole a exceção e guarda o erro no estado, então o sucesso é
-  // "sobrou um plano no fim". Sem isso, uma geração que falhou consumiria a
-  // única do dia.
-  if (ref.read(aiDietPlanProvider).plan != null) {
-    await controller.registrarUso(RecursoIa.planoDieta);
-  }
+  // A cota já foi cobrada pelo proxy (e devolvida, se a geração falhou).
+  controller.atualizarSaldo();
 }
 
 /// [SeloDeCota] resolvendo o provider sozinho.

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/i18n/ler_decimal.dart';
 import '../../../../core/auth/politica_de_senha.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/legal/legal_documents.dart';
@@ -358,8 +359,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     selected:      _weeklyGoal,
                     onSelect:      (v) => setState(() => _weeklyGoal = v),
                     goalType:      _goalType,
-                    currentWeight: double.tryParse(_currWtCtrl.text) ?? 0,
-                    targetWeight:  double.tryParse(_targWtCtrl.text) ?? 0,
+                    currentWeight: lerDecimal(_currWtCtrl.text) ?? 0,
+                    targetWeight:  lerDecimal(_targWtCtrl.text) ?? 0,
                     consentBlock: _ConsentBlock(
                       values:      _consents,
                       showError:   _consentError,

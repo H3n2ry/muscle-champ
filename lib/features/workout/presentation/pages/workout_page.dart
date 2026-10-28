@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/i18n/ler_decimal.dart';
 import '../../../../core/legal/legal_texts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -13,8 +14,10 @@ import '../../../../shared/widgets/mk_snack.dart';
 import '../../data/models/workout_template_model.dart';
 import '../../data/repositories/workout_template_repository.dart';
 import '../../data/datasources/exercise_library.dart';
+import '../../data/models/reconciliacao_de_exercicios.dart';
 import '../providers/workout_template_provider.dart';
 import '../widgets/anotacao_e_progresso.dart';
+import '../widgets/guarda_de_saida.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../subscription/data/models/cota_ia.dart';
 import '../../../subscription/presentation/providers/cota_ia_provider.dart';
@@ -454,9 +457,8 @@ class _AiWorkoutSheetState extends ConsumerState<_AiWorkoutSheet> {
 
     try {
       final result = await GroqService.generateWorkout(group);
-      await ref
-          .read(cotaIaControllerProvider)
-          .registrarUso(RecursoIa.gerarTreino);
+      // A cota já foi cobrada pelo proxy (e devolvida, se tivesse falhado).
+      ref.read(cotaIaControllerProvider).atualizarSaldo();
       if (mounted) setState(() => _generated = result);
     } catch (e) {
       if (mounted) {
@@ -1208,6 +1210,14 @@ class _TemplateSheetState extends ConsumerState<_TemplateSheet> {
           _exercises = list
               .map((e) => <String, dynamic>{
                     '_uid': _novoUid(),
+                    // ⚠️ O `id` do banco viaja junto e NÃO é enfeite.
+                    //
+                    // Sem ele, salvar a edição recriava toda linha com UUID
+                    // novo, e junto iam embora a `anotacao` (que mora nessa
+                    // linha) e todo o histórico de progressão (que aponta para
+                    // ela com ON DELETE CASCADE). Bastava reordenar ou corrigir
+                    // um nome para apagar meses de dado, sem aviso nenhum.
+                    'id': e.id,
                     'name': e.name,
                     'sets': e.sets,
                     'reps': e.reps,
@@ -1430,11 +1440,22 @@ class _TemplateSheetState extends ConsumerState<_TemplateSheet> {
                     onSubir: () => _moverExercicio(i, i - 1),
                     onDescer: () => _moverExercicio(i, i + 1),
                     onChange: (v) => setState(() {
-                      // Preserva o uid: _emit() devolve um Map novo sem ele.
-                      _exercises[i] = <String, dynamic>{
-                        ...v,
-                        '_uid': _exercises[i]['_uid'],
-                      };
+                      // `_emit()` devolve um Map NOVO a cada tecla, só com os
+                      // campos do formulário. O que ele deixa cair precisa ser
+                      // recolocado aqui.
+                      //
+                      // ⚠️ `id` é o caso grave. Sem ele, digitar uma letra no
+                      // nome fazia o exercício virar "linha nova" ao salvar —
+                      // INSERT com UUID novo e DELETE do antigo, levando junto
+                      // a anotação e todo o histórico de progressão, que aponta
+                      // para a linha com ON DELETE CASCADE. A reconciliação em
+                      // `updateExercises` não salva ninguém se o id não chega
+                      // lá.
+                      //
+                      // `_uid` só existe na tela: perdê-lo custava o foco do
+                      // campo no meio da digitação.
+                      _exercises[i] =
+                          preservarIdentidade(_exercises[i], v);
                     }),
                     onRemove: () =>
                         setState(() => _exercises.removeAt(i)),
@@ -1726,7 +1747,7 @@ class _ExerciseInputRowState extends State<_ExerciseInputRow> {
       'name': _name.text,
       'sets': int.tryParse(_sets.text) ?? 3,
       'reps': int.tryParse(_reps.text) ?? 10,
-      'weight_kg': double.tryParse(_weight.text) ?? 0.0,
+      'weight_kg': lerDecimal(_weight.text) ?? 0.0,
     });
   }
 
@@ -1867,6 +1888,27 @@ class _DoWorkoutSheetState extends ConsumerState<_DoWorkoutSheet> {
   /// Ids dos exercícios já concluídos nesta sessão.
   Set<String> _feitos = {};
 
+  /// Carga, séries e reps como vieram do banco.
+  ///
+  /// Só o CONCLUIR TREINO grava esses três, e de propósito: gravar a cada
+  /// tecla faria o servidor comparar a sessão com ela mesma e zerar os pontos
+  /// de progressão. O preço é que fechar a folha antes perde o que foi
+  /// digitado — então, havendo diferença, a folha pergunta antes de fechar.
+  /// Os checks e a anotação ficam de fora: esses já se salvam sozinhos.
+  Map<String, (double, int, int)> _original = {};
+
+  bool get _alterado => _exercises.any((e) {
+        final o = _original[e.id];
+        return o != null && o != (e.weightKg, e.sets, e.reps);
+      });
+
+  /// Enquanto salva, fechar a folha também é recusado: o `onComplete` termina
+  /// com um `Navigator.pop` que, com a folha já fechada, tiraria a página de
+  /// Treino da pilha.
+  bool get _segurar => _saving || _alterado;
+
+  bool _perguntando = false;
+
   /// Chave do progresso: por usuário, template e dia.
   ///
   /// Persistir em SharedPreferences (e não só em memória) porque durante o
@@ -1901,6 +1943,7 @@ class _DoWorkoutSheetState extends ConsumerState<_DoWorkoutSheet> {
     if (mounted) {
       setState(() {
         _exercises = list;
+        _original = {for (final e in list) e.id: (e.weightKg, e.sets, e.reps)};
         // Descarta ids que não existem mais (exercício removido do template).
         _feitos = feitos.where((id) => list.any((e) => e.id == id)).toSet();
       });
@@ -1917,15 +1960,68 @@ class _DoWorkoutSheetState extends ConsumerState<_DoWorkoutSheet> {
     } catch (_) {/* silencioso: o check na tela já valeu */}
   }
 
-  Future<void> _limparProgresso() async {
+  /// Recebe a chave pronta porque roda depois do `onComplete`, quando a folha
+  /// já fechou e `widget` não deve mais ser lido.
+  Future<void> _limparProgresso(String chave) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_chaveProgresso);
+      await prefs.remove(chave);
     } catch (_) {}
   }
 
+  Future<void> _concluir() async {
+    final chave = _chaveProgresso;
+    setState(() => _saving = true);
+    try {
+      await widget.onComplete(_exercises);
+    } catch (_) {
+      // Sem isto o botão ficava em SALVANDO... para sempre — e, com a folha
+      // recusando fechar enquanto salva, a pessoa ficaria presa nela. Os checks
+      // só são apagados depois do sucesso, então a nova tentativa os encontra.
+      if (mounted) {
+        setState(() => _saving = false);
+        MkSnack.error(context, L.of(context).treino_erroConcluir);
+      }
+      return;
+    }
+    await _limparProgresso(chave);
+  }
+
+  Future<void> _pedirParaSair() async {
+    // Salvando, a folha fecha sozinha no fim; perguntar ali só confundiria.
+    if (_saving || _perguntando) return;
+    _perguntando = true;
+    final sair = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: AppColors.surfaceContainerLow,
+        title: Text(L.of(context).treino_sairSemConcluirTitulo),
+        content: Text(L.of(context).treino_sairSemConcluirCorpo),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dialogCtx, false),
+              child: Text(L.of(context).treino_continuarTreino)),
+          TextButton(
+              onPressed: () => Navigator.pop(dialogCtx, true),
+              child: Text(L.of(context).treino_sairSemSalvar,
+                  style: const TextStyle(color: AppColors.error))),
+        ],
+      ),
+    );
+    _perguntando = false;
+    // `pop`, não `maybePop`: o PopScope recusaria de novo. O context é o da
+    // própria folha, então o que sai da pilha é ela.
+    if (sair == true && mounted) Navigator.of(context).pop();
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => GuardaDeSaida(
+        segurar: _segurar,
+        aoTentarSair: _pedirParaSair,
+        child: _folha(context),
+      );
+
+  Widget _folha(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.surfaceContainerLowest,
@@ -2042,13 +2138,8 @@ class _DoWorkoutSheetState extends ConsumerState<_DoWorkoutSheet> {
                   // Continua liberado mesmo com exercícios em aberto: pular um
                   // por dor, equipamento ocupado ou falta de tempo é rotina, e
                   // travar a conclusão puniria o usuário por treinar.
-                  onPressed: (_saving || _exercises.isEmpty)
-                      ? null
-                      : () async {
-                          setState(() => _saving = true);
-                          await _limparProgresso();
-                          await widget.onComplete(_exercises);
-                        },
+                  onPressed:
+                      (_saving || _exercises.isEmpty) ? null : _concluir,
                   icon: _saving
                       ? SizedBox(
                           width: 18, height: 18,
@@ -2287,7 +2378,7 @@ class _DoExerciseRowState extends ConsumerState<_DoExerciseRow> {
 
   void _emit() {
     widget.onChange(widget.exercise.copyWith(
-      weightKg: double.tryParse(_weight.text) ?? 0,
+      weightKg: lerDecimal(_weight.text) ?? 0,
       sets: int.tryParse(_sets.text) ?? widget.exercise.sets,
       reps: int.tryParse(_reps.text) ?? widget.exercise.reps,
     ));

@@ -1,8 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../models/cota_ia.dart';
-
 final cotaIaRepositoryProvider =
     Provider<CotaIaRepository>((_) => CotaIaRepository());
 
@@ -34,11 +32,6 @@ class CotaIaRepository {
       // — e o custo de uma chamada de IA é fração de centavo.
       return {};
     }
-  }
-
-  /// Registra um uso. Chamar só quando a IA respondeu com sucesso.
-  Future<void> consumir(RecursoIa recurso) async {
-    await _client.rpc('consumir_cota_ia', params: {'p_recurso': recurso.chave});
   }
 
   /// Zera a cota do dia. Só para o modo demonstração poder testar o limite
