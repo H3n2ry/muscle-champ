@@ -22,6 +22,18 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 passo() { printf '\n── %s\n' "$1"; }
 
+# ## Só o master, e só o que já está no GitHub
+#
+# Desde 28/10/2026 produção reflete apenas o master revisado (PR aceito).
+# Testar mudança é com tool/publicar_preview.sh, que vai para um endereço de
+# teste e para o Supabase de teste.
+passo "conferir origem"
+branch="$(git rev-parse --abbrev-ref HEAD)"
+[ "$branch" = "master" ] || { echo "está em '$branch'. Produção só sai do master (para testar: tool/publicar_preview.sh)."; exit 1; }
+[ -z "$(git status --porcelain --untracked-files=no)" ] || { echo "há mudanças não commitadas — não publico."; exit 1; }
+git fetch -q origin master
+[ "$(git rev-parse HEAD)" = "$(git rev-parse origin/master)" ] || { echo "master local difere do origin/master — faça pull/push antes."; exit 1; }
+
 passo "build"
 # Sem pipe: com `| grep`, o código de saída seria o do grep, não o do flutter.
 flutter build web --release

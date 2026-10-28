@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:muscle_camp/core/secrets.dart';
+import 'package:muscle_camp/core/supabase/supabase_config.dart';
 
 class GroqConfig {
   GroqConfig._();
@@ -7,7 +7,7 @@ class GroqConfig {
   // As chamadas de IA passam pela Edge Function groq-proxy (autenticada por JWT).
   // A chave Groq vive no Supabase Vault — nunca no app.
   static const String baseUrl =
-      '${Secrets.supabaseUrl}/functions/v1/groq-proxy';
+      '${SupabaseConfig.url}/functions/v1/groq-proxy';
 
   // ⚠️ O app NÃO conhece mais o ID do modelo. Ele envia apenas `task` —
   // 'text' ou 'vision' — e o proxy resolve para o modelo atual.
