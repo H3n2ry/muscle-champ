@@ -1,0 +1,72 @@
+name: Desligamentos da Groq
+
+# Toda semana lê https://console.groq.com/docs/deprecations e abre uma issue
+# quando um modelo da MODEL_CHAINS do groq-proxy tem data para ser desligado.
+#
+# Complementa o AI Healthcheck (diário), que só percebe DEPOIS que o modelo
+# caiu. Em 14/09/2026 a Groq desligou o qwen3.6-27b e o modo FOTO ficou fora
+# até 28/10: a data estava publicada nessa página com antecedência.
+#
+# Não mexe em nada: só abre issue (uma por modelo; se já houver uma aberta
+# com o mesmo título, não repete). Falha do workflow = página mudou de formato,
+# e o GitHub manda e-mail ao dono do repositório.
+
+on:
+  schedule:
+    # Segunda, 11:41 UTC (~08:41 BRT). Horário quebrado: crons redondos atrasam.
+    - cron: "41 11 * * 1"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  conferir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Baixar a página de desligamentos
+        run: |
+          curl -sSfL --retry 3 -A "muscle-champ-monitor" \
+            https://console.groq.com/docs/deprecations -o pagina.html
+
+      - name: Conferir modelos em uso
+        id: conferir
+        run: |
+          achados="$(python3 tool/desligamentos_groq.py pagina.html supabase/functions/groq-proxy/index.ts)"
+          echo "$achados"
+          echo "achados=$achados" >> "$GITHUB_OUTPUT"
+
+      - name: Abrir issue por modelo
+        if: steps.conferir.outputs.achados != '[]'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ACHADOS: ${{ steps.conferir.outputs.achados }}
+        run: |
+          echo "$ACHADOS" | jq -c '.[]' | while read -r a; do
+            modelo="$(jq -r .modelo <<<"$a")"
+            quando="$(jq -r .desligamento <<<"$a")"
+            subst="$(jq -r .substituto <<<"$a")"
+            titulo="Groq vai desligar $modelo em $quando"
+            ja_tem="$(gh issue list --state open --search "\"$modelo\" in:title" --json title --jq "map(select(.title == \"$titulo\")) | length")"
+            if [ "$ja_tem" != "0" ]; then
+              echo "já existe issue aberta: $titulo"
+              continue
+            fi
+            corpo="$(cat <<CORPO
+          A Groq marcou **\`$modelo\`** para ser desligado em **$quando**, e ele está na \`MODEL_CHAINS\` do \`groq-proxy\` (\`supabase/functions/groq-proxy/index.ts\`).
+
+          Substituto indicado pela Groq: \`$subst\`
+
+          O que fazer, sem tocar produção antes da revisão:
+          1. Branch + PR trocando o modelo na \`MODEL_CHAINS\`.
+          2. Publicar a função no Supabase de **teste** (ver CLAUDE.md) e testar o modo FOTO e o texto lá.
+          3. Depois do merge, publicar a função em produção e conferir o AI Healthcheck.
+
+          Fonte: https://console.groq.com/docs/deprecations
+          CORPO
+          )"
+            gh issue create --title "$titulo" --body "$corpo"
+          done

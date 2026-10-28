@@ -64,7 +64,7 @@ pols as (
            policyname, tablename, permissive, cmd, array_to_string(roles, ', '),
            case when qual is not null then E'\n  using (' || qual || ')' else '' end,
            case when with_check is not null then E'\n  with check (' || with_check || ')' else '' end),
-         E'\n' order by tablename, cmd) as s
+         E'\n' order by tablename, cmd, policyname) as s
   from pg_policies where schemaname='public'
 ),
 trigs as (
@@ -76,9 +76,13 @@ trigs as (
 ),
 -- Sem este bloco, reconstruir deixaria TODA função executável por `anon`:
 -- no Postgres, PUBLIC ganha EXECUTE por padrão ao criar uma função.
+-- E o revoke precisa nomear anon/authenticated/service_role também: o Supabase
+-- tem default privileges que dão EXECUTE a esses papéis EXPLICITAMENTE, e
+-- `from public` não tira isso. Pego em 28/10/2026 ao montar o banco de teste:
+-- com só `from public`, get_groq_api_key() ficava executável por anon.
 privs as (
   select string_agg(
-    format('revoke all on function public.%I(%s) from public;', f.proname, f.args)
+    format('revoke all on function public.%I(%s) from public, anon, authenticated, service_role;', f.proname, f.args)
     || coalesce((select string_agg(format(E'\ngrant execute on function public.%I(%s) to %I;',
                                           f.proname, f.args, g), '')
                  from unnest(f.quem) g
