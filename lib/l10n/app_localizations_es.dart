@@ -1917,6 +1917,50 @@ class LEs extends L {
   String get pag_seguro => 'Simulación local — no se transmite nada';
 
   @override
+  String get pag_nomeCompleto => 'NOMBRE COMPLETO';
+
+  @override
+  String get pag_cpf => 'CPF';
+
+  @override
+  String get pag_cartaoNoAsaas =>
+      'Ingresas la tarjeta en la página segura de Asaas, nuestro socio de pagos. El número de la tarjeta no pasa por Muscle Champ.';
+
+  @override
+  String get pag_pixNoAsaas =>
+      'En cada renovación recibes un cobro Pix para pagar desde la app de tu banco.';
+
+  @override
+  String get pag_seguroAsaas => 'Pago procesado por Asaas';
+
+  @override
+  String get pag_aguardandoTitulo => 'Falta pagar';
+
+  @override
+  String get pag_aguardandoTexto =>
+      'Abrimos la página de pago de Asaas. Pro se activa en cuanto se confirme el pago, normalmente en pocos minutos.';
+
+  @override
+  String get pag_abrirPagamento => 'ABRIR PÁGINA DE PAGO';
+
+  @override
+  String get pag_entendi => 'ENTENDIDO';
+
+  @override
+  String get pag_erroNome => 'Escribe tu nombre completo.';
+
+  @override
+  String get pag_erroCpf => 'CPF inválido. Revisa los números.';
+
+  @override
+  String get pag_erroOutroCanal =>
+      'Ya tienes una suscripción activa. También vale aquí.';
+
+  @override
+  String get pag_erroGenerico =>
+      'No pudimos iniciar la suscripción ahora. Inténtalo de nuevo en unos minutos.';
+
+  @override
   String get suc_titulo => 'SUSCRIPCIÓN ACTIVA';
 
   @override

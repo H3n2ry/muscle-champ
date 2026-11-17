@@ -3573,6 +3573,84 @@ abstract class L {
   /// **'Simulação local — nada é transmitido'**
   String get pag_seguro;
 
+  /// No description provided for @pag_nomeCompleto.
+  ///
+  /// In pt, this message translates to:
+  /// **'NOME COMPLETO'**
+  String get pag_nomeCompleto;
+
+  /// No description provided for @pag_cpf.
+  ///
+  /// In pt, this message translates to:
+  /// **'CPF'**
+  String get pag_cpf;
+
+  /// No description provided for @pag_cartaoNoAsaas.
+  ///
+  /// In pt, this message translates to:
+  /// **'Você digita o cartão na página segura do Asaas, nossa parceira de pagamentos. O número do cartão não passa pelo Muscle Champ.'**
+  String get pag_cartaoNoAsaas;
+
+  /// No description provided for @pag_pixNoAsaas.
+  ///
+  /// In pt, this message translates to:
+  /// **'A cada renovação você recebe uma cobrança Pix para pagar pelo app do seu banco.'**
+  String get pag_pixNoAsaas;
+
+  /// No description provided for @pag_seguroAsaas.
+  ///
+  /// In pt, this message translates to:
+  /// **'Pagamento processado pelo Asaas'**
+  String get pag_seguroAsaas;
+
+  /// No description provided for @pag_aguardandoTitulo.
+  ///
+  /// In pt, this message translates to:
+  /// **'Falta pagar'**
+  String get pag_aguardandoTitulo;
+
+  /// No description provided for @pag_aguardandoTexto.
+  ///
+  /// In pt, this message translates to:
+  /// **'Abrimos a página de pagamento do Asaas. Seu Pro é ativado assim que o pagamento for confirmado, normalmente em poucos minutos.'**
+  String get pag_aguardandoTexto;
+
+  /// No description provided for @pag_abrirPagamento.
+  ///
+  /// In pt, this message translates to:
+  /// **'ABRIR PÁGINA DE PAGAMENTO'**
+  String get pag_abrirPagamento;
+
+  /// No description provided for @pag_entendi.
+  ///
+  /// In pt, this message translates to:
+  /// **'ENTENDI'**
+  String get pag_entendi;
+
+  /// No description provided for @pag_erroNome.
+  ///
+  /// In pt, this message translates to:
+  /// **'Digite seu nome completo.'**
+  String get pag_erroNome;
+
+  /// No description provided for @pag_erroCpf.
+  ///
+  /// In pt, this message translates to:
+  /// **'CPF inválido. Confira os números.'**
+  String get pag_erroCpf;
+
+  /// No description provided for @pag_erroOutroCanal.
+  ///
+  /// In pt, this message translates to:
+  /// **'Você já tem uma assinatura ativa. Ela vale aqui também.'**
+  String get pag_erroOutroCanal;
+
+  /// No description provided for @pag_erroGenerico.
+  ///
+  /// In pt, this message translates to:
+  /// **'Não conseguimos iniciar a assinatura agora. Tente de novo em alguns minutos.'**
+  String get pag_erroGenerico;
+
   /// No description provided for @suc_titulo.
   ///
   /// In pt, this message translates to:

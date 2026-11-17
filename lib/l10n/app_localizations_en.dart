@@ -1900,6 +1900,50 @@ class LEn extends L {
   String get pag_seguro => 'Local simulation — nothing is transmitted';
 
   @override
+  String get pag_nomeCompleto => 'FULL NAME';
+
+  @override
+  String get pag_cpf => 'CPF (BRAZILIAN TAX ID)';
+
+  @override
+  String get pag_cartaoNoAsaas =>
+      'You enter your card on the secure page of Asaas, our payment partner. Your card number never goes through Muscle Champ.';
+
+  @override
+  String get pag_pixNoAsaas =>
+      'At each renewal you get a Pix charge to pay from your bank app.';
+
+  @override
+  String get pag_seguroAsaas => 'Payment processed by Asaas';
+
+  @override
+  String get pag_aguardandoTitulo => 'Payment pending';
+
+  @override
+  String get pag_aguardandoTexto =>
+      'We opened the Asaas payment page. Pro turns on as soon as the payment is confirmed, usually within a few minutes.';
+
+  @override
+  String get pag_abrirPagamento => 'OPEN PAYMENT PAGE';
+
+  @override
+  String get pag_entendi => 'GOT IT';
+
+  @override
+  String get pag_erroNome => 'Enter your full name.';
+
+  @override
+  String get pag_erroCpf => 'Invalid CPF. Please check the digits.';
+
+  @override
+  String get pag_erroOutroCanal =>
+      'You already have an active subscription. It works here too.';
+
+  @override
+  String get pag_erroGenerico =>
+      'We couldn\'t start the subscription right now. Please try again in a few minutes.';
+
+  @override
   String get suc_titulo => 'SUBSCRIPTION ACTIVE';
 
   @override
