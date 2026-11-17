@@ -1911,6 +1911,50 @@ class LPt extends L {
   String get pag_seguro => 'Simulação local — nada é transmitido';
 
   @override
+  String get pag_nomeCompleto => 'NOME COMPLETO';
+
+  @override
+  String get pag_cpf => 'CPF';
+
+  @override
+  String get pag_cartaoNoAsaas =>
+      'Você digita o cartão na página segura do Asaas, nossa parceira de pagamentos. O número do cartão não passa pelo Muscle Champ.';
+
+  @override
+  String get pag_pixNoAsaas =>
+      'A cada renovação você recebe uma cobrança Pix para pagar pelo app do seu banco.';
+
+  @override
+  String get pag_seguroAsaas => 'Pagamento processado pelo Asaas';
+
+  @override
+  String get pag_aguardandoTitulo => 'Falta pagar';
+
+  @override
+  String get pag_aguardandoTexto =>
+      'Abrimos a página de pagamento do Asaas. Seu Pro é ativado assim que o pagamento for confirmado, normalmente em poucos minutos.';
+
+  @override
+  String get pag_abrirPagamento => 'ABRIR PÁGINA DE PAGAMENTO';
+
+  @override
+  String get pag_entendi => 'ENTENDI';
+
+  @override
+  String get pag_erroNome => 'Digite seu nome completo.';
+
+  @override
+  String get pag_erroCpf => 'CPF inválido. Confira os números.';
+
+  @override
+  String get pag_erroOutroCanal =>
+      'Você já tem uma assinatura ativa. Ela vale aqui também.';
+
+  @override
+  String get pag_erroGenerico =>
+      'Não conseguimos iniciar a assinatura agora. Tente de novo em alguns minutos.';
+
+  @override
   String get suc_titulo => 'ASSINATURA ATIVA';
 
   @override

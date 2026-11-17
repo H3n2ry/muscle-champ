@@ -1,25 +1,27 @@
-/// Checkout — SIMULAÇÃO.
+/// Checkout.
 ///
-/// Os campos de cartão existem só para o layout poder ser avaliado. Eles vêm
-/// preenchidos com o número de teste 4111 1111 1111 1111, não saem do
-/// aparelho e não são gravados em lugar nenhum.
+/// No SITE é real: pede nome e CPF e chama a Edge Function `asaas-assinar`.
+/// O cartão é digitado na página do Asaas, nunca aqui, e o Pro só é ativado
+/// pelo servidor (avaliação gratuita na hora; pagamento pelo webhook).
 ///
-/// ⚠️ Em produção esta tela não existe no Android: assinatura de conteúdo
-/// digital tem que passar pelo Google Play Billing, que abre a folha de
-/// pagamento do próprio Play. O que sobra daqui é a versão web, e mesmo essa
-/// precisa de um gateway com confirmação por webhook no servidor — cliente
-/// nunca decide que pagou.
+/// Fora do site continua a SIMULAÇÃO: os campos de cartão vêm preenchidos com
+/// o número de teste 4111 1111 1111 1111 e não saem do aparelho. No Android
+/// esta tela dá lugar ao Google Play Billing, que abre a folha de pagamento
+/// do próprio Play.
 library;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../data/models/plano.dart';
+import '../../data/repositories/assinatura_repository.dart';
 import '../providers/assinatura_provider.dart';
 import '../widgets/demo_banner.dart';
 
@@ -43,8 +45,14 @@ class _PagamentoPageState extends ConsumerState<PagamentoPage> {
   final _validade = TextEditingController(text: '12/30');
   final _cvv = TextEditingController(text: '123');
 
+  // Site: quem paga. O Asaas exige nome e CPF do cliente.
+  final _nomeCompleto = TextEditingController();
+  final _cpf = TextEditingController();
+
   @override
   void dispose() {
+    _nomeCompleto.dispose();
+    _cpf.dispose();
     _numero.dispose();
     _nome.dispose();
     _validade.dispose();
@@ -59,6 +67,7 @@ class _PagamentoPageState extends ConsumerState<PagamentoPage> {
   }
 
   Future<void> _confirmar() async {
+    if (kIsWeb) return _confirmarPeloSite();
     setState(() => _processando = true);
     // Espera artificial: sem ela não dá para avaliar o estado de carregamento,
     // que é justamente onde um checkout real passa mais tempo.
@@ -70,17 +79,96 @@ class _PagamentoPageState extends ConsumerState<PagamentoPage> {
     context.pushReplacement('/assinatura/sucesso', extra: widget.plano);
   }
 
+  Future<void> _confirmarPeloSite() async {
+    final l = L.of(context);
+    final nome = _nomeCompleto.text.trim();
+    final cpf = _cpf.text.replaceAll(RegExp(r'\D'), '');
+    if (nome.length < 3 || !nome.contains(' ')) {
+      return _avisar(l.pag_erroNome);
+    }
+    if (!cpfValido(cpf)) return _avisar(l.pag_erroCpf);
+
+    setState(() => _processando = true);
+    try {
+      final r = await ref.read(assinaturaControllerProvider).assinarPeloSite(
+            plano: widget.plano,
+            nome: nome,
+            cpf: cpf,
+            cartao: _forma == _Forma.cartao,
+          );
+      if (!mounted) return;
+      if (r.emTrial) {
+        context.pushReplacement('/assinatura/sucesso', extra: widget.plano);
+        return;
+      }
+      final link = r.linkPagamento;
+      if (link != null) {
+        await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
+      }
+      if (!mounted) return;
+      await _mostrarAguardandoPagamento(link);
+    } on ErroAssinatura catch (e) {
+      _avisar(switch (e.codigo) {
+        'cpf_invalido' => l.pag_erroCpf,
+        'nome_invalido' => l.pag_erroNome,
+        'assinatura_ativa_em_outro_canal' => l.pag_erroOutroCanal,
+        _ => l.pag_erroGenerico,
+      });
+    } catch (_) {
+      _avisar(l.pag_erroGenerico);
+    } finally {
+      if (mounted) setState(() => _processando = false);
+    }
+  }
+
+  void _avisar(String texto) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(texto)));
+  }
+
+  /// Sem avaliação gratuita, o Pro depende do webhook. A tela não finge que
+  /// deu certo: explica que falta pagar e deixa reabrir a página do Asaas,
+  /// caso o navegador tenha bloqueado a nova aba.
+  Future<void> _mostrarAguardandoPagamento(String? link) async {
+    final l = L.of(context);
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l.pag_aguardandoTitulo),
+        content: Text(l.pag_aguardandoTexto),
+        actions: [
+          if (link != null)
+            TextButton(
+              onPressed: () => launchUrl(Uri.parse(link),
+                  mode: LaunchMode.externalApplication),
+              child: Text(l.pag_abrirPagamento),
+            ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(l.pag_entendi),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    ref.invalidate(assinaturaProvider);
+    context.pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = L.of(context);
     final p = widget.plano;
+    // Na dúvida (ainda carregando), mostra o trial: o servidor decide de
+    // verdade e, se não couber, cobra no primeiro dia.
+    final temTrial = !(ref.watch(jaUsouTrialProvider).valueOrNull ?? false);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
-            const DemoBanner(),
+            if (!kIsWeb) const DemoBanner(),
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 8, 24, 0),
               child: Row(
@@ -118,15 +206,21 @@ class _PagamentoPageState extends ConsumerState<PagamentoPage> {
                         children: [
                           _LinhaResumo(
                             rotulo: l.pag_hoje,
-                            valor: l.pag_gratis,
+                            valor: temTrial
+                                ? l.pag_gratis
+                                : formatarBRL(p.entrada),
                             destaque: true,
                           ),
-                          const Divider(
-                              height: 22, color: AppColors.surfaceContainerHigh),
-                          _LinhaResumo(
-                            rotulo: l.pag_depoisDoTrial(_dataPrimeiraCobranca),
-                            valor: formatarBRL(p.entrada),
-                          ),
+                          if (temTrial) ...[
+                            const Divider(
+                                height: 22,
+                                color: AppColors.surfaceContainerHigh),
+                            _LinhaResumo(
+                              rotulo:
+                                  l.pag_depoisDoTrial(_dataPrimeiraCobranca),
+                              valor: formatarBRL(p.entrada),
+                            ),
+                          ],
                           if (p.precisaAvisarRenovacao) ...[
                             const SizedBox(height: 8),
                             Align(
@@ -176,7 +270,15 @@ class _PagamentoPageState extends ConsumerState<PagamentoPage> {
 
                     const SizedBox(height: 18),
 
-                    if (_forma == _Forma.cartao)
+                    if (kIsWeb)
+                      _FormularioDoSite(
+                        nome: _nomeCompleto,
+                        cpf: _cpf,
+                        explicacao: _forma == _Forma.cartao
+                            ? l.pag_cartaoNoAsaas
+                            : l.pag_pixNoAsaas,
+                      )
+                    else if (_forma == _Forma.cartao)
                       _FormularioDeCartao(
                         numero: _numero,
                         nome: _nome,
@@ -243,7 +345,7 @@ class _PagamentoPageState extends ConsumerState<PagamentoPage> {
                           Icon(Icons.lock_outline,
                               size: 13, color: AppColors.onSurfaceVariant),
                           const SizedBox(width: 6),
-                          Text(l.pag_seguro,
+                          Text(kIsWeb ? l.pag_seguroAsaas : l.pag_seguro,
                               style: AppTypography.bodySm.copyWith(
                                 color: AppColors.onSurfaceVariant,
                                 fontSize: 11,
@@ -263,6 +365,67 @@ class _PagamentoPageState extends ConsumerState<PagamentoPage> {
 }
 
 // ── Formulário ───────────────────────────────────────────────────────────────
+
+/// Site: só quem paga. Cartão e Pix ficam na página do Asaas.
+class _FormularioDoSite extends StatelessWidget {
+  final TextEditingController nome;
+  final TextEditingController cpf;
+  final String explicacao;
+
+  const _FormularioDoSite({
+    required this.nome,
+    required this.cpf,
+    required this.explicacao,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l = L.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _Campo(rotulo: l.pag_nomeCompleto, controller: nome),
+        const SizedBox(height: 14),
+        _Campo(
+          rotulo: l.pag_cpf,
+          controller: cpf,
+          teclado: TextInputType.number,
+          entradas: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(11),
+            _MascaraDeCpf(),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Text(explicacao,
+            style: AppTypography.bodySm.copyWith(
+              color: AppColors.onSurfaceVariant,
+              height: 1.45,
+            )),
+      ],
+    );
+  }
+}
+
+/// `52998224725` → `529.982.247-25`.
+class _MascaraDeCpf extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue antigo, TextEditingValue novo) {
+    final d = novo.text.replaceAll(RegExp(r'\D'), '');
+    final b = StringBuffer();
+    for (var i = 0; i < d.length; i++) {
+      if (i == 3 || i == 6) b.write('.');
+      if (i == 9) b.write('-');
+      b.write(d[i]);
+    }
+    final t = b.toString();
+    return TextEditingValue(
+      text: t,
+      selection: TextSelection.collapsed(offset: t.length),
+    );
+  }
+}
 
 class _FormularioDeCartao extends StatelessWidget {
   final TextEditingController numero;
